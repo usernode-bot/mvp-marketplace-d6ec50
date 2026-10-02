@@ -20,6 +20,12 @@ const state = {
   filter: null, // { type: 'search' | 'category' | 'deals', q?, id? }
 };
 
+/* Escape a user-typed string for use inside markup and attribute values
+ * (recent searches and typed queries end up in innerHTML-built panels). */
+function esc(s) {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
 /* Banner gradient tones — whole literal class strings so the Tailwind
  * compiler sees them. */
 const BANNER_TONES = {
@@ -174,7 +180,7 @@ export function openResults(filter) {
     empty.innerHTML = emptyState({
       icon: 'search',
       title: 'No results found',
-      body: 'Nothing matches "' + filter.q + '" right now. Try a different word, or start from a trending search.',
+      body: 'Nothing matches "' + esc(filter.q) + '" right now. Try a different word, or start from a trending search.',
       actionLabel: 'Clear search',
       actionAttr: 'data-results-clear',
     })
@@ -216,8 +222,8 @@ function panelRows(q) {
         + '<button type="button" data-recent-clear class="text-xs font-medium text-brand-700 hover:underline">Clear all</button></div>'
         + '<div class="flex flex-wrap gap-2 pb-1">'
         + store.recent.map((r) => '<span class="inline-flex items-center gap-1 rounded-full bg-zinc-100 pl-3 pr-1.5 text-xs font-medium text-zinc-700">'
-          + '<button type="button" data-recent="' + r + '" class="py-1.5 hover:text-zinc-900">' + r + '</button>'
-          + '<button type="button" data-recent-remove="' + r + '" aria-label="Remove ' + r + ' from recent searches" class="flex h-4 w-4 items-center justify-center rounded-full text-zinc-400 hover:bg-zinc-200 hover:text-zinc-600">' + icon('x', 'h-3 w-3') + '</button>'
+          + '<button type="button" data-recent="' + esc(r) + '" class="py-1.5 hover:text-zinc-900">' + esc(r) + '</button>'
+          + '<button type="button" data-recent-remove="' + esc(r) + '" aria-label="Remove ' + esc(r) + ' from recent searches" class="flex h-4 w-4 items-center justify-center rounded-full text-zinc-400 hover:bg-zinc-200 hover:text-zinc-600">' + icon('x', 'h-3 w-3') + '</button>'
           + '</span>').join('')
         + '</div>'
       : '';
@@ -230,7 +236,7 @@ function panelRows(q) {
   }
   const matches = PRODUCTS.filter((p) => p.name.toLowerCase().includes(term)).slice(0, 6);
   if (!matches.length) {
-    return '<p class="p-2 text-sm text-zinc-500">No matches for "' + q + '". Press Enter to search anyway.</p>';
+    return '<p class="p-2 text-sm text-zinc-500">No matches for "' + esc(q) + '". Press Enter to search anyway.</p>';
   }
   return matches.map((p) => '<button type="button" data-suggest="' + p.name + '" class="flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-left text-sm text-zinc-700 hover:bg-zinc-50">'
     + '<span class="text-zinc-400">' + icon('search', 'h-4 w-4') + '</span>'
@@ -343,6 +349,12 @@ function initCarousel() {
   track.addEventListener('mouseenter', pause);
   track.addEventListener('mouseleave', resume);
 
+  // The shell keeps the last few apps loaded but hidden; don't advance the
+  // banner while nobody can see it, so returning shows it as it was left.
+  window.addEventListener('usernode:visibility-changed', (e) => {
+    if (e.detail && e.detail.hidden) pause(); else resume();
+  });
+
   carousel.timer = setInterval(() => {
     if (!carousel.paused && !document.hidden) goTo(carousel.index + 1);
   }, 4000);
@@ -356,7 +368,7 @@ export function initHome() {
   // 1. Skeletons immediately, so the shell never shows an empty grid.
   document.getElementById('promo-carousel').innerHTML = skeletonBanner() + skeletonBanner() + skeletonBanner();
   document.getElementById('promo-dots').innerHTML = [0, 1, 2].map((i) =>
-    '<button type="button" data-dot="' + i + '" aria-label="Go to banner ' + (i + 1) + '" class="h-2 w-2 rounded-full bg-zinc-300 transition-all"></button>').join('');
+    '<button type="button" data-dot="' + i + '" aria-label="Go to banner ' + (i + 1) + '" class="un-touch-target h-2 w-2 rounded-full bg-zinc-300 transition-all"></button>').join('');
   document.getElementById('category-grid').innerHTML = CATEGORIES.concat([{ id: 'more' }]).map(() => skeletonCategoryTile()).join('');
   document.getElementById('flash-row').innerHTML = Array.from({ length: 5 }, () =>
     '<div class="w-40 shrink-0 snap-start sm:w-44">' + skeletonCard(true) + '</div>').join('');
