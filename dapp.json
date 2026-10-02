@@ -28,6 +28,21 @@
       "name": "Cart tab shows the empty state",
       "path": "/#/cart",
       "expectText": "Your cart is empty"
+    },
+    {
+      "id": "cart.default",
+      "name": "Cart renders items, selection, summary and vouchers",
+      "path": "/?demo=1#/cart",
+      "expectSelector": "[data-cart-row]",
+      "expectText": "Order summary",
+      "visual": true,
+      "impact": ["public/**", "styles/tailwind-input.css", "tailwind.config.js"]
+    },
+    {
+      "id": "cart.vouchers",
+      "name": "Available vouchers are listed on the cart",
+      "path": "/?demo=1#/cart",
+      "expectText": "WELCOME10"
     }
   ]
 }
