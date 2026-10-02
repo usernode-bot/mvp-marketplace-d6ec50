@@ -19,7 +19,21 @@ const KEYS = {
   orders: 'bazario:orders',
   saved: 'bazario:saved',
   voucher: 'bazario:voucher',
+  orderOverrides: 'bazario:order-overrides',
+  addresses: 'bazario:addresses',
+  profile: 'bazario:profile',
+  prefs: 'bazario:prefs',
 };
+
+/* Settings defaults. Only the chosen values persist; new toggles inherit
+ * these until the user changes them. */
+const DEFAULT_PREFS = () => ({
+  orderUpdates: true,
+  promotions: true,
+  personalized: true,
+  saveSearch: true,
+  locale: 'en',
+});
 
 const PRODUCT_LOOKUP = Object.fromEntries(PRODUCTS.map((p) => [p.id, p]));
 
@@ -85,6 +99,13 @@ export const store = {
   orders: load(KEYS.orders, []), // placed (mock) orders, newest first
   saved: new Set(load(KEYS.saved, [])), // ids moved out of the cart
   voucher: normalizeVoucher(load(KEYS.voucher, null)),
+  // Order status overrides keyed by order number (Phase 5). Orders themselves
+  // are mock seed data; cancelling one is the only user mutation, and it
+  // persists so a reload keeps the cancelled state.
+  orderOverrides: load(KEYS.orderOverrides, {}),
+  addresses: load(KEYS.addresses, []), // [{ id, name, phone, line1, city, zip, isDefault }]
+  profile: load(KEYS.profile, null), // { name, phone, email } or null
+  prefs: Object.assign(DEFAULT_PREFS(), load(KEYS.prefs, {})),
 
   isFavorite(id) {
     return this.favorites.has(id);
@@ -230,6 +251,110 @@ export const store = {
 
   cartTotal() {
     return this.cartItems().reduce((sum, e) => sum + e.product.price * e.item.qty, 0);
+  },
+
+  /* ------------------------------------------------------------------
+   * Orders (Phase 5). The seeds live in data.js; this holds only the
+   * user's mutations on top of them.
+   * ------------------------------------------------------------------ */
+
+  setOrderStatus(no, status) {
+    this.orderOverrides = Object.assign({}, this.orderOverrides, { [no]: status });
+    save(KEYS.orderOverrides, this.orderOverrides);
+    emit();
+  },
+
+  /* ------------------------------------------------------------------
+   * Addresses (Phase 5). Invariant: when the list is non-empty, exactly
+   * one entry is the default.
+   * ------------------------------------------------------------------ */
+
+  addAddress(data) {
+    const entry = Object.assign({}, data, {
+      id: 'a' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+    });
+    if (entry.isDefault || !this.addresses.length) {
+      this.addresses.forEach((a) => { a.isDefault = false; });
+      entry.isDefault = true;
+    } else {
+      entry.isDefault = false;
+    }
+    this.addresses.push(entry);
+    save(KEYS.addresses, this.addresses);
+    emit();
+  },
+
+  updateAddress(id, patch) {
+    const entry = this.addresses.find((a) => a.id === id);
+    if (!entry) return;
+    Object.assign(entry, patch);
+    if (patch.isDefault) {
+      this.addresses.forEach((a) => { if (a.id !== id) a.isDefault = false; });
+    }
+    if (!this.addresses.some((a) => a.isDefault)) entry.isDefault = true;
+    save(KEYS.addresses, this.addresses);
+    emit();
+  },
+
+  removeAddress(id) {
+    const wasDefault = this.addresses.some((a) => a.id === id && a.isDefault);
+    this.addresses = this.addresses.filter((a) => a.id !== id);
+    if (wasDefault && this.addresses.length) this.addresses[0].isDefault = true;
+    save(KEYS.addresses, this.addresses);
+    emit();
+  },
+
+  addressById(id) {
+    return this.addresses.find((a) => a.id === id) || null;
+  },
+
+  /* ------------------------------------------------------------------
+   * Account profile and settings (Phase 5).
+   * ------------------------------------------------------------------ */
+
+  setProfile(data) {
+    const clean = {
+      name: (data.name || '').trim(),
+      phone: (data.phone || '').trim(),
+      email: (data.email || '').trim(),
+    };
+    this.profile = clean.name || clean.phone || clean.email ? clean : null;
+    save(KEYS.profile, this.profile);
+    emit();
+  },
+
+  setPref(key, value) {
+    if (!(key in DEFAULT_PREFS())) return;
+    this.prefs = Object.assign({}, this.prefs, { [key]: value });
+    save(KEYS.prefs, this.prefs);
+    emit();
+  },
+
+  /* Log out: this app keeps everything on the device, so signing out clears
+   * every bazario:* key (cart, wishlist, addresses, settings and the demo
+   * seed flags) and resets in-memory state. */
+  clearAll() {
+    try {
+      const doomed = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && k.indexOf('bazario:') === 0) doomed.push(k);
+      }
+      doomed.forEach((k) => localStorage.removeItem(k));
+    } catch {
+      // Storage refused: reset what we hold in memory anyway.
+    }
+    this.favorites = new Set();
+    this.cart = [];
+    this.recent = [];
+    this.saved = new Set();
+    this.voucher = null;
+    this.orderOverrides = {};
+    this.addresses = [];
+    this.profile = null;
+    this.prefs = DEFAULT_PREFS();
+    this.orders = [];
+    emit();
   },
 
   clearCart() {

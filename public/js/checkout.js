@@ -11,7 +11,7 @@
 
 import { icon, productArt } from './icons.js';
 import { store } from './store.js';
-import { fmtDate, fmtPrice, emptyState, toast } from './ui.js';
+import { fmtEtaDate, fmtPrice, emptyState, toast } from './ui.js';
 
 const view = document.getElementById('view-checkout');
 const ADDRESS_KEY = 'bazario:address';
@@ -115,7 +115,7 @@ function totals() {
 function etaLabel(opt) {
   const day = 24 * 60 * 60 * 1000;
   const now = Date.now();
-  return fmtDate(new Date(now + opt.etaDays[0] * day)) + ' – ' + fmtDate(new Date(now + opt.etaDays[1] * day));
+  return fmtEtaDate(new Date(now + opt.etaDays[0] * day)) + ' – ' + fmtEtaDate(new Date(now + opt.etaDays[1] * day));
 }
 
 /* ------------------------------------------------------------------ */

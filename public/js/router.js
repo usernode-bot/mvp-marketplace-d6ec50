@@ -15,7 +15,9 @@
 
 import { renderBrowse } from './browse.js';
 import { renderProduct } from './product.js';
-import { renderCategoriesView, renderOrdersView, renderProfileView } from './views.js';
+import { renderCategoriesView } from './views.js';
+import { renderOrdersView } from './orders.js';
+import { renderProfileView } from './profile.js';
 import { renderCartView } from './cart.js';
 import { renderCheckoutView } from './checkout.js';
 

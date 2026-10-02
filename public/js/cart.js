@@ -10,7 +10,7 @@
  */
 
 import { icon, productArt } from './icons.js';
-import { VOUCHERS, voucherByCode, discountPct } from './data.js';
+import { VOUCHERS, voucherByCode, voucherDescription, discountPct } from './data.js';
 import { store } from './store.js';
 import { fmtPrice, emptyState, toast } from './ui.js';
 
@@ -173,15 +173,6 @@ function savedSection(saved) {
 /* ------------------------------------------------------------------ */
 /* Vouchers                                                            */
 /* ------------------------------------------------------------------ */
-
-function voucherDescription(v) {
-  const base = v.type === 'percent'
-    ? v.value + '% off your order'
-    : v.type === 'fixed'
-      ? fmtPrice(v.value) + ' off your order'
-      : 'Free shipping on your order';
-  return base + ' · orders over ' + fmtPrice(v.min);
-}
 
 function voucherBlock(totals) {
   const applied = store.voucher ? voucherByCode(store.voucher) : null;

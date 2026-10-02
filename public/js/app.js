@@ -1,12 +1,14 @@
 /* App bootstrap: icon hydration, hash routing (router.js), header/bottom-nav
  * bindings and one delegated click handler for all card buttons
- * (favorite / add-to-cart / category / banner CTA / search panel).
+ * (favorite / add-to-cart / category / banner CTA / search panel / in-app
+ * route links).
  *
  * Views and routes live in router.js: tabs (home/categories/cart/orders/
- * profile) render their own modules; category browse and search results
- * render through browse.js; product detail through product.js. Deep links
- * (?q=..., ?cat=...) are translated to hash routes on boot so the address
- * bar always carries the real screen.
+ * profile) render their own modules, with sub-routes like #/orders/<no> and
+ * #/profile/<page> handled by orders.js / profile.js; category browse and
+ * search results render through browse.js; product detail through product.js.
+ * Deep links (?q=..., ?cat=...) are translated to hash routes on boot so the
+ * address bar always carries the real screen.
  */
 
 import { hydrateIcons, icon } from './icons.js';
@@ -14,7 +16,10 @@ import { productById } from './data.js';
 import { store } from './store.js';
 import { toast } from './ui.js';
 import { clearResults, initHome, panelRows, runBannerAction, submitSearch } from './home.js';
-import { renderProfileView } from './views.js';
+import { initOrders } from './orders.js';
+import { renderProfileView } from './profile.js';
+import { initAddresses } from './addresses.js';
+import { initSettings } from './settings.js';
 import { applyVoucherCode, initCart, removeCartItem, renderCartView } from './cart.js';
 import { goToHash, parseRoute, renderRoute } from './router.js';
 
@@ -43,7 +48,7 @@ function reopenSearchPanel(box, input) {
 }
 
 function handleClick(e) {
-  const target = e.target.closest('[data-fav], [data-add], [data-category], [data-nav], [data-banner-action], [data-recent], [data-recent-remove], [data-recent-clear], [data-suggest], [data-search-suggest], [data-soon], [data-cart-plus], [data-cart-minus], [data-cart-remove], [data-cart-select], [data-cart-select-all], [data-cart-save], [data-saved-move], [data-saved-remove], [data-voucher-pick], [data-voucher-remove], [data-results-clear], [data-back]');
+  const target = e.target.closest('[data-fav], [data-add], [data-category], [data-nav], [data-route], [data-banner-action], [data-recent], [data-recent-remove], [data-recent-clear], [data-suggest], [data-search-suggest], [data-soon], [data-cart-plus], [data-cart-minus], [data-cart-remove], [data-cart-select], [data-cart-select-all], [data-cart-save], [data-saved-move], [data-saved-remove], [data-voucher-pick], [data-voucher-remove], [data-results-clear], [data-back]');
   if (!target) return;
 
   const favId = target.getAttribute('data-fav');
@@ -93,6 +98,13 @@ function handleClick(e) {
 
   if (target.hasAttribute('data-back')) {
     history.back();
+    return;
+  }
+
+  // In-app sub-route link (e.g. "profile/wishlist" -> #/profile/wishlist).
+  const route = target.getAttribute('data-route');
+  if (route) {
+    location.hash = '/' + route;
     return;
   }
 
@@ -221,6 +233,9 @@ function boot() {
 
   document.addEventListener('click', handleClick);
   initCart();
+  initOrders();
+  initAddresses();
+  initSettings();
 
   window.addEventListener('hashchange', renderRoute);
 
@@ -257,10 +272,12 @@ function boot() {
     goToHash('#/category/' + deepCat);
   }
 
-  // Bell has no notification center yet; say so instead of doing nothing.
+  // The bell opens the Notifications page (Phase 5).
   const bell = document.getElementById('bell-btn');
   if (bell) {
-    bell.addEventListener('click', () => toast('Notifications arrive in a later phase'));
+    bell.addEventListener('click', () => {
+      location.hash = '/profile/notifications';
+    });
   }
 }
 

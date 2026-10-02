@@ -94,6 +94,52 @@
       "expectText": "WELCOME10"
     },
     {
+      "id": "orders.default",
+      "name": "Orders page renders status tabs and order cards",
+      "path": "/#/orders",
+      "expectSelector": "[data-order-card]",
+      "expectText": "To Pay",
+      "visual": true,
+      "impact": ["public/js/orders.js", "public/js/app.js", "public/index.html", "styles/tailwind-input.css"]
+    },
+    {
+      "id": "orders.detail",
+      "name": "Order detail shows timeline, address, payment and totals",
+      "path": "/#/orders/BZ-48073",
+      "expectSelector": "[data-order-timeline]",
+      "expectText": "Shipping address",
+      "visual": true,
+      "impact": ["public/js/orders.js"]
+    },
+    {
+      "id": "profile.default",
+      "name": "Profile page renders account header and menu",
+      "path": "/#/profile",
+      "expectText": "Edit Profile",
+      "visual": true,
+      "impact": ["public/js/profile.js", "public/js/app.js"]
+    },
+    {
+      "id": "profile.wishlist-demo",
+      "name": "Wishlist shows saved products with the demo account",
+      "path": "/?demo=1#/profile/wishlist",
+      "expectSelector": "[data-view='profile'] .product-card",
+      "expectText": "Wishlist"
+    },
+    {
+      "id": "profile.addresses-demo",
+      "name": "Address list renders with a default address",
+      "path": "/?demo=1#/profile/addresses",
+      "expectSelector": "[data-address-row]",
+      "expectText": "Default"
+    },
+    {
+      "id": "profile.settings",
+      "name": "Settings renders notification, preference and privacy groups",
+      "path": "/#/profile/settings",
+      "expectText": "Notification settings"
+    },
+    {
       "id": "home.search-quoted",
       "name": "Search query with quotes and angle brackets renders as text",
       "path": "/?q=wireless%20%22pro%22%20%3Ctest%3E",
