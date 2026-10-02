@@ -28,6 +28,31 @@ module.exports = {
   // the usernode-native UI kit and harmless without it.
   future: { hoverOnlyWhenSupported: true },
 
-  theme: { extend: {} },
+  theme: {
+    extend: {
+      // Design-system tokens. `brand` is the app's single accent (a violet
+      // ramp, deliberately not any existing marketplace's color). Semantic
+      // colors (rose for sale urgency, amber for ratings) use Tailwind's
+      // defaults; spacing and radii use the default 4px scale.
+      colors: {
+        brand: {
+          50: '#F5F3FF',
+          100: '#EDE9FE',
+          200: '#DDD6FE',
+          300: '#C4B5FD',
+          400: '#A78BFA',
+          500: '#8B5CF6',
+          600: '#7C3AED',
+          700: '#6D28D9',
+          800: '#5B21B6',
+          900: '#4C1D95',
+        },
+      },
+      boxShadow: {
+        card: '0 1px 2px rgba(24, 24, 27, 0.06), 0 1px 3px rgba(24, 24, 27, 0.08)',
+        'card-lg': '0 4px 12px rgba(24, 24, 27, 0.08), 0 2px 4px rgba(24, 24, 27, 0.06)',
+      },
+    },
+  },
   plugins: [],
 };

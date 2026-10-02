@@ -1,4 +1,33 @@
 {
-  "description": "MVP → Beta → Add Seller → Payment → Logistics → Advanced Features → Production",
-  "secrets": []
+  "description": "A modern mobile-first marketplace: deals, categories and everyday essentials.",
+  "secrets": [],
+  "tests": [
+    {
+      "id": "home.default",
+      "name": "Home renders with banners, categories, flash sale and products",
+      "path": "/",
+      "expectSelector": "[data-view='home'] .product-card",
+      "expectText": "Flash Sale",
+      "visual": true,
+      "impact": ["public/**", "styles/tailwind-input.css", "tailwind.config.js"]
+    },
+    {
+      "id": "home.search-no-results",
+      "name": "Search with no matches shows the empty state",
+      "path": "/?q=zzzznothing",
+      "expectText": "No results found"
+    },
+    {
+      "id": "home.categories-tab",
+      "name": "Categories tab renders category tiles",
+      "path": "/#/categories",
+      "expectText": "All categories"
+    },
+    {
+      "id": "home.cart-empty",
+      "name": "Cart tab shows the empty state",
+      "path": "/#/cart",
+      "expectText": "Your cart is empty"
+    }
+  ]
 }

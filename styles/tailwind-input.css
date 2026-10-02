@@ -11,3 +11,111 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* ---------------------------------------------------------------------------
+ * Design system — component classes.
+ *
+ * Every reusable piece of UI (buttons, cards, badges, inputs, chips, nav
+ * items) is defined here once so screens stay consistent by construction.
+ * One accent (`brand`, violet); rose is reserved for sale urgency, amber for
+ * ratings. Spacing uses Tailwind's 4px scale; radii: lg (8px) for controls,
+ * xl (12px) for cards, full for pills and circles.
+ * ------------------------------------------------------------------------- */
+@layer components {
+  /* Cards: white surface on the zinc-50 page, hairline shadow, 12px radius. */
+  .card {
+    @apply rounded-xl bg-white shadow-card;
+  }
+
+  .section-title {
+    @apply text-lg font-bold tracking-tight text-zinc-900;
+  }
+
+  /* Round ghost button for header actions (bell, cart, back). */
+  .icon-btn {
+    @apply relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-zinc-900;
+  }
+
+  .badge {
+    @apply inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold leading-none;
+  }
+  .badge-sale {
+    @apply inline-flex items-center gap-1 rounded-full bg-rose-600 px-2 py-0.5 text-[11px] font-semibold leading-none text-white;
+  }
+  .badge-soft {
+    @apply inline-flex items-center gap-1 rounded-full bg-zinc-100 px-2 py-0.5 text-[11px] font-semibold leading-none text-zinc-600;
+  }
+  .badge-brand {
+    @apply inline-flex items-center gap-1 rounded-full bg-brand-50 px-2 py-0.5 text-[11px] font-semibold leading-none text-brand-700;
+  }
+
+  /* Buttons. Sizes: default h-10, `.btn-sm` h-8. One primary per view. */
+  .btn {
+    @apply inline-flex items-center justify-center gap-1.5 rounded-lg text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-primary {
+    @apply inline-flex h-10 items-center justify-center gap-1.5 rounded-lg bg-brand-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-secondary {
+    @apply inline-flex h-10 items-center justify-center gap-1.5 rounded-lg bg-brand-50 px-4 text-sm font-semibold text-brand-700 transition-colors hover:bg-brand-100 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-outline {
+    @apply inline-flex h-10 items-center justify-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-4 text-sm font-semibold text-zinc-700 transition-colors hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-ghost {
+    @apply inline-flex h-10 items-center justify-center gap-1.5 rounded-lg px-3 text-sm font-semibold text-brand-700 transition-colors hover:bg-brand-50 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-sm {
+    @apply h-8 rounded-lg px-3 text-xs;
+  }
+
+  /* Text inputs. The search input reserves 40px for its leading icon. */
+  .input {
+    @apply h-11 w-full rounded-lg border border-zinc-200 bg-white pl-10 pr-3 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100;
+  }
+
+  /* Countdown chip (Flash Sale timer). */
+  .chip {
+    @apply inline-flex h-6 min-w-7 items-center justify-center rounded-md bg-zinc-900 px-1 text-xs font-bold tabular-nums text-white;
+  }
+
+  /* Desktop top navigation links. */
+  .nav-link {
+    @apply flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-zinc-900;
+  }
+  .nav-link-active {
+    @apply bg-brand-50 text-brand-700;
+  }
+
+  /* Mobile bottom navigation items. */
+  .nav-item {
+    @apply relative flex flex-1 flex-col items-center justify-center gap-0.5 py-2 text-[10px] font-medium text-zinc-500 transition-colors;
+  }
+  .nav-item-active {
+    @apply text-brand-600;
+  }
+
+  /* Circular add-to-cart button on product cards. */
+  .add-btn {
+    @apply flex h-9 min-w-9 items-center justify-center gap-1 rounded-full bg-brand-600 px-2 text-xs font-semibold text-white transition-colors hover:bg-brand-700;
+  }
+
+  /* Favorite (heart) button on product cards. */
+  .fav-btn {
+    @apply flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-zinc-400 shadow-card transition-colors hover:text-rose-500;
+  }
+  .fav-btn-on {
+    @apply text-rose-500;
+  }
+}
+
+@layer utilities {
+  /* Horizontal scrollers (carousel, flash row) without a visible scrollbar. */
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+}
