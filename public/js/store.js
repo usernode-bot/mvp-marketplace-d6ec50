@@ -13,6 +13,7 @@ const KEYS = {
   favorites: 'bazario:favorites',
   cart: 'bazario:cart',
   recent: 'bazario:recent',
+  orders: 'bazario:orders',
 };
 
 const PRODUCT_LOOKUP = Object.fromEntries(PRODUCTS.map((p) => [p.id, p]));
@@ -51,6 +52,7 @@ export const store = {
   favorites: new Set(load(KEYS.favorites, [])),
   cart: load(KEYS.cart, []), // [{ id, qty }]
   recent: load(KEYS.recent, []),
+  orders: load(KEYS.orders, []), // placed (mock) orders, newest first
 
   isFavorite(id) {
     return this.favorites.has(id);
@@ -112,6 +114,18 @@ export const store = {
 
   cartTotal() {
     return this.cartItems().reduce((sum, e) => sum + e.product.price * e.item.qty, 0);
+  },
+
+  clearCart() {
+    this.cart = [];
+    save(KEYS.cart, this.cart);
+    emit();
+  },
+
+  addOrder(order) {
+    this.orders = [order, ...this.orders].slice(0, 20);
+    save(KEYS.orders, this.orders);
+    emit();
   },
 
   addRecent(q) {

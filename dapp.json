@@ -28,6 +28,30 @@
       "name": "Cart tab shows the empty state",
       "path": "/#/cart",
       "expectText": "Your cart is empty"
+    },
+    {
+      "id": "checkout.default",
+      "name": "Checkout renders address, products, shipping, payment and summary",
+      "path": "/?demo=checkout#/checkout",
+      "expectSelector": "[data-checkout-products]",
+      "expectText": "Order summary",
+      "visual": true,
+      "impact": [
+        "public/js/checkout.js",
+        "public/js/app.js",
+        "public/js/store.js",
+        "public/js/views.js",
+        "public/js/icons.js",
+        "public/js/ui.js",
+        "public/index.html",
+        "styles/tailwind-input.css"
+      ]
+    },
+    {
+      "id": "checkout.empty",
+      "name": "Checkout with an empty cart shows the empty state",
+      "path": "/#/checkout",
+      "expectText": "Add items to your cart"
     }
   ]
 }

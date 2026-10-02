@@ -6,7 +6,7 @@
 import { icon, productArt } from './icons.js';
 import { CATEGORIES, PRODUCTS } from './data.js';
 import { store } from './store.js';
-import { fmtCount, fmtPrice, emptyState, productCard, toast } from './ui.js';
+import { fmtCount, fmtDate, fmtPrice, emptyState, productCard, toast } from './ui.js';
 
 const CATEGORY_TINTS = {
   electronics: ['bg-indigo-50', 'text-indigo-600'],
@@ -119,8 +119,8 @@ export function renderCartView() {
     + '<div class="mt-3 flex justify-between text-sm text-zinc-600"><span>Subtotal</span><span class="font-medium tabular-nums text-zinc-900">' + fmtPrice(subtotal) + '</span></div>'
     + '<div class="mt-1.5 flex justify-between text-sm text-zinc-600"><span>Shipping</span><span class="text-zinc-400">Calculated at checkout</span></div>'
     + '<div class="mt-3 flex justify-between border-t border-zinc-100 pt-3 text-sm font-semibold text-zinc-900"><span>Total</span><span class="tabular-nums">' + fmtPrice(subtotal) + '</span></div>'
-    + '<button type="button" class="btn-primary mt-4 w-full" disabled>Checkout coming soon</button>'
-    + '<p class="mt-2 text-center text-xs text-zinc-400">Checkout and payment arrive in a later phase.</p>'
+    + '<button type="button" class="btn-primary mt-4 w-full" data-nav="checkout">Checkout</button>'
+    + '<p class="mt-2 text-center text-xs text-zinc-400">Mock checkout: no real payment is taken.</p>'
     + '</div></div>'
     + '</div>';
 }
@@ -131,17 +131,50 @@ export function renderCartView() {
 
 export function renderOrdersView() {
   const view = document.getElementById('view-orders');
+  const orders = store.orders;
+
+  if (!orders.length) {
+    view.innerHTML =
+      '<h1 class="section-title">Orders</h1>'
+      + '<div class="card mt-4">'
+      + emptyState({
+        icon: 'package',
+        title: 'No orders yet',
+        body: 'When you place an order, it will show up here with its status and delivery updates.',
+        actionLabel: 'Browse products',
+        actionAttr: 'data-nav="home"',
+      })
+      + '</div>';
+    return;
+  }
+
   view.innerHTML =
     '<h1 class="section-title">Orders</h1>'
-    + '<div class="card mt-4">'
-    + emptyState({
-      icon: 'package',
-      title: 'No orders yet',
-      body: 'When you place an order, it will show up here with its status and delivery updates.',
-      actionLabel: 'Browse products',
-      actionAttr: 'data-nav="home"',
-    })
-    + '</div>';
+    + orders.map(orderCard).join('');
+}
+
+function orderCard(o) {
+  const first = o.items[0];
+  const more = o.items.length - 1;
+  return '<article class="card mt-4 p-4">'
+    + '<div class="flex items-center gap-2">'
+    + '<h2 class="text-sm font-semibold text-zinc-900">' + o.number + '</h2>'
+    + '<span class="badge-brand ml-auto">' + o.status + '</span>'
+    + '</div>'
+    + '<p class="mt-1 text-xs text-zinc-500">Placed ' + fmtDate(new Date(o.placedAt)) + '</p>'
+    + '<div class="mt-3 flex items-center gap-3">'
+    + '<div class="h-12 w-12 shrink-0 overflow-hidden rounded-lg">' + productArt(first) + '</div>'
+    + '<div class="min-w-0 flex-1 text-sm">'
+    + '<p class="truncate font-medium text-zinc-800">' + first.name + '</p>'
+    + '<p class="text-xs text-zinc-500">' + (more > 0 ? '+ ' + more + ' more item' + (more === 1 ? '' : 's') : 'Qty ' + first.qty) + '</p>'
+    + '</div>'
+    + '<span class="text-sm font-bold tabular-nums text-zinc-900">' + fmtPrice(o.total) + '</span>'
+    + '</div>'
+    + '<div class="mt-3 flex items-center gap-2 border-t border-zinc-100 pt-3 text-xs text-zinc-500">'
+    + '<span class="text-zinc-400">' + icon('truck', 'h-4 w-4') + '</span>'
+    + 'Estimated delivery ' + o.etaLabel
+    + '</div>'
+    + '</article>';
 }
 
 /* ------------------------------------------------------------------ */

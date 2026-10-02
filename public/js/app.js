@@ -9,8 +9,9 @@ import { store } from './store.js';
 import { toast } from './ui.js';
 import { clearResults, initHome, openResults, panelRows, submitSearch } from './home.js';
 import { renderCartView, renderCategoriesView, renderOrdersView, renderProfileView, selectCategoryTab } from './views.js';
+import { renderCheckoutView } from './checkout.js';
 
-const VIEWS = ['home', 'categories', 'cart', 'orders', 'profile'];
+const VIEWS = ['home', 'categories', 'cart', 'checkout', 'orders', 'profile'];
 
 /* ------------------------------------------------------------------ */
 /* View switching                                                      */
@@ -37,6 +38,7 @@ function showView(name) {
 
   if (name === 'categories') renderCategoriesView();
   if (name === 'cart') renderCartView();
+  if (name === 'checkout') renderCheckoutView();
   if (name === 'orders') renderOrdersView();
   if (name === 'profile') renderProfileView();
 
@@ -211,6 +213,18 @@ function boot() {
   store.subscribe(() => {
     if (currentView() === 'cart') renderCartView();
   });
+
+  // Demo seed for proposal checks and staging screenshots: ?demo=checkout
+  // fills the cart with a few mock items, in memory only (they persist only
+  // if the shopper then changes something). Plain routes never hit this.
+  if (new URLSearchParams(window.location.search).get('demo') === 'checkout') {
+    store.cart = [
+      { id: 'p01', qty: 1 },
+      { id: 'p14', qty: 2 },
+      { id: 'p26', qty: 1 },
+    ];
+  }
+
   updateBadges();
 
   initHome();
