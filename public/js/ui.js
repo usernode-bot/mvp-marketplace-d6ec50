@@ -64,7 +64,7 @@ export function productCard(p, opts = {}) {
   const soldBlock = opts.compact
     ? '<div class="mt-1.5"><div class="h-1.5 w-full overflow-hidden rounded-full bg-rose-100"><div class="h-full rounded-full bg-rose-500" style="width:' + (p.pct || 0) + '%"></div></div>'
       + '<div class="mt-1 text-[11px] font-medium text-zinc-500">' + fmtCount(p.sold) + ' sold</div></div>'
-    : '<span class="text-xs text-zinc-400">' + fmtCount(p.sold) + ' sold</span>';
+    : '<span class="text-xs text-zinc-500">' + fmtCount(p.sold) + ' sold</span>';
 
   return '<article class="card product-card group flex flex-col overflow-hidden">'
     + '<div class="relative aspect-square overflow-hidden rounded-t-xl">'

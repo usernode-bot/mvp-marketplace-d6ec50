@@ -124,6 +124,17 @@
   }
 }
 
+/* Keyboard focus: visible ring for keyboard navigation only (WCAG 2.4.7).
+ * Rings are box-shadows, so they never shift layout, and mouse/touch
+ * activation does not show them. Component-level focus styles below (.input's
+ * own ring, kit controls) keep winning because the components layer
+ * comes later. */
+@layer base {
+  :focus-visible {
+    @apply outline-none ring-2 ring-brand-500 ring-offset-2;
+  }
+}
+
 @layer utilities {
   /* Horizontal scrollers (carousel, flash row) without a visible scrollbar. */
   .no-scrollbar {

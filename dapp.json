@@ -67,6 +67,12 @@
       "name": "Available vouchers are listed on the cart",
       "path": "/?demo=1#/cart",
       "expectText": "WELCOME10"
+    },
+    {
+      "id": "home.search-quoted",
+      "name": "Search query with quotes and angle brackets renders as text",
+      "path": "/?q=wireless%20%22pro%22%20%3Ctest%3E",
+      "expectText": "Nothing matches \"wireless \"pro\" <test>\" right now"
     }
   ]
 }
