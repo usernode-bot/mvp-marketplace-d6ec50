@@ -1,6 +1,6 @@
-/* Secondary tabs: Categories, Cart, Orders and Profile. Phase 1 keeps these
- * light but real: Categories browses the mock catalog, Cart manages what you
- * added, Orders and Profile are honest empty/stub states for later phases.
+/* Secondary tabs: Categories, Orders and Profile. Cart lives in cart.js
+ * (Phase 3). Categories browses the mock catalog, Orders and Profile are
+ * honest empty/stub states for later phases.
  */
 
 import { icon, productArt } from './icons.js';
@@ -69,60 +69,6 @@ export function selectCategoryTab(id) {
   renderCategoriesView();
   const title = document.getElementById('category-products-title');
   if (title) title.scrollIntoView({ behavior: 'smooth', block: 'start' });
-}
-
-/* ------------------------------------------------------------------ */
-/* Cart                                                                */
-/* ------------------------------------------------------------------ */
-
-function cartRow(entry) {
-  const { item, product: p } = entry;
-  return '<div class="card flex items-center gap-3 p-3" data-cart-row="' + p.id + '">'
-    + '<div class="h-16 w-16 shrink-0 overflow-hidden rounded-lg">' + productArt(p) + '</div>'
-    + '<div class="min-w-0 flex-1">'
-    + '<h3 class="truncate text-sm font-medium text-zinc-800">' + p.name + '</h3>'
-    + '<div class="mt-0.5 text-sm font-bold tabular-nums text-zinc-900">' + fmtPrice(p.price * item.qty) + '</div>'
-    + '<div class="mt-1.5 flex items-center gap-2">'
-    + '<button type="button" data-cart-minus="' + p.id + '" aria-label="Decrease quantity" class="flex h-7 w-7 items-center justify-center rounded-lg border border-zinc-200 text-zinc-600 hover:bg-zinc-50">' + icon('minus', 'h-3.5 w-3.5') + '</button>'
-    + '<span class="min-w-6 text-center text-sm font-semibold tabular-nums">' + item.qty + '</span>'
-    + '<button type="button" data-cart-plus="' + p.id + '" aria-label="Increase quantity" class="flex h-7 w-7 items-center justify-center rounded-lg border border-zinc-200 text-zinc-600 hover:bg-zinc-50">' + icon('plus', 'h-3.5 w-3.5') + '</button>'
-    + '</div></div>'
-    + '<button type="button" data-cart-remove="' + p.id + '" aria-label="Remove from cart" class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-zinc-400 hover:bg-rose-50 hover:text-rose-600">' + icon('trash', 'h-4 w-4') + '</button>'
-    + '</div>';
-}
-
-export function renderCartView() {
-  const view = document.getElementById('view-cart');
-  const entries = store.cartItems();
-
-  if (!entries.length) {
-    view.innerHTML =
-      '<h1 class="section-title">Cart</h1>'
-      + '<div class="card mt-4">' + emptyState({
-        icon: 'cart',
-        title: 'Your cart is empty',
-        body: 'Browse the home page and add something you like.',
-        actionLabel: 'Start shopping',
-        actionAttr: 'data-nav="home"',
-      }) + '</div>';
-    return;
-  }
-
-  const subtotal = store.cartTotal();
-  const items = store.cartCount();
-  view.innerHTML =
-    '<div class="flex items-center gap-2"><h1 class="section-title">Cart</h1><span class="badge-soft">' + items + (items === 1 ? ' item' : ' items') + '</span></div>'
-    + '<div class="mt-4 grid gap-6 lg:grid-cols-3">'
-    + '<div class="flex flex-col gap-3 lg:col-span-2">' + entries.map(cartRow).join('') + '</div>'
-    + '<div class="lg:col-span-1"><div class="card p-4 lg:sticky lg:top-24">'
-    + '<h2 class="text-sm font-semibold text-zinc-900">Order summary</h2>'
-    + '<div class="mt-3 flex justify-between text-sm text-zinc-600"><span>Subtotal</span><span class="font-medium tabular-nums text-zinc-900">' + fmtPrice(subtotal) + '</span></div>'
-    + '<div class="mt-1.5 flex justify-between text-sm text-zinc-600"><span>Shipping</span><span class="text-zinc-400">Calculated at checkout</span></div>'
-    + '<div class="mt-3 flex justify-between border-t border-zinc-100 pt-3 text-sm font-semibold text-zinc-900"><span>Total</span><span class="tabular-nums">' + fmtPrice(subtotal) + '</span></div>'
-    + '<button type="button" class="btn-primary mt-4 w-full" data-nav="checkout">Checkout</button>'
-    + '<p class="mt-2 text-center text-xs text-zinc-400">Mock checkout: no real payment is taken.</p>'
-    + '</div></div>'
-    + '</div>';
 }
 
 /* ------------------------------------------------------------------ */

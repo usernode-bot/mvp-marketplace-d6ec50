@@ -8,8 +8,9 @@ import { productById } from './data.js';
 import { store } from './store.js';
 import { toast } from './ui.js';
 import { clearResults, initHome, openResults, panelRows, submitSearch } from './home.js';
-import { renderCartView, renderCategoriesView, renderOrdersView, renderProfileView, selectCategoryTab } from './views.js';
+import { renderCategoriesView, renderOrdersView, renderProfileView, selectCategoryTab } from './views.js';
 import { renderCheckoutView } from './checkout.js';
+import { applyVoucherCode, initCart, removeCartItem, renderCartView } from './cart.js';
 
 const VIEWS = ['home', 'categories', 'cart', 'checkout', 'orders', 'profile'];
 
@@ -78,7 +79,7 @@ function reopenSearchPanel(box, input) {
 }
 
 function handleClick(e) {
-  const target = e.target.closest('[data-fav], [data-add], [data-category], [data-category-tab], [data-nav], [data-banner-action], [data-recent], [data-recent-remove], [data-recent-clear], [data-suggest], [data-search-suggest], [data-soon], [data-cart-plus], [data-cart-minus], [data-cart-remove], [data-results-clear]');
+  const target = e.target.closest('[data-fav], [data-add], [data-category], [data-category-tab], [data-nav], [data-banner-action], [data-recent], [data-recent-remove], [data-recent-clear], [data-suggest], [data-search-suggest], [data-soon], [data-cart-plus], [data-cart-minus], [data-cart-remove], [data-cart-select], [data-cart-select-all], [data-cart-save], [data-saved-move], [data-saved-remove], [data-voucher-pick], [data-voucher-remove], [data-results-clear]');
   if (!target) return;
 
   const favId = target.getAttribute('data-fav');
@@ -181,14 +182,58 @@ function handleClick(e) {
   const minus = target.getAttribute('data-cart-minus');
   if (minus) {
     const entry = store.cart.find((i) => i.id === minus);
-    if (entry) store.setQty(minus, entry.qty - 1);
+    // Use the remove button (with confirmation) to delete an item.
+    if (entry && entry.qty > 1) store.setQty(minus, entry.qty - 1);
     return;
   }
 
   const remove = target.getAttribute('data-cart-remove');
   if (remove) {
-    store.removeFromCart(remove);
-    toast('Removed from cart');
+    removeCartItem(remove);
+    return;
+  }
+
+  const select = target.getAttribute('data-cart-select');
+  if (select) {
+    store.setSelected(select, target.checked);
+    return;
+  }
+
+  if (target.hasAttribute('data-cart-select-all')) {
+    store.setAllSelected(target.checked);
+    return;
+  }
+
+  const save = target.getAttribute('data-cart-save');
+  if (save) {
+    store.saveForLater(save);
+    toast('Saved for later');
+    return;
+  }
+
+  const move = target.getAttribute('data-saved-move');
+  if (move) {
+    store.moveToCart(move);
+    toast('Moved to cart');
+    return;
+  }
+
+  const savedRemove = target.getAttribute('data-saved-remove');
+  if (savedRemove) {
+    store.removeSaved(savedRemove);
+    toast('Removed from saved items');
+    return;
+  }
+
+  if (target.hasAttribute('data-voucher-remove')) {
+    store.clearVoucher();
+    toast('Voucher removed');
+    return;
+  }
+
+  const pick = target.getAttribute('data-voucher-pick');
+  if (pick) {
+    applyVoucherCode(pick);
     return;
   }
 
@@ -206,6 +251,7 @@ function boot() {
   hydrateIcons();
 
   document.addEventListener('click', handleClick);
+  initCart();
 
   window.addEventListener('hashchange', () => showView(currentView()));
 
