@@ -22,6 +22,43 @@ export function fmtCount(n) {
   return String(n);
 }
 
+/* "Oct 2" within the current year, "Oct 2, 2025" otherwise. */
+export function fmtDate(ts) {
+  const d = new Date(ts);
+  const sameYear = d.getFullYear() === new Date().getFullYear();
+  return d.toLocaleDateString('en-US', sameYear
+    ? { month: 'short', day: 'numeric' }
+    : { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+/* Escape a user-typed string for use inside HTML text and attribute values. */
+export function esc(s) {
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+/* Confirmation dialog. Uses the platform kit's alert when present (the same
+ * pattern as the cart's remove confirmation); falls back to window.confirm
+ * in standalone local runs. Resolves true only when the destructive button
+ * was pressed. */
+export function confirmDialog({ title, message, confirmLabel = 'Confirm' }) {
+  if (window.unNative && typeof window.unNative.alert === 'function') {
+    return window.unNative.alert({
+      title,
+      message,
+      buttons: [
+        { label: 'Cancel', style: 'cancel' },
+        { label: confirmLabel, style: 'destructive' },
+      ],
+    }).then((r) => !!(r && r.button && r.button.style === 'destructive'));
+  }
+  return Promise.resolve(window.confirm(title + '\n\n' + message));
+}
+
 /* ---------------------------------------------------------------------------
  * Toast. Uses the platform's native kit when it is present (it is safe-area
  * aware and singleton); falls back to a minimal fixed pill otherwise, e.g.

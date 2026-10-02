@@ -107,6 +107,24 @@
   .fav-btn-on {
     @apply text-rose-500;
   }
+
+  /* Filter pill for the Orders status tabs (All / To Pay / ...). */
+  .tab-pill {
+    @apply inline-flex h-9 shrink-0 items-center justify-center gap-1 whitespace-nowrap rounded-full border border-zinc-200 bg-white px-4 text-sm font-semibold text-zinc-600 transition-colors hover:bg-zinc-50;
+  }
+  .tab-pill-active {
+    @apply border-brand-600 bg-brand-600 text-white hover:bg-brand-700;
+  }
+
+  /* One row of a settings/menu list card (Profile, Settings, Help). */
+  .menu-row {
+    @apply flex w-full items-center gap-3 px-4 py-3.5 text-left text-sm font-medium text-zinc-800 transition-colors hover:bg-zinc-50;
+  }
+
+  /* Form text input without the icon space the search .input reserves. */
+  .field {
+    @apply h-11 w-full rounded-lg border border-zinc-200 bg-white px-3 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100;
+  }
 }
 
 @layer utilities {
