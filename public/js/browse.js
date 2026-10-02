@@ -19,7 +19,7 @@ import {
   score,
 } from './data.js';
 import { store } from './store.js';
-import { emptyState, productCard, skeletonCard } from './ui.js';
+import { emptyState, esc, productCard, skeletonCard } from './ui.js';
 import { goToHash } from './router.js';
 
 const SORT_OPTIONS = [
@@ -211,7 +211,7 @@ function emptyResultsHtml() {
   return emptyState({
     icon: 'search',
     title: 'No results found',
-    body: 'Nothing matches "' + state.q + '" right now. Try a different word, or start from a popular search.',
+    body: 'Nothing matches "' + esc(state.q) + '" right now. Try a different word, or start from a popular search.',
     actionLabel: 'Clear search',
     actionAttr: 'data-browse-clear-search',
   })
@@ -225,7 +225,7 @@ function emptyResultsHtml() {
 function searchInputHtml(id, placeholder, value) {
   return '<div class="relative">'
     + '<span class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400">' + icon('search', 'h-5 w-5') + '</span>'
-    + '<input type="search" id="' + id + '" class="input" placeholder="' + placeholder + '" value="' + value + '" autocomplete="off" aria-label="' + placeholder + '">'
+    + '<input type="search" id="' + id + '" class="input" placeholder="' + placeholder + '" value="' + esc(value) + '" autocomplete="off" aria-label="' + placeholder + '">'
     + '</div>';
 }
 
@@ -233,7 +233,7 @@ function searchHomeShell() {
   const recent = store.recent.length
     ? '<section class="mt-6" aria-label="Recent searches"><h2 class="text-sm font-semibold text-zinc-900">Recent searches</h2>'
       + '<div class="mt-2.5 flex flex-wrap gap-2">'
-      + store.recent.map((r) => '<button type="button" data-recent="' + r + '" class="inline-flex items-center gap-1.5 rounded-full bg-zinc-100 px-3 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-200">' + icon('clock', 'h-3.5 w-3.5') + r + '</button>').join('')
+      + store.recent.map((r) => '<button type="button" data-recent="' + esc(r) + '" class="inline-flex items-center gap-1.5 rounded-full bg-zinc-100 px-3 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-200">' + icon('clock', 'h-3.5 w-3.5') + esc(r) + '</button>').join('')
       + '</div></section>'
     : '';
   const popular = '<section class="mt-6" aria-label="Popular searches"><h2 class="text-sm font-semibold text-zinc-900">Popular searches</h2>'
@@ -284,7 +284,7 @@ function categoryShell() {
 function searchResultsShell() {
   return '<div class="flex min-w-0 items-center gap-2">'
     + '<button type="button" data-back class="icon-btn -ml-2 shrink-0" aria-label="Back">' + icon('chevronLeft', 'h-5 w-5') + '</button>'
-    + '<h1 class="section-title truncate">Results for "' + state.q + '"</h1>'
+    + '<h1 class="section-title truncate">Results for "' + esc(state.q) + '"</h1>'
     + '</div>'
     + '<div class="mt-2">' + searchInputHtml('search-page-input', 'Search products, brands, and more', state.q) + '</div>'
     + toolbarHtml()
