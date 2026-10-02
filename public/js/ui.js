@@ -1,0 +1,121 @@
+/* Shared UI pieces: formatting helpers, toast, product cards, badges,
+ * skeletons and empty states. Rendered as HTML strings; behavior is wired
+ * with data-* attributes and event delegation in app.js, so cards never
+ * carry their own listeners.
+ */
+
+import { icon, productArt } from './icons.js';
+import { discountPct } from './data.js';
+import { store } from './store.js';
+
+/* $12.99 from integer cents. */
+export function fmtPrice(cents) {
+  return '$' + (cents / 100).toFixed(2);
+}
+
+/* 12040 -> "12k", 980 -> "980". */
+export function fmtCount(n) {
+  if (n >= 1000) {
+    const k = n / 1000;
+    return (k >= 10 ? Math.round(k) : Math.round(k * 10) / 10) + 'k';
+  }
+  return String(n);
+}
+
+/* ---------------------------------------------------------------------------
+ * Toast. Uses the platform's native kit when it is present (it is safe-area
+ * aware and singleton); falls back to a minimal fixed pill otherwise, e.g.
+ * standalone local runs where the hosted assets are unreachable.
+ * ------------------------------------------------------------------------- */
+let toastTimer;
+export function toast(message) {
+  if (window.unNative && typeof window.unNative.toast === 'function') {
+    window.unNative.toast(message);
+    return;
+  }
+  let el = document.getElementById('fallback-toast');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'fallback-toast';
+    el.setAttribute('role', 'status');
+    el.className = 'fixed bottom-24 left-1/2 z-50 -translate-x-1/2 rounded-full bg-zinc-900 px-4 py-2 text-sm font-medium text-white opacity-0 shadow-card-lg transition-opacity duration-200';
+    document.body.appendChild(el);
+  }
+  el.textContent = message;
+  requestAnimationFrame(() => { el.style.opacity = '1'; });
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { el.style.opacity = '0'; }, 1800);
+}
+
+/* ---------------------------------------------------------------------------
+ * Product card. `opts.compact` narrows the layout for the flash-sale row and
+ * swaps the plain sold count for a sold-progress bar.
+ * ------------------------------------------------------------------------- */
+export function productCard(p, opts = {}) {
+  const disc = discountPct(p);
+  const fav = store.isFavorite(p.id);
+  const heart = icon(fav ? 'heartFilled' : 'heart', 'h-4 w-4');
+
+  const soldBlock = opts.compact
+    ? '<div class="mt-1.5"><div class="h-1.5 w-full overflow-hidden rounded-full bg-rose-100"><div class="h-full rounded-full bg-rose-500" style="width:' + (p.pct || 0) + '%"></div></div>'
+      + '<div class="mt-1 text-[11px] font-medium text-zinc-500">' + fmtCount(p.sold) + ' sold</div></div>'
+    : '<span class="text-xs text-zinc-400">' + fmtCount(p.sold) + ' sold</span>';
+
+  return '<article class="card product-card group flex flex-col overflow-hidden">'
+    + '<div class="relative aspect-square overflow-hidden rounded-t-xl">'
+    + '<div class="h-full w-full transition-transform duration-300 group-hover:scale-[1.03]">' + productArt(p) + '</div>'
+    + (disc ? '<span class="badge-sale absolute left-2 top-2">-' + disc + '%</span>' : '')
+    + '<button type="button" data-fav="' + p.id + '" aria-label="Toggle favorite" aria-pressed="' + fav
+    + '" class="fav-btn absolute right-2 top-2' + (fav ? ' fav-btn-on' : '') + '">' + heart + '</button>'
+    + '</div>'
+    + '<div class="flex flex-1 flex-col p-3">'
+    + '<h3 class="line-clamp-2 text-sm font-medium leading-snug text-zinc-800">' + p.name + '</h3>'
+    + '<div class="mt-1.5 flex items-center gap-1 text-xs text-zinc-500">'
+    + '<span class="text-amber-400">' + icon('star', 'h-3.5 w-3.5') + '</span>'
+    + '<span class="font-semibold text-zinc-700">' + p.rating.toFixed(1) + '</span>'
+    + '<span>(' + fmtCount(p.reviews) + ')</span>'
+    + (opts.compact ? '' : soldBlock)
+    + '</div>'
+    + (opts.compact ? soldBlock : '')
+    + '<div class="mt-auto flex items-end justify-between gap-2 pt-2">'
+    + '<div class="min-w-0">'
+    + '<div class="text-base font-bold tabular-nums text-zinc-900">' + fmtPrice(p.price) + '</div>'
+    + (p.orig ? '<div class="text-xs tabular-nums text-zinc-400 line-through">' + fmtPrice(p.orig) + '</div>' : '')
+    + '</div>'
+    + '<button type="button" data-add="' + p.id + '" aria-label="Add to cart" class="add-btn">' + icon('plus', 'h-4 w-4') + '<span class="hidden lg:inline">Add</span></button>'
+    + '</div>'
+    + '</div>'
+    + '</article>';
+}
+
+/* Placeholder card shown while mock data "loads" on boot. */
+export function skeletonCard(compact = false) {
+  return '<div class="card overflow-hidden" aria-hidden="true">'
+    + '<div class="aspect-square animate-pulse bg-zinc-100"></div>'
+    + '<div class="space-y-2 p-3">'
+    + '<div class="h-3.5 w-4/5 animate-pulse rounded bg-zinc-100"></div>'
+    + '<div class="h-3 w-2/5 animate-pulse rounded bg-zinc-100"></div>'
+    + '<div class="h-5 w-1/2 animate-pulse rounded bg-zinc-100"></div>'
+    + '</div></div>';
+}
+
+export function skeletonBanner() {
+  return '<div class="h-40 w-[86%] shrink-0 snap-center animate-pulse rounded-2xl bg-zinc-100 sm:w-96 sm:shrink-0" aria-hidden="true"></div>';
+}
+
+export function skeletonCategoryTile() {
+  return '<div class="card flex flex-col items-center gap-2 p-3" aria-hidden="true">'
+    + '<div class="h-11 w-11 animate-pulse rounded-full bg-zinc-100"></div>'
+    + '<div class="h-3 w-10 animate-pulse rounded bg-zinc-100"></div></div>';
+}
+
+/* Empty state: icon in a tinted circle, one-line title, one-line body and an
+ * optional action button. */
+export function emptyState({ icon: iconName, title, body, actionLabel, actionAttr = '' }) {
+  return '<div class="flex flex-col items-center gap-3 px-6 py-12 text-center">'
+    + '<span class="flex h-16 w-16 items-center justify-center rounded-full bg-brand-50 text-brand-600">' + icon(iconName, 'h-8 w-8') + '</span>'
+    + '<h3 class="text-base font-semibold text-zinc-900">' + title + '</h3>'
+    + '<p class="max-w-xs text-sm text-zinc-500">' + body + '</p>'
+    + (actionLabel ? '<button type="button" class="btn-primary btn-sm mt-1" ' + actionAttr + '>' + actionLabel + '</button>' : '')
+    + '</div>';
+}

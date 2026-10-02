@@ -88,13 +88,24 @@ tables you've marked private), etc.
 
 ## About MVP Marketplace
 
-MVP → Beta → Add Seller → Payment → Logistics → Advanced Features → Production
-
-_(add a sentence or two more of product context here so Claude Code has a
-shared understanding of what this app is for)_
+The consumer app is branded **Bazario** (original brand: violet accent,
+bag glyph — deliberately unlike any existing marketplace). Roadmap:
+MVP → Beta → Add Seller → Payment → Logistics → Advanced Features →
+Production. Phase 1 (shipped) is the design system, app shell, Home page
+and mock catalog with client-side interactions. Later phases add real
+catalog/cart/order storage, checkout and seller tools; the UI says "coming
+soon" on those entry points rather than hiding them.
 
 ## App-specific conventions
 
-_(optional — e.g. "all currency values stored as integer cents, not
-floats"; "the `posts` table is append-only"; "avoid adding new
-dependencies"; etc.)_
+- All currency values are integer cents; format for display with
+  `fmtPrice()` in `public/js/ui.js`.
+- Product/catalog data for now lives in `public/js/data.js` as mock data;
+  later phases replace that module with a real API. Rendering code should
+  read the same product shape, not the module directly where practical.
+- Client state (favorites, cart, recent searches) persists in localStorage
+  under the `bazario:` prefix and is deliberately NOT keyed per user, so an
+  offline load without a token never destroys the user's data.
+- The app is light-theme only by design; do not add dark-mode variants.
+- Product artwork is generated SVG (`public/js/icons.js`), never external
+  image URLs and never image bytes in the database.

@@ -1,27 +1,40 @@
-# MVP Marketplace
+# MVP Marketplace (Bazario)
 
-> **Starter template** — this repo was scaffolded by Homeroom Social
-> Vibecoding. Everything in it is placeholder example code until the
-> app's first real feature is built.
+A mobile-first marketplace app on [Homeroom](https://app.onhomeroom.com):
+modern, clean UI for browsing deals, categories and products.
 
-The scaffold is a small working demo that proves the plumbing works:
+Roadmap: **MVP (this phase)** → Beta → Add Seller → Payment → Logistics →
+Advanced Features → Production.
 
-- **Sign-in** — the server verifies the platform-issued user token
-  (an RS256 JWT) on every request, so the app already knows who is
-  using it. No accounts to build.
-- **Database** — the app has its own private Postgres database; the
-  demo stores button presses in a `presses` table.
-- **Live API** — two example routes (`/api/press`,
-  `/api/leaderboard`) read and write through a real Express server.
-- **Styling** — Tailwind CSS, precompiled by `npm run build` during
-  image creation with either Kubernetes/Paketo or standalone Docker.
+## Phase 1 — scope
 
-## Replacing the template
+- **Design system**: typography scale, buttons, cards, badges, inputs,
+  spacing/radii/shadows and a single brand accent (`brand`, violet) with
+  rose reserved for sale urgency and amber for ratings. Tokens live in
+  `tailwind.config.js`; reusable component classes in
+  `styles/tailwind-input.css`.
+- **App shell**: sticky header (logo, search, notification + cart), mobile
+  bottom navigation (Home, Categories, Cart, Orders, Profile) and a desktop
+  top navigation on wider screens.
+- **Home page**: promotional carousel (3 banners), category tiles, Flash
+  Sale row with a live countdown and sold-progress bars, and a Recommended
+  products grid (2 columns on mobile, up to 6 on desktop) with ratings,
+  review/sold counts, prices, discount badges, favorites and add-to-cart.
+- **Interactions**: search with recents/trending/suggestions and an
+  empty-search state, category and deal filters (shareable via `?q=` /
+  `?cat=` deep links), favorite toggles, add-to-cart with toast feedback,
+  cart quantity management, and loading skeletons on boot.
+- **Mock data**: 33 invented products across 7 categories, generated SVG
+  artwork (no external image requests), served from `public/js/data.js`.
 
-Open the app on Homeroom, tap the Homeroom icon in the header, choose
-**Start a new change**, and describe the app you want in plain English.
-The template will be replaced with your real app. You can also run
-Claude Code against this repo directly; start with `CLAUDE.md`, which
-carries the app-specific notes and points at the platform rules.
+Out of scope until later phases: checkout, payment, order management and
+seller tools. Where a control would lead there, the UI says so ("coming
+soon") instead of hiding it.
 
-Once the real app exists, rewrite this README to describe it.
+## Run locally
+
+```sh
+npm ci --include=dev
+npm run build   # compiles public/tailwind.css
+npm start       # needs DATABASE_URL + USERNODE_* env (provided by Homeroom)
+```
