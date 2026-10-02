@@ -12,6 +12,12 @@
       "impact": ["public/**", "styles/tailwind-input.css", "tailwind.config.js"]
     },
     {
+      "id": "home.load-more",
+      "name": "Recommended grid shows a first batch with a Load more button",
+      "path": "/",
+      "expectText": "Load more"
+    },
+    {
       "id": "home.categories-tab",
       "name": "Categories tab renders category tiles",
       "path": "/#/categories",
@@ -38,6 +44,12 @@
       "path": "/#/search?q=headphones",
       "expectSelector": "#view-browse .product-card",
       "expectText": "Results for"
+    },
+    {
+      "id": "browse.search-load-more",
+      "name": "Broad search results paginate with a Load more button",
+      "path": "/#/search?q=a",
+      "expectText": "Load more"
     },
     {
       "id": "browse.search-empty",

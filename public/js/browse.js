@@ -54,7 +54,12 @@ const DISCOUNT_OPTIONS = [
 
 const GRID_CLASS = 'grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6';
 
+/* Product grids render in batches; "Load more" (with scroll auto-load)
+ * reveals the next batch. */
+const PAGE_SIZE = 24;
+
 let state = null;
+let gridObserver = null;
 
 function defaultFilters() {
   return { price: 'any', rating: 0, discount: 0, brands: [], inStock: false };
@@ -277,6 +282,7 @@ function categoryShell() {
     + '<div class="mt-2">' + searchInputHtml('cat-search', 'Search in ' + category.name, state.inCatQuery) + '</div>'
     + toolbarHtml()
     + '<div id="browse-grid" class="mt-3 ' + GRID_CLASS + '"></div>'
+    + '<div id="browse-more" class="mt-4 hidden"></div>'
     + '<div id="browse-empty" class="hidden"></div>'
     + filterOverlay();
 }
@@ -289,6 +295,7 @@ function searchResultsShell() {
     + '<div class="mt-2">' + searchInputHtml('search-page-input', 'Search products, brands, and more', state.q) + '</div>'
     + toolbarHtml()
     + '<div id="browse-grid" class="mt-3 ' + GRID_CLASS + '"></div>'
+    + '<div id="browse-more" class="mt-4 hidden"></div>'
     + '<div id="browse-empty" class="hidden"></div>'
     + filterOverlay();
 }
@@ -314,10 +321,46 @@ function syncSortMenu() {
   });
 }
 
+/* Full-width "Load more" button under the grid, plus a sentinel element the
+ * IntersectionObserver watches so the next batch also loads on scroll. */
+function loadMoreFooterHtml() {
+  const sentinel = '<div class="h-px w-full" data-load-more-sentinel aria-hidden="true"></div>';
+  const button = '<button type="button" data-load-more class="btn-outline w-full">'
+    + 'Load more</button>';
+  return '<div class="mt-4 space-y-2">' + sentinel + button + '</div>';
+}
+
+/* Watch the footer sentinel; when it scrolls into view, load the next batch
+ * once. The observer is disconnected and rebuilt on every renderGrid() so a
+ * replaced footer never fires from a stale sentinel. */
+function watchLoadMoreFooter() {
+  const footer = document.getElementById('browse-more');
+  if (!footer || !('IntersectionObserver' in window)) return;
+  const sentinel = footer.querySelector('[data-load-more-sentinel]');
+  if (!sentinel) return;
+  if (gridObserver) gridObserver.disconnect();
+  gridObserver = new IntersectionObserver((entries) => {
+    if (entries.some((en) => en.isIntersecting)) {
+      gridObserver.disconnect();
+      gridObserver = null;
+      state.shown += PAGE_SIZE;
+      renderGrid();
+    }
+  });
+  gridObserver.observe(sentinel);
+}
+
 function renderGrid() {
+  // Drop any observer left over from the previous footer before the footer
+  // (and its sentinel) is rebuilt below.
+  if (gridObserver) {
+    gridObserver.disconnect();
+    gridObserver = null;
+  }
   const list = resultList();
   const grid = document.getElementById('browse-grid');
   const empty = document.getElementById('browse-empty');
+  const footer = document.getElementById('browse-more');
   const count = document.getElementById('browse-count');
   const badge = document.getElementById('filter-badge');
   const showCount = document.getElementById('filter-show-count');
@@ -332,11 +375,22 @@ function renderGrid() {
   if (!grid || !empty) return;
 
   if (list.length) {
-    grid.innerHTML = list.map((p) => productCard(p)).join('');
+    const shown = Math.min(state.shown, list.length);
+    grid.innerHTML = list.slice(0, shown).map((p) => productCard(p)).join('');
     grid.classList.remove('hidden');
     empty.classList.add('hidden');
     empty.innerHTML = '';
+    if (footer) {
+      const remaining = list.length > shown;
+      footer.classList.toggle('hidden', !remaining);
+      footer.innerHTML = remaining ? loadMoreFooterHtml() : '';
+      if (remaining) watchLoadMoreFooter();
+    }
   } else {
+    if (footer) {
+      footer.classList.add('hidden');
+      footer.innerHTML = '';
+    }
     grid.classList.add('hidden');
     empty.innerHTML = emptyResultsHtml();
     empty.classList.remove('hidden');
@@ -364,6 +418,7 @@ function renderShell() {
       debounce = setTimeout(() => {
         if (state) {
           state.inCatQuery = catInput.value;
+          state.shown = PAGE_SIZE;
           renderGrid();
         }
       }, 200);
@@ -393,6 +448,7 @@ export function renderBrowse(route) {
       inCatQuery: '',
       sort: 'recommended',
       filters: defaultFilters(),
+      shown: PAGE_SIZE,
     };
   } else if (route.sub) {
     state.sub = route.sub;
@@ -443,12 +499,19 @@ function bindBrowseEvents() {
   if (!view) return;
 
   view.addEventListener('click', (e) => {
-    const target = e.target.closest('[data-sub], [data-sort-toggle], [data-sort-item], [data-filter-open], [data-filter-close], [data-filter-reset], [data-filter-price], [data-filter-rating], [data-filter-discount], [data-browse-reset], [data-browse-clear-search]');
+    const target = e.target.closest('[data-sub], [data-sort-toggle], [data-sort-item], [data-filter-open], [data-filter-close], [data-filter-reset], [data-filter-price], [data-filter-rating], [data-filter-discount], [data-browse-reset], [data-browse-clear-search], [data-load-more]');
     if (!target) return;
+
+    if (target.hasAttribute('data-load-more')) {
+      state.shown += PAGE_SIZE;
+      renderGrid();
+      return;
+    }
 
     const sub = target.getAttribute('data-sub');
     if (sub !== null && target.hasAttribute('data-sub')) {
       state.sub = sub;
+      state.shown = PAGE_SIZE;
       renderShell();
       window.scrollTo({ top: 0 });
       return;
@@ -463,6 +526,7 @@ function bindBrowseEvents() {
     const sortItem = target.getAttribute('data-sort-item');
     if (sortItem) {
       state.sort = sortItem;
+      state.shown = PAGE_SIZE;
       syncSortMenu();
       closeSortMenu();
       renderGrid();
@@ -486,6 +550,7 @@ function bindBrowseEvents() {
 
     if (target.hasAttribute('data-filter-reset')) {
       state.filters = defaultFilters();
+      state.shown = PAGE_SIZE;
       closeFilter();
       renderShell();
       renderGrid();
@@ -495,6 +560,7 @@ function bindBrowseEvents() {
     const price = target.getAttribute('data-filter-price');
     if (price) {
       state.filters.price = price;
+      state.shown = PAGE_SIZE;
       setChipGroup('price', price, view.querySelectorAll('[data-filter-price]'));
       renderGrid();
       return;
@@ -503,6 +569,7 @@ function bindBrowseEvents() {
     const rating = target.getAttribute('data-filter-rating');
     if (rating) {
       state.filters.rating = Number(rating);
+      state.shown = PAGE_SIZE;
       setChipGroup('rating', rating, view.querySelectorAll('[data-filter-rating]'));
       renderGrid();
       return;
@@ -511,6 +578,7 @@ function bindBrowseEvents() {
     const discount = target.getAttribute('data-filter-discount');
     if (discount) {
       state.filters.discount = Number(discount);
+      state.shown = PAGE_SIZE;
       setChipGroup('discount', discount, view.querySelectorAll('[data-filter-discount]'));
       renderGrid();
       return;
@@ -520,6 +588,7 @@ function bindBrowseEvents() {
       state.sub = '';
       state.inCatQuery = '';
       state.filters = defaultFilters();
+      state.shown = PAGE_SIZE;
       renderShell();
       window.scrollTo({ top: 0 });
       return;
@@ -539,9 +608,11 @@ function bindBrowseEvents() {
       state.filters.brands = target.checked
         ? state.filters.brands.concat([brand])
         : state.filters.brands.filter((b) => b !== brand);
+      state.shown = PAGE_SIZE;
       renderGrid();
     } else if (target.matches('[data-filter-stock]')) {
       state.filters.inStock = target.checked;
+      state.shown = PAGE_SIZE;
       renderGrid();
     }
   });

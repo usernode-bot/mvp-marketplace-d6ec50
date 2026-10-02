@@ -55,6 +55,10 @@ const CATEGORY_ART = {
   more: 'ellipsis',
 };
 
+/* Product grids render in batches; "Load more" (with scroll auto-load)
+ * reveals the next batch. Keep in sync with the PAGE_SIZE in browse.js. */
+const PAGE_SIZE = 24;
+
 /* ------------------------------------------------------------------ */
 /* Banners                                                             */
 /* ------------------------------------------------------------------ */
@@ -138,6 +142,111 @@ function productsForFilter() {
   return PRODUCTS.filter((p) => discountPct(p) >= 30);
 }
 
+/* Shared footer pattern for both home grids: a full-width "Load more"
+ * button under the grid, plus a sentinel element the IntersectionObserver
+ * watches so the next batch also loads on scroll. */
+let resultsObserver = null;
+let resultsShown = PAGE_SIZE;
+
+function loadMoreFooterHtml() {
+  const sentinel = '<div class="h-px w-full" data-load-more-sentinel aria-hidden="true"></div>';
+  const button = '<button type="button" data-load-more class="btn-outline w-full">'
+    + 'Load more</button>';
+  return '<div class="mt-4 space-y-2">' + sentinel + button + '</div>';
+}
+
+/* Footer containers live right after their grid. index.html is not part of
+ * this change, so they are created on demand (once) and reused after. */
+function ensureFooter(footerId, gridId) {
+  let footer = document.getElementById(footerId);
+  if (!footer) {
+    const grid = document.getElementById(gridId);
+    if (!grid) return null;
+    footer = document.createElement('div');
+    footer.id = footerId;
+    footer.className = 'mt-4 hidden';
+    grid.insertAdjacentElement('afterend', footer);
+  }
+  return footer;
+}
+
+function watchLoadMoreFooter(footerId, onVisible) {
+  const footer = document.getElementById(footerId);
+  if (!footer || !('IntersectionObserver' in window)) return;
+  const sentinel = footer.querySelector('[data-load-more-sentinel]');
+  if (!sentinel) return;
+  if (resultsObserver) resultsObserver.disconnect();
+  resultsObserver = new IntersectionObserver((entries) => {
+    if (entries.some((en) => en.isIntersecting)) {
+      resultsObserver.disconnect();
+      resultsObserver = null;
+      onVisible();
+    }
+  });
+  resultsObserver.observe(sentinel);
+}
+
+/* One delegated listener (bound once) drives the "Load more" button on both
+ * home grids: the Recommended grid and the Big deals results grid. */
+let homeGridEventsBound = false;
+function bindHomeGridEvents() {
+  if (homeGridEventsBound) return;
+  const homeView = document.getElementById('view-home');
+  if (!homeView) return;
+  homeGridEventsBound = true;
+  homeView.addEventListener('click', (e) => {
+    const target = e.target.closest('[data-load-more]');
+    if (!target) return;
+    if (target.closest('#section-recommended')) {
+      const grid = document.getElementById('recommended-grid');
+      if (grid && grid.getAttribute('data-shown')) {
+        renderRecommendedGrid(Number(grid.getAttribute('data-shown')) + PAGE_SIZE);
+      }
+      return;
+    }
+    if (target.closest('#results-section')) {
+      renderResultsBatch(productsForFilter(), resultsShown + PAGE_SIZE);
+    }
+  });
+}
+
+/* Render the first `shown` discounted products into the Big deals grid; when
+ * more remain, append the shared "Load more" footer and start its observer.
+ * Used by openResults() and by the delegated "Load more" click. */
+function renderResultsBatch(products, shown) {
+  const grid = document.getElementById('results-grid');
+  if (!grid) return;
+  resultsShown = Math.min(shown, products.length);
+  grid.innerHTML = products.slice(0, resultsShown).map((p) => productCard(p)).join('');
+  const footer = document.getElementById('results-more');
+  if (!footer) return;
+  const remaining = products.length > resultsShown;
+  footer.classList.toggle('hidden', !remaining);
+  footer.innerHTML = remaining ? loadMoreFooterHtml() : '';
+  if (remaining) {
+    const loadNextBatch = () => renderResultsBatch(products, resultsShown + PAGE_SIZE);
+    watchLoadMoreFooter('results-more', loadNextBatch);
+  }
+}
+
+/* Render the first `shown` products into the Recommended grid; when more
+ * remain, append the shared "Load more" footer and start its observer. */
+function renderRecommendedGrid(shown) {
+  const grid = document.getElementById('recommended-grid');
+  if (!grid) return;
+  const clamped = Math.min(shown, PRODUCTS.length);
+  grid.setAttribute('data-shown', String(clamped));
+  grid.innerHTML = PRODUCTS.slice(0, clamped).map((p) => productCard(p)).join('');
+  const footer = ensureFooter('recommended-more', 'recommended-grid');
+  if (!footer) return;
+  const remaining = PRODUCTS.length > clamped;
+  footer.classList.toggle('hidden', !remaining);
+  footer.innerHTML = remaining ? loadMoreFooterHtml() : '';
+  if (remaining) watchLoadMoreFooter('recommended-more', () => {
+    renderRecommendedGrid(clamped + PAGE_SIZE);
+  });
+}
+
 function openResults() {
   closePanels();
   const products = productsForFilter();
@@ -148,13 +257,20 @@ function openResults() {
 
   const grid = document.getElementById('results-grid');
   const empty = document.getElementById('results-empty');
-  grid.innerHTML = products.map((p) => productCard(p)).join('');
+  const footer = ensureFooter('results-more', 'results-grid');
 
   if (products.length) {
+    // The Big deals banner always opens at the first batch; the batch
+    // renderer also reconnects the scroll observer.
+    renderResultsBatch(products, PAGE_SIZE);
     grid.classList.remove('hidden');
     empty.classList.add('hidden');
     empty.innerHTML = '';
   } else {
+    if (footer) {
+      footer.classList.add('hidden');
+      footer.innerHTML = '';
+    }
     grid.classList.add('hidden');
     empty.classList.remove('hidden');
     const suggestions = TRENDING.slice(0, 4)
@@ -182,6 +298,15 @@ function openResults() {
 
 export function clearResults() {
   document.getElementById('results-section').classList.add('hidden');
+  if (resultsObserver) {
+    resultsObserver.disconnect();
+    resultsObserver = null;
+  }
+  const footer = document.getElementById('results-more');
+  if (footer) {
+    footer.classList.add('hidden');
+    footer.innerHTML = '';
+  }
   ['promo', 'categories', 'flash', 'recommended'].forEach((id) => {
     const el = document.getElementById('section-' + id);
     if (el) el.classList.remove('hidden');
@@ -366,13 +491,13 @@ export function initHome() {
     document.getElementById('flash-row').innerHTML =
       PRODUCTS.filter((p) => p.flash).map((p) =>
         '<div class="w-40 shrink-0 snap-start sm:w-44">' + productCard(p, { compact: true }) + '</div>').join('');
-    document.getElementById('recommended-grid').innerHTML =
-      PRODUCTS.map((p) => productCard(p)).join('');
+    renderRecommendedGrid(PAGE_SIZE);
     initCarousel();
   }, 450);
 
   startCountdown();
   bindSearch();
+  bindHomeGridEvents();
 }
 
 /* Banner CTA targets: the deals banner opens a discounted-items results view
