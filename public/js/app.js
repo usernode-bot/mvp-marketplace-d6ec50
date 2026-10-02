@@ -1,6 +1,8 @@
-/* App bootstrap: icon hydration, hash-based tab routing, header/bottom-nav
+/* App bootstrap: icon hydration, hash-based routing (top-level tabs plus
+ * sub-routes like #/orders/<no> and #/profile/<page>), header/bottom-nav
  * bindings and one delegated click handler for all card buttons
- * (favorite / add-to-cart / category / banner CTA / search panel).
+ * (favorite / add-to-cart / category / banner CTA / search panel / in-app
+ * route links).
  */
 
 import { hydrateIcons, icon } from './icons.js';
@@ -8,7 +10,11 @@ import { productById } from './data.js';
 import { store } from './store.js';
 import { toast } from './ui.js';
 import { clearResults, initHome, openResults, panelRows, submitSearch } from './home.js';
-import { renderCategoriesView, renderOrdersView, renderProfileView, selectCategoryTab } from './views.js';
+import { renderCategoriesView, selectCategoryTab } from './views.js';
+import { initOrders, renderOrdersView } from './orders.js';
+import { renderProfileView } from './profile.js';
+import { initAddresses } from './addresses.js';
+import { initSettings } from './settings.js';
 import { renderCheckoutView } from './checkout.js';
 import { applyVoucherCode, initCart, removeCartItem, renderCartView } from './cart.js';
 
@@ -18,9 +24,12 @@ const VIEWS = ['home', 'categories', 'cart', 'checkout', 'orders', 'profile'];
 /* View switching                                                      */
 /* ------------------------------------------------------------------ */
 
+/* Top-level view of the current hash. Sub-routes (#/orders/<no>,
+ * #/profile/<page>) map to their parent tab; the render functions read the
+ * full hash themselves. */
 function currentView() {
-  const name = (location.hash || '').replace(/^#\/?/, '');
-  return VIEWS.includes(name) ? name : 'home';
+  const seg = (location.hash || '').replace(/^#\/?/, '').split('/')[0];
+  return VIEWS.includes(seg) && seg ? seg : 'home';
 }
 
 function showView(name) {
@@ -79,7 +88,7 @@ function reopenSearchPanel(box, input) {
 }
 
 function handleClick(e) {
-  const target = e.target.closest('[data-fav], [data-add], [data-category], [data-category-tab], [data-nav], [data-banner-action], [data-recent], [data-recent-remove], [data-recent-clear], [data-suggest], [data-search-suggest], [data-soon], [data-cart-plus], [data-cart-minus], [data-cart-remove], [data-cart-select], [data-cart-select-all], [data-cart-save], [data-saved-move], [data-saved-remove], [data-voucher-pick], [data-voucher-remove], [data-results-clear]');
+  const target = e.target.closest('[data-fav], [data-add], [data-category], [data-category-tab], [data-nav], [data-route], [data-banner-action], [data-recent], [data-recent-remove], [data-recent-clear], [data-suggest], [data-search-suggest], [data-soon], [data-cart-plus], [data-cart-minus], [data-cart-remove], [data-cart-select], [data-cart-select-all], [data-cart-save], [data-saved-move], [data-saved-remove], [data-voucher-pick], [data-voucher-remove], [data-results-clear]');
   if (!target) return;
 
   const favId = target.getAttribute('data-fav');
@@ -125,6 +134,13 @@ function handleClick(e) {
   const nav = target.getAttribute('data-nav');
   if (nav) {
     navigate(nav);
+    return;
+  }
+
+  // In-app sub-route link (e.g. "profile/wishlist" -> #/profile/wishlist).
+  const route = target.getAttribute('data-route');
+  if (route) {
+    location.hash = '/' + route;
     return;
   }
 
@@ -252,6 +268,9 @@ function boot() {
 
   document.addEventListener('click', handleClick);
   initCart();
+  initOrders();
+  initAddresses();
+  initSettings();
 
   window.addEventListener('hashchange', () => showView(currentView()));
 
@@ -289,10 +308,12 @@ function boot() {
     openResults({ type: 'category', id: deepCat });
   }
 
-  // Bell has no notification center yet; say so instead of doing nothing.
+  // The bell opens the Notifications page (Phase 5).
   const bell = document.getElementById('bell-btn');
   if (bell) {
-    bell.addEventListener('click', () => toast('Notifications arrive in a later phase'));
+    bell.addEventListener('click', () => {
+      location.hash = '/profile/notifications';
+    });
   }
 }
 

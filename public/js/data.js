@@ -121,10 +121,81 @@ export function voucherByCode(code) {
   return VOUCHERS.find((v) => v.code === c) || null;
 }
 
+/* One-line description of a voucher ("10% off your order · orders over
+ * $20.00"). Shared by the cart's voucher block and the profile's Coupons
+ * page so both always word it the same way. */
+export function voucherDescription(v) {
+  const base = v.type === 'percent'
+    ? v.value + '% off your order'
+    : v.type === 'fixed'
+      ? '$' + (v.value / 100).toFixed(2) + ' off your order'
+      : 'Free shipping on your order';
+  return base + ' · orders over ' + '$' + (v.min / 100).toFixed(2);
+}
+
 export function discountPct(p) {
   if (!p.orig || p.orig <= p.price) return 0;
   return Math.round((1 - p.price / p.orig) * 100);
 }
+
+/* Orders (Phase 5). Mock seed data, like the catalog: there is no checkout
+ * yet, so nothing in the app creates an order. Statuses: 'to_pay' | 'to_ship'
+ * | 'shipped' | 'completed' | 'cancelled'. dates are expressed as daysAgo so
+ * the history always looks recent; orders.js turns them into timestamps.
+ * Each order snapshots the shipping address used at purchase (later phases
+ * replace these seeds with real order storage).
+ */
+export const ORDER_SEEDS = [
+  {
+    no: 'BZ-48219', status: 'to_pay', daysAgo: 0.2,
+    items: [{ id: 'p09', qty: 1 }, { id: 'p13', qty: 1 }],
+    payment: 'Visa ending in 4242', shipMethod: 'Standard delivery', shipEta: '3-5 business days',
+    shipping: 399,
+    address: { name: 'Alex Rivera', phone: '+1 555 0134', line1: '221 Maple Street, Apt 4B', city: 'Portland, OR', zip: '97205' },
+  },
+  {
+    no: 'BZ-48073', status: 'to_ship', daysAgo: 1.3,
+    items: [{ id: 'p05', qty: 2 }],
+    payment: 'Bazario Pay', shipMethod: 'Standard delivery', shipEta: '3-5 business days',
+    shipping: 0,
+    address: { name: 'Alex Rivera', phone: '+1 555 0134', line1: '221 Maple Street, Apt 4B', city: 'Portland, OR', zip: '97205' },
+  },
+  {
+    no: 'BZ-47156', status: 'shipped', daysAgo: 2.6,
+    items: [{ id: 'p22', qty: 1 }],
+    payment: 'Visa ending in 4242', shipMethod: 'Express delivery', shipEta: '1-2 business days',
+    shipping: 799,
+    address: { name: 'Alex Rivera', phone: '+1 555 0134', line1: '221 Maple Street, Apt 4B', city: 'Portland, OR', zip: '97205' },
+  },
+  {
+    no: 'BZ-46402', status: 'shipped', daysAgo: 3.4,
+    items: [{ id: 'p06', qty: 1 }, { id: 'p07', qty: 1 }],
+    payment: 'Bazario Pay', shipMethod: 'Standard delivery', shipEta: '3-5 business days',
+    shipping: 0,
+    address: { name: 'Sam Taylor', phone: '+1 555 0198', line1: '8 Cedar Lane', city: 'Austin, TX', zip: '78701' },
+  },
+  {
+    no: 'BZ-45201', status: 'completed', daysAgo: 9,
+    items: [{ id: 'p19', qty: 1 }, { id: 'p20', qty: 1 }],
+    payment: 'Visa ending in 4242', shipMethod: 'Standard delivery', shipEta: '3-5 business days',
+    shipping: 0,
+    address: { name: 'Alex Rivera', phone: '+1 555 0134', line1: '221 Maple Street, Apt 4B', city: 'Portland, OR', zip: '97205' },
+  },
+  {
+    no: 'BZ-43810', status: 'completed', daysAgo: 15,
+    items: [{ id: 'p14', qty: 3 }],
+    payment: 'Bazario Pay', shipMethod: 'Standard delivery', shipEta: '3-5 business days',
+    shipping: 0,
+    address: { name: 'Sam Taylor', phone: '+1 555 0198', line1: '8 Cedar Lane', city: 'Austin, TX', zip: '78701' },
+  },
+  {
+    no: 'BZ-42087', status: 'cancelled', daysAgo: 21, cancelledAfterHours: 5,
+    items: [{ id: 'p23', qty: 1 }, { id: 'p24', qty: 1 }],
+    payment: 'Visa ending in 4242', shipMethod: 'Standard delivery', shipEta: '3-5 business days',
+    shipping: 399,
+    address: { name: 'Alex Rivera', phone: '+1 555 0134', line1: '221 Maple Street, Apt 4B', city: 'Portland, OR', zip: '97205' },
+  },
+];
 
 export function productById(id) {
   return PRODUCTS.find((p) => p.id === id) || null;
