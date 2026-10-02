@@ -1,67 +1,27 @@
-/* App bootstrap: icon hydration, hash-based routing (top-level tabs plus
- * sub-routes like #/orders/<no> and #/profile/<page>), header/bottom-nav
+/* App bootstrap: icon hydration, hash routing (router.js), header/bottom-nav
  * bindings and one delegated click handler for all card buttons
  * (favorite / add-to-cart / category / banner CTA / search panel / in-app
  * route links).
+ *
+ * Views and routes live in router.js: tabs (home/categories/cart/orders/
+ * profile) render their own modules, with sub-routes like #/orders/<no> and
+ * #/profile/<page> handled by orders.js / profile.js; category browse and
+ * search results render through browse.js; product detail through product.js.
+ * Deep links (?q=..., ?cat=...) are translated to hash routes on boot so the
+ * address bar always carries the real screen.
  */
 
 import { hydrateIcons, icon } from './icons.js';
 import { productById } from './data.js';
 import { store } from './store.js';
 import { toast } from './ui.js';
-import { clearResults, initHome, openResults, panelRows, submitSearch } from './home.js';
-import { renderCategoriesView, selectCategoryTab } from './views.js';
-import { initOrders, renderOrdersView } from './orders.js';
+import { clearResults, initHome, panelRows, runBannerAction, submitSearch } from './home.js';
+import { initOrders } from './orders.js';
 import { renderProfileView } from './profile.js';
 import { initAddresses } from './addresses.js';
 import { initSettings } from './settings.js';
-import { renderCheckoutView } from './checkout.js';
 import { applyVoucherCode, initCart, removeCartItem, renderCartView } from './cart.js';
-
-const VIEWS = ['home', 'categories', 'cart', 'checkout', 'orders', 'profile'];
-
-/* ------------------------------------------------------------------ */
-/* View switching                                                      */
-/* ------------------------------------------------------------------ */
-
-/* Top-level view of the current hash. Sub-routes (#/orders/<no>,
- * #/profile/<page>) map to their parent tab; the render functions read the
- * full hash themselves. */
-function currentView() {
-  const seg = (location.hash || '').replace(/^#\/?/, '').split('/')[0];
-  return VIEWS.includes(seg) && seg ? seg : 'home';
-}
-
-function showView(name) {
-  VIEWS.forEach((v) => {
-    const el = document.querySelector('[data-view="' + v + '"]');
-    if (el) el.classList.toggle('hidden', v !== name);
-  });
-
-  document.querySelectorAll('[data-nav]').forEach((el) => {
-    const active = el.dataset.nav === name;
-    el.classList.toggle('nav-item-active', active && el.classList.contains('nav-item'));
-    el.classList.toggle('nav-link-active', active && el.classList.contains('nav-link'));
-    if (active) el.setAttribute('aria-current', 'page');
-    else el.removeAttribute('aria-current');
-  });
-
-  if (name === 'categories') renderCategoriesView();
-  if (name === 'cart') renderCartView();
-  if (name === 'checkout') renderCheckoutView();
-  if (name === 'orders') renderOrdersView();
-  if (name === 'profile') renderProfileView();
-
-  window.scrollTo({ top: 0 });
-}
-
-function navigate(name) {
-  if (name === currentView()) {
-    showView(name);
-    return;
-  }
-  location.hash = '/' + name; // hashchange drives showView
-}
+import { goToHash, parseRoute, renderRoute } from './router.js';
 
 /* ------------------------------------------------------------------ */
 /* Header / nav badges                                                 */
@@ -88,7 +48,7 @@ function reopenSearchPanel(box, input) {
 }
 
 function handleClick(e) {
-  const target = e.target.closest('[data-fav], [data-add], [data-category], [data-category-tab], [data-nav], [data-route], [data-banner-action], [data-recent], [data-recent-remove], [data-recent-clear], [data-suggest], [data-search-suggest], [data-soon], [data-cart-plus], [data-cart-minus], [data-cart-remove], [data-cart-select], [data-cart-select-all], [data-cart-save], [data-saved-move], [data-saved-remove], [data-voucher-pick], [data-voucher-remove], [data-results-clear]');
+  const target = e.target.closest('[data-fav], [data-add], [data-category], [data-nav], [data-route], [data-banner-action], [data-recent], [data-recent-remove], [data-recent-clear], [data-suggest], [data-search-suggest], [data-soon], [data-cart-plus], [data-cart-minus], [data-cart-remove], [data-cart-select], [data-cart-select-all], [data-cart-save], [data-saved-move], [data-saved-remove], [data-voucher-pick], [data-voucher-remove], [data-results-clear], [data-back]');
   if (!target) return;
 
   const favId = target.getAttribute('data-fav');
@@ -100,12 +60,17 @@ function handleClick(e) {
       btn.classList.toggle('fav-btn-on', on);
       btn.setAttribute('aria-pressed', String(on));
     });
-    if (currentView() === 'profile') renderProfileView();
+    if (parseRoute().view === 'profile') renderProfileView();
     return;
   }
 
   const addId = target.getAttribute('data-add');
   if (addId) {
+    const product = productById(addId);
+    if (product && product.oos) {
+      toast('This item is sold out');
+      return;
+    }
     store.addToCart(addId);
     toast('Added to cart');
     // Brief "Added" confirmation on the button that was tapped.
@@ -121,19 +86,18 @@ function handleClick(e) {
 
   const cat = target.getAttribute('data-category');
   if (cat) {
-    if (currentView() === 'home') openResults({ type: 'category', id: cat });
-    return;
-  }
-
-  const catTab = target.getAttribute('data-category-tab');
-  if (catTab) {
-    selectCategoryTab(catTab);
+    goToHash('#/category/' + cat);
     return;
   }
 
   const nav = target.getAttribute('data-nav');
   if (nav) {
-    navigate(nav);
+    goToHash('#/' + nav);
+    return;
+  }
+
+  if (target.hasAttribute('data-back')) {
+    history.back();
     return;
   }
 
@@ -190,16 +154,16 @@ function handleClick(e) {
 
   const plus = target.getAttribute('data-cart-plus');
   if (plus) {
-    const entry = store.cart.find((i) => i.id === plus);
-    if (entry) store.setQty(plus, entry.qty + 1);
+    const entry = store.cart.find((i) => i.key === plus);
+    if (entry) store.setQty(entry.key, entry.qty + 1);
     return;
   }
 
   const minus = target.getAttribute('data-cart-minus');
   if (minus) {
-    const entry = store.cart.find((i) => i.id === minus);
+    const entry = store.cart.find((i) => i.key === minus);
     // Use the remove button (with confirmation) to delete an item.
-    if (entry && entry.qty > 1) store.setQty(minus, entry.qty - 1);
+    if (entry && entry.qty > 1) store.setQty(entry.key, entry.qty - 1);
     return;
   }
 
@@ -255,6 +219,7 @@ function handleClick(e) {
 
   if (target.hasAttribute('data-results-clear')) {
     clearResults();
+    goToHash('#/home');
     return;
   }
 }
@@ -272,40 +237,39 @@ function boot() {
   initAddresses();
   initSettings();
 
-  window.addEventListener('hashchange', () => showView(currentView()));
+  window.addEventListener('hashchange', renderRoute);
 
   store.subscribe(updateBadges);
   store.subscribe(() => {
-    if (currentView() === 'cart') renderCartView();
+    if (parseRoute().view === 'cart') renderCartView();
   });
 
   // Demo seed for proposal checks and staging screenshots: ?demo=checkout
   // fills the cart with a few mock items, in memory only (they persist only
   // if the shopper then changes something). Plain routes never hit this.
   if (new URLSearchParams(window.location.search).get('demo') === 'checkout') {
-    store.cart = [
-      { id: 'p01', qty: 1 },
-      { id: 'p14', qty: 2 },
-      { id: 'p26', qty: 1 },
-    ];
+    store.cart = ['p01|1', 'p14|2', 'p26|1'].map((spec) => {
+      const [id, qty] = spec.split('|');
+      return { id, qty: Number(qty), color: '', size: '', key: id + '||', selected: true };
+    });
   }
 
   updateBadges();
 
   initHome();
-  showView(currentView());
+  renderRoute();
 
   // Shareable deep links: /?q=... opens search results, /?cat=... opens a
-  // category results view. Applied after home init so the results section
-  // exists; the plain routes stay honest (no query, no results view).
+  // category page. They become plain hash routes so the address bar carries
+  // the real screen; the plain routes stay honest (no query, no results).
   const params = new URLSearchParams(window.location.search);
   const deepQ = params.get('q');
   const deepCat = params.get('cat');
   if (deepQ) {
     store.addRecent(deepQ);
-    openResults({ type: 'search', q: deepQ.trim() || ' ' });
+    goToHash('#/search?q=' + encodeURIComponent(deepQ.trim() || ' '));
   } else if (deepCat && deepCat !== 'more') {
-    openResults({ type: 'category', id: deepCat });
+    goToHash('#/category/' + deepCat);
   }
 
   // The bell opens the Notifications page (Phase 5).

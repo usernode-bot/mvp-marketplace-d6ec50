@@ -12,12 +12,6 @@
       "impact": ["public/**", "styles/tailwind-input.css", "tailwind.config.js"]
     },
     {
-      "id": "home.search-no-results",
-      "name": "Search with no matches shows the empty state",
-      "path": "/?q=zzzznothing",
-      "expectText": "No results found"
-    },
-    {
       "id": "home.categories-tab",
       "name": "Categories tab renders category tiles",
       "path": "/#/categories",
@@ -28,6 +22,37 @@
       "name": "Cart tab shows the empty state",
       "path": "/#/cart",
       "expectText": "Your cart is empty"
+    },
+    {
+      "id": "browse.category",
+      "name": "Category page renders subcategories, toolbar and product grid",
+      "path": "/#/category/electronics",
+      "expectSelector": "#view-browse .product-card",
+      "expectText": "Sort:",
+      "visual": true,
+      "impact": ["public/js/browse.js", "public/js/router.js", "public/js/data.js", "public/index.html"]
+    },
+    {
+      "id": "browse.search-results",
+      "name": "Search results render the query and matching products",
+      "path": "/#/search?q=headphones",
+      "expectSelector": "#view-browse .product-card",
+      "expectText": "Results for"
+    },
+    {
+      "id": "browse.search-empty",
+      "name": "Search with no matches shows the empty state",
+      "path": "/#/search?q=zzzznothing",
+      "expectText": "No results found"
+    },
+    {
+      "id": "product.detail",
+      "name": "Product page renders gallery, variants, reviews and buy bar",
+      "path": "/#/product/p01",
+      "expectSelector": "#view-product .add-btn",
+      "expectText": "Add to Cart",
+      "visual": true,
+      "impact": ["public/js/product.js", "public/js/router.js", "public/js/data.js", "public/js/store.js", "public/index.html"]
     },
     {
       "id": "checkout.default",

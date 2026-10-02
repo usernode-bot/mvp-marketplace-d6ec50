@@ -96,11 +96,12 @@ function computeTotals(entries) {
 function cartRow(entry) {
   const { item, product: p } = entry;
   const disc = discountPct(p);
+  const variantLabel = [item.color, item.size].filter(Boolean).join(' · ') || p.variant;
   const fav = store.isFavorite(p.id);
   const ghostBtn = 'flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-zinc-400 transition-colors ';
 
-  return '<div class="card flex gap-3 p-3" data-cart-row="' + p.id + '">'
-    + '<input type="checkbox" data-cart-select="' + p.id + '"' + (item.selected ? ' checked' : '')
+  return '<div class="card flex gap-3 p-3" data-cart-row="' + item.key + '">'
+    + '<input type="checkbox" data-cart-select="' + item.key + '"' + (item.selected ? ' checked' : '')
     + ' class="mt-1 h-4 w-4 shrink-0 accent-brand-600" aria-label="Select ' + p.name + '">'
     + '<div class="h-20 w-20 shrink-0 overflow-hidden rounded-lg">' + productArt(p) + '</div>'
     + '<div class="min-w-0 flex-1">'
@@ -108,17 +109,17 @@ function cartRow(entry) {
     + '<h3 class="min-w-0 flex-1 text-sm font-medium leading-snug text-zinc-800">' + p.name + '</h3>'
     + (disc ? '<span class="badge-sale shrink-0">-' + disc + '%</span>' : '')
     + '</div>'
-    + (p.variant ? '<p class="mt-0.5 truncate text-xs text-zinc-500">' + p.variant + '</p>' : '')
+    + (variantLabel ? '<p class="mt-0.5 truncate text-xs text-zinc-500">' + variantLabel + '</p>' : '')
     + '<div class="mt-1 flex items-baseline gap-1.5">'
     + '<span class="text-sm font-bold tabular-nums text-zinc-900">' + fmtPrice(p.price) + '</span>'
     + (p.orig ? '<span class="text-xs tabular-nums text-zinc-400 line-through">' + fmtPrice(p.orig) + '</span>' : '')
     + '</div>'
     + '<div class="mt-2 flex items-center gap-2">'
-    + '<button type="button" data-cart-minus="' + p.id + '" aria-label="Decrease quantity"'
+    + '<button type="button" data-cart-minus="' + item.key + '" aria-label="Decrease quantity"'
     + (item.qty <= 1 ? ' disabled' : '')
     + ' class="flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-200 text-zinc-600 transition-colors hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-40">' + icon('minus', 'h-3.5 w-3.5') + '</button>'
     + '<span class="min-w-6 text-center text-sm font-semibold tabular-nums">' + item.qty + '</span>'
-    + '<button type="button" data-cart-plus="' + p.id + '" aria-label="Increase quantity" class="flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-200 text-zinc-600 transition-colors hover:bg-zinc-50">' + icon('plus', 'h-3.5 w-3.5') + '</button>'
+    + '<button type="button" data-cart-plus="' + item.key + '" aria-label="Increase quantity" class="flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-200 text-zinc-600 transition-colors hover:bg-zinc-50">' + icon('plus', 'h-3.5 w-3.5') + '</button>'
     + (item.qty > 1
       ? '<span class="ml-1 text-xs text-zinc-500">Line total <span class="font-semibold tabular-nums text-zinc-700">' + fmtPrice(p.price * item.qty) + '</span></span>'
       : '')
@@ -126,8 +127,8 @@ function cartRow(entry) {
     + '<div class="mt-2 flex items-center gap-0.5">'
     + '<button type="button" data-fav="' + p.id + '" aria-label="Toggle favorite" aria-pressed="' + fav
     + '" class="' + ghostBtn + (fav ? 'text-rose-500 hover:bg-rose-50' : 'hover:bg-zinc-100 hover:text-zinc-600') + '">' + icon(fav ? 'heartFilled' : 'heart', 'h-4 w-4') + '</button>'
-    + '<button type="button" data-cart-save="' + p.id + '" aria-label="Save for later" class="' + ghostBtn + 'hover:bg-zinc-100 hover:text-zinc-600">' + icon('bookmark', 'h-4 w-4') + '</button>'
-    + '<button type="button" data-cart-remove="' + p.id + '" aria-label="Remove from cart" class="' + ghostBtn + 'hover:bg-rose-50 hover:text-rose-600">' + icon('trash', 'h-4 w-4') + '</button>'
+    + '<button type="button" data-cart-save="' + item.key + '" aria-label="Save for later" class="' + ghostBtn + 'hover:bg-zinc-100 hover:text-zinc-600">' + icon('bookmark', 'h-4 w-4') + '</button>'
+    + '<button type="button" data-cart-remove="' + item.key + '" aria-label="Remove from cart" class="' + ghostBtn + 'hover:bg-rose-50 hover:text-rose-600">' + icon('trash', 'h-4 w-4') + '</button>'
     + '</div>'
     + '</div>'
     + '</div>';
@@ -306,12 +307,12 @@ function confirmRemove(message) {
   return Promise.resolve(window.confirm(message));
 }
 
-export function removeCartItem(id) {
-  const entry = store.cartItems().find((e) => e.product.id === id);
+export function removeCartItem(key) {
+  const entry = store.cartItems().find((e) => e.item.key === key);
   const name = entry ? entry.product.name : 'This item';
   confirmRemove(name + ' will be removed from your cart.').then((ok) => {
     if (!ok) return;
-    store.removeFromCart(id);
+    store.removeFromCart(key);
     toast('Removed from cart');
   });
 }
