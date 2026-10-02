@@ -434,6 +434,23 @@ export const PRODUCTS = [
  * Lookups and derived helpers.
  * ------------------------------------------------------------------------- */
 
+/* Vouchers (Phase 3). Types: 'percent' (value = % off), 'fixed'
+ * (value = cents off), 'ship' (free shipping). min = subtotal in cents the
+ * order must reach before the voucher applies. Later phases swap this for a
+ * real voucher API without touching the cart (same shape).
+ */
+export const VOUCHERS = [
+  { code: 'WELCOME10', type: 'percent', value: 10, min: 2000 },
+  { code: 'SAVE5', type: 'fixed', value: 500, min: 3000 },
+  { code: 'FREESHIP', type: 'ship', value: 0, min: 2500 },
+];
+
+export function voucherByCode(code) {
+  if (typeof code !== 'string') return null;
+  const c = code.trim().toUpperCase();
+  return VOUCHERS.find((v) => v.code === c) || null;
+}
+
 export function discountPct(p) {
   if (!p.orig || p.orig <= p.price) return 0;
   return Math.round((1 - p.price / p.orig) * 100);

@@ -22,6 +22,11 @@ export function fmtCount(n) {
   return String(n);
 }
 
+/* "Tue, Oct 6" from a Date (used for order delivery estimates). */
+export function fmtDate(d) {
+  return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+}
+
 /* ---------------------------------------------------------------------------
  * Star row. Five outline stars, filled proportionally to the rating via a
  * clipped overlay. Amber is the ratings color per the design system.

@@ -59,6 +59,30 @@ soon") instead of hiding it.
   variants and specs; deterministic per-product reviews, shipping terms and
   rating distributions generated in `public/js/data.js`.
 
+## Phase 3 — Cart
+
+- **Cart page**: each item shows its artwork, name, variant, unit price,
+  original price and discount badge, a quantity stepper (minus disabled at
+  1; removal goes through the remove button), line total, and favorite /
+  save-for-later / remove actions.
+- **Selection**: per-item checkboxes, select all / deselect all and an
+  "n of m selected" count. Totals always cover only the selected items.
+- **Order summary**: subtotal, product discounts (savings vs original
+  prices), estimated shipping (free over $50, otherwise $3.99), voucher
+  discount and total, recalculated on every change. Checkout is a
+  "coming in a later phase" stub; no payment.
+- **Vouchers**: code input, available-voucher list, applied state with its
+  discount, and invalid states (unknown code, order below the voucher
+  minimum). The applied voucher persists for the session.
+- **Saved for later**: items moved out of the cart persist and can be moved
+  back or removed, including from the empty cart.
+- **Responsive**: on mobile a sticky checkout bar sits above the bottom
+  navigation; on desktop the cart is two columns (items left, sticky
+  summary right).
+- **Demo state**: `/?demo=1#/cart` seeds a representative cart once per
+  browser, so the populated cart is reachable from a URL for previews and
+  checks; `/#/cart` always shows the real cart.
+
 ## Run locally
 
 ```sh

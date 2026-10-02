@@ -2,6 +2,7 @@
  *
  * Routes:
  *   #/home #/categories #/cart #/orders #/profile   Phase 1 tabs
+ *   #/checkout                   Checkout (reached from the cart)
  *   #/category/<id>              Category browse page
  *   #/search?q=...               Search results page
  *   #/product/<id>               Product detail page
@@ -14,9 +15,11 @@
 
 import { renderBrowse } from './browse.js';
 import { renderProduct } from './product.js';
-import { renderCartView, renderCategoriesView, renderOrdersView, renderProfileView } from './views.js';
+import { renderCategoriesView, renderOrdersView, renderProfileView } from './views.js';
+import { renderCartView } from './cart.js';
+import { renderCheckoutView } from './checkout.js';
 
-const TABS = ['home', 'categories', 'cart', 'orders', 'profile'];
+const TABS = ['home', 'categories', 'cart', 'checkout', 'orders', 'profile'];
 const VIEW_NAMES = TABS.concat(['browse', 'product']);
 
 export function parseRoute() {
@@ -67,6 +70,7 @@ function showView(name) {
 
   if (name === 'categories') renderCategoriesView();
   if (name === 'cart') renderCartView();
+  if (name === 'checkout') renderCheckoutView();
   if (name === 'orders') renderOrdersView();
   if (name === 'profile') renderProfileView();
   if (name === 'browse') renderBrowse(parseRoute());

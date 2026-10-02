@@ -1,12 +1,12 @@
-/* Secondary tabs: Categories, Cart, Orders and Profile. Phase 1 keeps these
- * light but real: Categories browses the mock catalog, Cart manages what you
- * added, Orders and Profile are honest empty/stub states for later phases.
+/* Secondary tabs: Categories, Orders and Profile. Cart lives in cart.js
+ * (Phase 3). Categories browses the mock catalog, Orders and Profile are
+ * honest empty/stub states for later phases.
  */
 
 import { icon, productArt } from './icons.js';
 import { CATEGORIES, PRODUCTS } from './data.js';
 import { store } from './store.js';
-import { fmtPrice, emptyState } from './ui.js';
+import { fmtDate, fmtPrice, emptyState } from './ui.js';
 
 const CATEGORY_TINTS = {
   electronics: ['bg-indigo-50', 'text-indigo-600'],
@@ -54,78 +54,55 @@ export function renderCategoriesView() {
 }
 
 /* ------------------------------------------------------------------ */
-/* Cart                                                                */
-/* ------------------------------------------------------------------ */
-
-function cartRow(entry) {
-  const { item, product: p } = entry;
-  const variant = [item.color, item.size].filter(Boolean).join(' · ');
-  return '<div class="card flex items-center gap-3 p-3" data-cart-row="' + item.key + '">'
-    + '<div class="h-16 w-16 shrink-0 overflow-hidden rounded-lg">' + productArt(p) + '</div>'
-    + '<div class="min-w-0 flex-1">'
-    + '<h3 class="truncate text-sm font-medium text-zinc-800">' + p.name + '</h3>'
-    + (variant ? '<div class="mt-0.5 text-xs text-zinc-500">' + variant + '</div>' : '')
-    + '<div class="mt-0.5 text-sm font-bold tabular-nums text-zinc-900">' + fmtPrice(p.price * item.qty) + '</div>'
-    + '<div class="mt-1.5 flex items-center gap-2">'
-    + '<button type="button" data-cart-minus="' + item.key + '" aria-label="Decrease quantity" class="flex h-7 w-7 items-center justify-center rounded-lg border border-zinc-200 text-zinc-600 hover:bg-zinc-50">' + icon('minus', 'h-3.5 w-3.5') + '</button>'
-    + '<span class="min-w-6 text-center text-sm font-semibold tabular-nums">' + item.qty + '</span>'
-    + '<button type="button" data-cart-plus="' + item.key + '" aria-label="Increase quantity" class="flex h-7 w-7 items-center justify-center rounded-lg border border-zinc-200 text-zinc-600 hover:bg-zinc-50">' + icon('plus', 'h-3.5 w-3.5') + '</button>'
-    + '</div></div>'
-    + '<button type="button" data-cart-remove="' + item.key + '" aria-label="Remove from cart" class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-zinc-400 hover:bg-rose-50 hover:text-rose-600">' + icon('trash', 'h-4 w-4') + '</button>'
-    + '</div>';
-}
-
-export function renderCartView() {
-  const view = document.getElementById('view-cart');
-  const entries = store.cartItems();
-
-  if (!entries.length) {
-    view.innerHTML =
-      '<h1 class="section-title">Cart</h1>'
-      + '<div class="card mt-4">' + emptyState({
-        icon: 'cart',
-        title: 'Your cart is empty',
-        body: 'Browse the home page and add something you like.',
-        actionLabel: 'Start shopping',
-        actionAttr: 'data-nav="home"',
-      }) + '</div>';
-    return;
-  }
-
-  const subtotal = store.cartTotal();
-  const items = store.cartCount();
-  view.innerHTML =
-    '<div class="flex items-center gap-2"><h1 class="section-title">Cart</h1><span class="badge-soft">' + items + (items === 1 ? ' item' : ' items') + '</span></div>'
-    + '<div class="mt-4 grid gap-6 lg:grid-cols-3">'
-    + '<div class="flex flex-col gap-3 lg:col-span-2">' + entries.map(cartRow).join('') + '</div>'
-    + '<div class="lg:col-span-1"><div class="card p-4 lg:sticky lg:top-24">'
-    + '<h2 class="text-sm font-semibold text-zinc-900">Order summary</h2>'
-    + '<div class="mt-3 flex justify-between text-sm text-zinc-600"><span>Subtotal</span><span class="font-medium tabular-nums text-zinc-900">' + fmtPrice(subtotal) + '</span></div>'
-    + '<div class="mt-1.5 flex justify-between text-sm text-zinc-600"><span>Shipping</span><span class="text-zinc-400">Calculated at checkout</span></div>'
-    + '<div class="mt-3 flex justify-between border-t border-zinc-100 pt-3 text-sm font-semibold text-zinc-900"><span>Total</span><span class="tabular-nums">' + fmtPrice(subtotal) + '</span></div>'
-    + '<button type="button" class="btn-primary mt-4 w-full" disabled>Checkout coming soon</button>'
-    + '<p class="mt-2 text-center text-xs text-zinc-400">Checkout and payment arrive in a later phase.</p>'
-    + '</div></div>'
-    + '</div>';
-}
-
-/* ------------------------------------------------------------------ */
 /* Orders                                                              */
 /* ------------------------------------------------------------------ */
 
 export function renderOrdersView() {
   const view = document.getElementById('view-orders');
+  const orders = store.orders;
+
+  if (!orders.length) {
+    view.innerHTML =
+      '<h1 class="section-title">Orders</h1>'
+      + '<div class="card mt-4">'
+      + emptyState({
+        icon: 'package',
+        title: 'No orders yet',
+        body: 'When you place an order, it will show up here with its status and delivery updates.',
+        actionLabel: 'Browse products',
+        actionAttr: 'data-nav="home"',
+      })
+      + '</div>';
+    return;
+  }
+
   view.innerHTML =
     '<h1 class="section-title">Orders</h1>'
-    + '<div class="card mt-4">'
-    + emptyState({
-      icon: 'package',
-      title: 'No orders yet',
-      body: 'When you place an order, it will show up here with its status and delivery updates.',
-      actionLabel: 'Browse products',
-      actionAttr: 'data-nav="home"',
-    })
-    + '</div>';
+    + orders.map(orderCard).join('');
+}
+
+function orderCard(o) {
+  const first = o.items[0];
+  const more = o.items.length - 1;
+  return '<article class="card mt-4 p-4">'
+    + '<div class="flex items-center gap-2">'
+    + '<h2 class="text-sm font-semibold text-zinc-900">' + o.number + '</h2>'
+    + '<span class="badge-brand ml-auto">' + o.status + '</span>'
+    + '</div>'
+    + '<p class="mt-1 text-xs text-zinc-500">Placed ' + fmtDate(new Date(o.placedAt)) + '</p>'
+    + '<div class="mt-3 flex items-center gap-3">'
+    + '<div class="h-12 w-12 shrink-0 overflow-hidden rounded-lg">' + productArt(first) + '</div>'
+    + '<div class="min-w-0 flex-1 text-sm">'
+    + '<p class="truncate font-medium text-zinc-800">' + first.name + '</p>'
+    + '<p class="text-xs text-zinc-500">' + (more > 0 ? '+ ' + more + ' more item' + (more === 1 ? '' : 's') : 'Qty ' + first.qty) + '</p>'
+    + '</div>'
+    + '<span class="text-sm font-bold tabular-nums text-zinc-900">' + fmtPrice(o.total) + '</span>'
+    + '</div>'
+    + '<div class="mt-3 flex items-center gap-2 border-t border-zinc-100 pt-3 text-xs text-zinc-500">'
+    + '<span class="text-zinc-400">' + icon('truck', 'h-4 w-4') + '</span>'
+    + 'Estimated delivery ' + o.etaLabel
+    + '</div>'
+    + '</article>';
 }
 
 /* ------------------------------------------------------------------ */

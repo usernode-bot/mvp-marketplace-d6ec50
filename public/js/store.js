@@ -1,4 +1,5 @@
-/* Client-side state: favorites, cart (variant-aware), recent searches and
+/* Client-side state: favorites, cart (variant-aware, with per-item
+ * selection), saved for later, the applied voucher, recent searches and
  * recently viewed products.
  *
  * Everything persists to localStorage under one app-level namespace. This
@@ -15,6 +16,9 @@ const KEYS = {
   cart: 'bazario:cart',
   recent: 'bazario:recent',
   viewed: 'bazario:viewed',
+  orders: 'bazario:orders',
+  saved: 'bazario:saved',
+  voucher: 'bazario:voucher',
 };
 
 const PRODUCT_LOOKUP = Object.fromEntries(PRODUCTS.map((p) => [p.id, p]));
@@ -35,6 +39,10 @@ function save(key, value) {
     // Storage refused (private mode, cross-origin WebView): state simply
     // does not persist for the session.
   }
+}
+
+function normalizeVoucher(v) {
+  return typeof v === 'string' && v.trim() ? v.trim().toUpperCase() : null;
 }
 
 const listeners = new Set();
@@ -65,14 +73,18 @@ function normalizeCart(raw) {
       color: e.color || '',
       size: e.size || '',
       key: e.key || entryKey(e.id, e.color, e.size),
+      selected: e.selected !== false, // older carts have no flag: selected
     }));
 }
 
 export const store = {
   favorites: new Set(load(KEYS.favorites, [])),
-  cart: normalizeCart(load(KEYS.cart, [])),
+  cart: normalizeCart(load(KEYS.cart, [])), // [{ id, qty, color, size, key, selected }]
   recent: load(KEYS.recent, []),
   viewed: load(KEYS.viewed, []), // most-recent-first product ids
+  orders: load(KEYS.orders, []), // placed (mock) orders, newest first
+  saved: new Set(load(KEYS.saved, [])), // ids moved out of the cart
+  voucher: normalizeVoucher(load(KEYS.voucher, null)),
 
   isFavorite(id) {
     return this.favorites.has(id);
@@ -104,7 +116,14 @@ export const store = {
     const key = entryKey(id, color, size);
     const item = this.cart.find((i) => i.key === key);
     if (item) item.qty += qty;
-    else this.cart.push({ id, qty, color, size, key });
+    else this.cart.push({ id, qty, color, size, key, selected: true });
+    save(KEYS.cart, this.cart);
+    emit();
+  },
+
+  /* Replace the whole cart (used by the ?demo=1 seeding route only). */
+  setCart(entries) {
+    this.cart = normalizeCart(entries);
     save(KEYS.cart, this.cart);
     emit();
   },
@@ -122,10 +141,83 @@ export const store = {
     }
   },
 
+  setSelected(key, on) {
+    const item = this.cart.find((i) => i.key === key);
+    if (!item || item.selected === on) return;
+    item.selected = on;
+    save(KEYS.cart, this.cart);
+    emit();
+  },
+
+  setAllSelected(on) {
+    let changed = false;
+    this.cart.forEach((i) => {
+      if (i.selected !== on) {
+        i.selected = on;
+        changed = true;
+      }
+    });
+    if (!changed) return;
+    save(KEYS.cart, this.cart);
+    emit();
+  },
+
+  selectedEntries() {
+    return this.cart.filter((i) => i.selected !== false);
+  },
+
   removeFromCart(key) {
     this.cart = this.cart.filter((i) => i.key !== key);
     save(KEYS.cart, this.cart);
     emit();
+  },
+
+  /* Move a cart item out to the "Saved for later" list. */
+  saveForLater(key) {
+    const entry = this.cart.find((i) => i.key === key);
+    if (!entry) return;
+    const id = entry.id;
+    this.removeFromCart(key);
+    if (!this.saved.has(id)) {
+      this.saved.add(id);
+      save(KEYS.saved, [...this.saved]);
+      emit();
+    }
+  },
+
+  /* Move a saved item back into the cart. */
+  moveToCart(id) {
+    if (this.saved.has(id)) {
+      this.saved.delete(id);
+      save(KEYS.saved, [...this.saved]);
+    }
+    const key = entryKey(id, '', '');
+    const item = this.cart.find((i) => i.key === key);
+    if (item) item.qty += 1;
+    else this.cart.push({ id, qty: 1, color: '', size: '', key, selected: true });
+    save(KEYS.cart, this.cart);
+    emit();
+  },
+
+  removeSaved(id) {
+    if (!this.saved.has(id)) return;
+    this.saved.delete(id);
+    save(KEYS.saved, [...this.saved]);
+    emit();
+  },
+
+  savedItems() {
+    return [...this.saved].map((id) => PRODUCT_LOOKUP[id]).filter(Boolean);
+  },
+
+  setVoucher(code) {
+    this.voucher = normalizeVoucher(code);
+    save(KEYS.voucher, this.voucher);
+    emit();
+  },
+
+  clearVoucher() {
+    this.setVoucher(null);
   },
 
   cartItems() {
@@ -138,6 +230,18 @@ export const store = {
 
   cartTotal() {
     return this.cartItems().reduce((sum, e) => sum + e.product.price * e.item.qty, 0);
+  },
+
+  clearCart() {
+    this.cart = [];
+    save(KEYS.cart, this.cart);
+    emit();
+  },
+
+  addOrder(order) {
+    this.orders = [order, ...this.orders].slice(0, 20);
+    save(KEYS.orders, this.orders);
+    emit();
   },
 
   addRecent(q) {
