@@ -14,6 +14,7 @@ const KEYS = {
   favorites: 'bazario:favorites',
   cart: 'bazario:cart',
   recent: 'bazario:recent',
+  orders: 'bazario:orders',
   saved: 'bazario:saved',
   voucher: 'bazario:voucher',
 };
@@ -63,6 +64,7 @@ export const store = {
   favorites: new Set(load(KEYS.favorites, [])),
   cart: load(KEYS.cart, []).map(normalizeCartEntry), // [{ id, qty, selected }]
   recent: load(KEYS.recent, []),
+  orders: load(KEYS.orders, []), // placed (mock) orders, newest first
   saved: new Set(load(KEYS.saved, [])), // ids moved out of the cart
   voucher: normalizeVoucher(load(KEYS.voucher, null)),
 
@@ -202,6 +204,18 @@ export const store = {
 
   cartTotal() {
     return this.cartItems().reduce((sum, e) => sum + e.product.price * e.item.qty, 0);
+  },
+
+  clearCart() {
+    this.cart = [];
+    save(KEYS.cart, this.cart);
+    emit();
+  },
+
+  addOrder(order) {
+    this.orders = [order, ...this.orders].slice(0, 20);
+    save(KEYS.orders, this.orders);
+    emit();
   },
 
   addRecent(q) {
