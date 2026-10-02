@@ -1,10 +1,11 @@
 /* Home page: promotional carousel, category tiles, Flash Sale row with
- * countdown, Recommended grid, and the search/filter results view (which
- * also serves empty-search and no-product states).
+ * countdown and the Recommended grid. Search and category browsing moved to
+ * dedicated pages (browse.js, routed by router.js); the home results section
+ * now only serves the Big deals banner CTA.
  */
 
 import { icon } from './icons.js';
-import { BANNERS, CATEGORIES, PRODUCTS, TRENDING, categoryById, discountPct } from './data.js';
+import { BANNERS, CATEGORIES, PRODUCTS, TRENDING, discountPct } from './data.js';
 import { store } from './store.js';
 import {
   emptyState,
@@ -15,10 +16,7 @@ import {
   skeletonCard,
   skeletonCategoryTile,
 } from './ui.js';
-
-const state = {
-  filter: null, // { type: 'search' | 'category' | 'deals', q?, id? }
-};
+import { goToHash } from './router.js';
 
 /* Banner gradient tones — whole literal class strings so the Tailwind
  * compiler sees them. */
@@ -123,37 +121,22 @@ function startCountdown() {
 }
 
 /* ------------------------------------------------------------------ */
-/* Results (search / category / deals)                                 */
+/* Results (Big deals banner)                                          */
 /* ------------------------------------------------------------------ */
 
-function productsForFilter(filter) {
-  if (!filter) return [];
-  if (filter.type === 'search') {
-    const q = filter.q.toLowerCase();
-    return PRODUCTS.filter((p) => p.name.toLowerCase().includes(q) || p.cat.includes(q));
-  }
-  if (filter.type === 'category') return PRODUCTS.filter((p) => p.cat === filter.id);
-  if (filter.type === 'deals') return PRODUCTS.filter((p) => discountPct(p) >= 30);
-  return [];
+/* Search and category browsing moved to dedicated pages (browse.js, routed
+ * from router.js). The home results section now only serves the "Big deals"
+ * banner CTA. */
+
+function productsForFilter() {
+  return PRODUCTS.filter((p) => discountPct(p) >= 30);
 }
 
-function filterTitle(filter) {
-  if (!filter) return '';
-  if (filter.type === 'search') return 'Results for "' + filter.q + '"';
-  if (filter.type === 'category') {
-    const c = categoryById(filter.id);
-    return c ? c.name : 'Products';
-  }
-  if (filter.type === 'deals') return 'Big deals';
-  return 'Products';
-}
-
-export function openResults(filter) {
-  state.filter = filter;
+function openResults() {
   closePanels();
-  const products = productsForFilter(filter);
+  const products = productsForFilter();
   const section = document.getElementById('results-section');
-  document.getElementById('results-title').textContent = filterTitle(filter);
+  document.getElementById('results-title').textContent = 'Big deals';
   const count = document.getElementById('results-count');
   count.textContent = products.length + (products.length === 1 ? ' item' : ' items');
 
@@ -174,7 +157,7 @@ export function openResults(filter) {
     empty.innerHTML = emptyState({
       icon: 'search',
       title: 'No results found',
-      body: 'Nothing matches "' + filter.q + '" right now. Try a different word, or start from a trending search.',
+      body: 'No discounted products right now. Try a trending search instead.',
       actionLabel: 'Clear search',
       actionAttr: 'data-results-clear',
     })
@@ -192,7 +175,6 @@ export function openResults(filter) {
 }
 
 export function clearResults() {
-  state.filter = null;
   document.getElementById('results-section').classList.add('hidden');
   ['promo', 'categories', 'flash', 'recommended'].forEach((id) => {
     const el = document.getElementById('section-' + id);
@@ -273,7 +255,8 @@ function submitSearch(value) {
   const q = (value || '').trim();
   if (!q) return;
   store.addRecent(q);
-  openResults({ type: 'search', q });
+  closePanels();
+  goToHash('#/search?q=' + encodeURIComponent(q));
 }
 
 /* ------------------------------------------------------------------ */
@@ -380,9 +363,9 @@ export function initHome() {
   bindSearch();
 }
 
-/* Banner CTA targets: the deals banner opens a discounted-items results view,
- * the flash banner scrolls to the Flash Sale row, the arrivals banner opens
- * the Fashion category. */
+/* Banner CTA targets: the deals banner opens a discounted-items results view
+ * on the home page, the flash banner scrolls to the Flash Sale row, and the
+ * arrivals banner opens the Fashion category page. */
 export function runBannerAction(i) {
   const b = BANNERS[i];
   if (!b) return;
@@ -393,11 +376,11 @@ export function runBannerAction(i) {
     return;
   }
   if (b.action.type === 'deals') {
-    openResults({ type: 'deals' });
+    openResults();
     return;
   }
   if (b.action.type === 'category') {
-    openResults({ type: 'category', id: b.action.id });
+    goToHash('#/category/' + b.action.id);
   }
 }
 

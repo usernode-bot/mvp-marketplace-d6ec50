@@ -23,6 +23,19 @@ export function fmtCount(n) {
 }
 
 /* ---------------------------------------------------------------------------
+ * Star row. Five outline stars, filled proportionally to the rating via a
+ * clipped overlay. Amber is the ratings color per the design system.
+ * ------------------------------------------------------------------------- */
+export function starRow(rating, cls = 'h-3.5 w-3.5') {
+  const five = Array.from({ length: 5 }, () => icon('star', cls)).join('');
+  const pct = Math.max(0, Math.min(100, (rating / 5) * 100));
+  return '<span class="relative inline-flex shrink-0" role="img" aria-label="Rated ' + rating + ' out of 5">'
+    + '<span class="flex text-zinc-200">' + five + '</span>'
+    + '<span class="absolute inset-0 flex overflow-hidden text-amber-400" style="width:' + pct + '%">' + five + '</span>'
+    + '</span>';
+}
+
+/* ---------------------------------------------------------------------------
  * Toast. Uses the platform's native kit when it is present (it is safe-area
  * aware and singleton); falls back to a minimal fixed pill otherwise, e.g.
  * standalone local runs where the hosted assets are unreachable.
@@ -49,7 +62,9 @@ export function toast(message) {
 
 /* ---------------------------------------------------------------------------
  * Product card. `opts.compact` narrows the layout for the flash-sale row and
- * swaps the plain sold count for a sold-progress bar.
+ * swaps the plain sold count for a sold-progress bar. Tapping anywhere on the
+ * card (except the favorite/add buttons) opens the product detail page; sold
+ * out items show a badge and a disabled add button.
  * ------------------------------------------------------------------------- */
 export function productCard(p, opts = {}) {
   const disc = discountPct(p);
@@ -61,10 +76,11 @@ export function productCard(p, opts = {}) {
       + '<div class="mt-1 text-[11px] font-medium text-zinc-500">' + fmtCount(p.sold) + ' sold</div></div>'
     : '<span class="text-xs text-zinc-400">' + fmtCount(p.sold) + ' sold</span>';
 
-  return '<article class="card product-card group flex flex-col overflow-hidden">'
+  return '<article class="card product-card group flex cursor-pointer flex-col overflow-hidden" data-product="' + p.id + '">'
     + '<div class="relative aspect-square overflow-hidden rounded-t-xl">'
     + '<div class="h-full w-full transition-transform duration-300 group-hover:scale-[1.03]">' + productArt(p) + '</div>'
     + (disc ? '<span class="badge-sale absolute left-2 top-2">-' + disc + '%</span>' : '')
+    + (p.oos ? '<span class="badge absolute bottom-2 left-2 bg-zinc-900/80 text-white">Sold out</span>' : '')
     + '<button type="button" data-fav="' + p.id + '" aria-label="Toggle favorite" aria-pressed="' + fav
     + '" class="fav-btn absolute right-2 top-2' + (fav ? ' fav-btn-on' : '') + '">' + heart + '</button>'
     + '</div>'
@@ -82,7 +98,9 @@ export function productCard(p, opts = {}) {
     + '<div class="text-base font-bold tabular-nums text-zinc-900">' + fmtPrice(p.price) + '</div>'
     + (p.orig ? '<div class="text-xs tabular-nums text-zinc-400 line-through">' + fmtPrice(p.orig) + '</div>' : '')
     + '</div>'
-    + '<button type="button" data-add="' + p.id + '" aria-label="Add to cart" class="add-btn">' + icon('plus', 'h-4 w-4') + '<span class="hidden lg:inline">Add</span></button>'
+    + (p.oos
+      ? '<button type="button" disabled aria-label="Sold out" class="add-btn cursor-not-allowed bg-zinc-300">' + icon('x', 'h-4 w-4') + '</button>'
+      : '<button type="button" data-add="' + p.id + '" aria-label="Add to cart" class="add-btn">' + icon('plus', 'h-4 w-4') + '<span class="hidden lg:inline">Add</span></button>')
     + '</div>'
     + '</div>'
     + '</article>';

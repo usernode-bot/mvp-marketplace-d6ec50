@@ -192,7 +192,7 @@
       <!-- Search / filter results (hidden until a search or category tap) -->
       <section id="results-section" class="hidden" aria-label="Results">
         <div class="flex items-center gap-2">
-          <button id="results-clear" data-results-clear class="icon-btn -ml-2" aria-label="Back to home"><span data-icon="chevron-left" data-cls="h-5 w-5"></span></button>
+          <button id="results-clear" data-results-clear class="icon-btn -ml-2" aria-label="Back to home"><span data-icon="chevronLeft" data-cls="h-5 w-5"></span></button>
           <h2 id="results-title" class="section-title truncate"></h2>
           <span id="results-count" class="badge-soft ml-1"></span>
         </div>
@@ -205,6 +205,10 @@
     <div id="view-cart" data-view="cart" class="hidden"></div>
     <div id="view-orders" data-view="orders" class="hidden"></div>
     <div id="view-profile" data-view="profile" class="hidden"></div>
+    <!-- Category browse / search results (browse.js) and product detail
+         (product.js) render into these containers. -->
+    <div id="view-browse" data-view="browse" class="hidden"></div>
+    <div id="view-product" data-view="product" class="hidden"></div>
   </main>
 
   <!-- Bottom navigation (mobile) -->

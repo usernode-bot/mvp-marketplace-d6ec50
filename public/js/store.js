@@ -1,9 +1,10 @@
-/* Client-side state for Phase 1: favorites, cart and recent searches.
+/* Client-side state: favorites, cart (variant-aware), recent searches and
+ * recently viewed products.
  *
  * Everything persists to localStorage under one app-level namespace. This
  * store is deliberately NOT keyed on the signed-in user: an offline load
  * carries no token, and per-user namespaces would destroy the real user's
- * saved data on the first offline boot. Phase 2 moves cart/favorites
+ * saved data on the first offline boot. A later phase moves cart/favorites
  * server-side; this module is the single seam for that swap.
  */
 
@@ -13,6 +14,7 @@ const KEYS = {
   favorites: 'bazario:favorites',
   cart: 'bazario:cart',
   recent: 'bazario:recent',
+  viewed: 'bazario:viewed',
 };
 
 const PRODUCT_LOOKUP = Object.fromEntries(PRODUCTS.map((p) => [p.id, p]));
@@ -47,10 +49,30 @@ function emit() {
   });
 }
 
+/* A cart entry is one product + chosen variant. Older saved carts (Phase 1)
+ * stored plain { id, qty } rows; normalize gives them a key so every entry
+ * shares the same shape. */
+function entryKey(id, color, size) {
+  return id + '|' + (color || '') + '|' + (size || '');
+}
+
+function normalizeCart(raw) {
+  return (Array.isArray(raw) ? raw : [])
+    .filter((e) => e && PRODUCT_LOOKUP[e.id])
+    .map((e) => ({
+      id: e.id,
+      qty: Math.max(1, Number(e.qty) || 1),
+      color: e.color || '',
+      size: e.size || '',
+      key: e.key || entryKey(e.id, e.color, e.size),
+    }));
+}
+
 export const store = {
   favorites: new Set(load(KEYS.favorites, [])),
-  cart: load(KEYS.cart, []), // [{ id, qty }]
+  cart: normalizeCart(load(KEYS.cart, [])),
   recent: load(KEYS.recent, []),
+  viewed: load(KEYS.viewed, []), // most-recent-first product ids
 
   isFavorite(id) {
     return this.favorites.has(id);
@@ -75,20 +97,24 @@ export const store = {
     return this.cart.reduce((sum, item) => sum + item.qty, 0);
   },
 
-  addToCart(id) {
-    const item = this.cart.find((i) => i.id === id);
-    if (item) item.qty += 1;
-    else this.cart.push({ id, qty: 1 });
+  addToCart(id, opts = {}) {
+    const qty = Math.max(1, Math.floor(Number(opts.qty) || 1));
+    const color = opts.color || '';
+    const size = opts.size || '';
+    const key = entryKey(id, color, size);
+    const item = this.cart.find((i) => i.key === key);
+    if (item) item.qty += qty;
+    else this.cart.push({ id, qty, color, size, key });
     save(KEYS.cart, this.cart);
     emit();
   },
 
-  setQty(id, qty) {
+  setQty(key, qty) {
     if (qty <= 0) {
-      this.removeFromCart(id);
+      this.removeFromCart(key);
       return;
     }
-    const item = this.cart.find((i) => i.id === id);
+    const item = this.cart.find((i) => i.key === key);
     if (item) {
       item.qty = qty;
       save(KEYS.cart, this.cart);
@@ -96,8 +122,8 @@ export const store = {
     }
   },
 
-  removeFromCart(id) {
-    this.cart = this.cart.filter((i) => i.id !== id);
+  removeFromCart(key) {
+    this.cart = this.cart.filter((i) => i.key !== key);
     save(KEYS.cart, this.cart);
     emit();
   },
@@ -129,6 +155,16 @@ export const store = {
   clearRecent() {
     this.recent = [];
     save(KEYS.recent, this.recent);
+  },
+
+  addRecentlyViewed(id) {
+    if (!PRODUCT_LOOKUP[id]) return;
+    this.viewed = [id, ...this.viewed.filter((v) => v !== id)].slice(0, 10);
+    save(KEYS.viewed, this.viewed);
+  },
+
+  recentlyViewed() {
+    return this.viewed.map((id) => PRODUCT_LOOKUP[id]).filter(Boolean);
   },
 
   subscribe(fn) {

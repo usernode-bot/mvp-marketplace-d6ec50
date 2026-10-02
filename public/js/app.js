@@ -1,55 +1,21 @@
-/* App bootstrap: icon hydration, hash-based tab routing, header/bottom-nav
+/* App bootstrap: icon hydration, hash routing (router.js), header/bottom-nav
  * bindings and one delegated click handler for all card buttons
  * (favorite / add-to-cart / category / banner CTA / search panel).
+ *
+ * Views and routes live in router.js: tabs (home/categories/cart/orders/
+ * profile) render their own modules; category browse and search results
+ * render through browse.js; product detail through product.js. Deep links
+ * (?q=..., ?cat=...) are translated to hash routes on boot so the address
+ * bar always carries the real screen.
  */
 
 import { hydrateIcons, icon } from './icons.js';
 import { productById } from './data.js';
 import { store } from './store.js';
 import { toast } from './ui.js';
-import { clearResults, initHome, openResults, panelRows, submitSearch } from './home.js';
-import { renderCartView, renderCategoriesView, renderOrdersView, renderProfileView, selectCategoryTab } from './views.js';
-
-const VIEWS = ['home', 'categories', 'cart', 'orders', 'profile'];
-
-/* ------------------------------------------------------------------ */
-/* View switching                                                      */
-/* ------------------------------------------------------------------ */
-
-function currentView() {
-  const name = (location.hash || '').replace(/^#\/?/, '');
-  return VIEWS.includes(name) ? name : 'home';
-}
-
-function showView(name) {
-  VIEWS.forEach((v) => {
-    const el = document.querySelector('[data-view="' + v + '"]');
-    if (el) el.classList.toggle('hidden', v !== name);
-  });
-
-  document.querySelectorAll('[data-nav]').forEach((el) => {
-    const active = el.dataset.nav === name;
-    el.classList.toggle('nav-item-active', active && el.classList.contains('nav-item'));
-    el.classList.toggle('nav-link-active', active && el.classList.contains('nav-link'));
-    if (active) el.setAttribute('aria-current', 'page');
-    else el.removeAttribute('aria-current');
-  });
-
-  if (name === 'categories') renderCategoriesView();
-  if (name === 'cart') renderCartView();
-  if (name === 'orders') renderOrdersView();
-  if (name === 'profile') renderProfileView();
-
-  window.scrollTo({ top: 0 });
-}
-
-function navigate(name) {
-  if (name === currentView()) {
-    showView(name);
-    return;
-  }
-  location.hash = '/' + name; // hashchange drives showView
-}
+import { clearResults, initHome, panelRows, runBannerAction, submitSearch } from './home.js';
+import { renderCartView, renderProfileView } from './views.js';
+import { goToHash, parseRoute, renderRoute } from './router.js';
 
 /* ------------------------------------------------------------------ */
 /* Header / nav badges                                                 */
@@ -76,7 +42,7 @@ function reopenSearchPanel(box, input) {
 }
 
 function handleClick(e) {
-  const target = e.target.closest('[data-fav], [data-add], [data-category], [data-category-tab], [data-nav], [data-banner-action], [data-recent], [data-recent-remove], [data-recent-clear], [data-suggest], [data-search-suggest], [data-soon], [data-cart-plus], [data-cart-minus], [data-cart-remove], [data-results-clear]');
+  const target = e.target.closest('[data-fav], [data-add], [data-category], [data-nav], [data-banner-action], [data-recent], [data-recent-remove], [data-recent-clear], [data-suggest], [data-search-suggest], [data-soon], [data-cart-plus], [data-cart-minus], [data-cart-remove], [data-results-clear], [data-back]');
   if (!target) return;
 
   const favId = target.getAttribute('data-fav');
@@ -88,12 +54,17 @@ function handleClick(e) {
       btn.classList.toggle('fav-btn-on', on);
       btn.setAttribute('aria-pressed', String(on));
     });
-    if (currentView() === 'profile') renderProfileView();
+    if (parseRoute().view === 'profile') renderProfileView();
     return;
   }
 
   const addId = target.getAttribute('data-add');
   if (addId) {
+    const product = productById(addId);
+    if (product && product.oos) {
+      toast('This item is sold out');
+      return;
+    }
     store.addToCart(addId);
     toast('Added to cart');
     // Brief "Added" confirmation on the button that was tapped.
@@ -109,19 +80,18 @@ function handleClick(e) {
 
   const cat = target.getAttribute('data-category');
   if (cat) {
-    if (currentView() === 'home') openResults({ type: 'category', id: cat });
-    return;
-  }
-
-  const catTab = target.getAttribute('data-category-tab');
-  if (catTab) {
-    selectCategoryTab(catTab);
+    goToHash('#/category/' + cat);
     return;
   }
 
   const nav = target.getAttribute('data-nav');
   if (nav) {
-    navigate(nav);
+    goToHash('#/' + nav);
+    return;
+  }
+
+  if (target.hasAttribute('data-back')) {
+    history.back();
     return;
   }
 
@@ -171,15 +141,15 @@ function handleClick(e) {
 
   const plus = target.getAttribute('data-cart-plus');
   if (plus) {
-    const entry = store.cart.find((i) => i.id === plus);
-    if (entry) store.setQty(plus, entry.qty + 1);
+    const entry = store.cart.find((i) => i.key === plus);
+    if (entry) store.setQty(entry.key, entry.qty + 1);
     return;
   }
 
   const minus = target.getAttribute('data-cart-minus');
   if (minus) {
-    const entry = store.cart.find((i) => i.id === minus);
-    if (entry) store.setQty(minus, entry.qty - 1);
+    const entry = store.cart.find((i) => i.key === minus);
+    if (entry) store.setQty(entry.key, entry.qty - 1);
     return;
   }
 
@@ -192,6 +162,7 @@ function handleClick(e) {
 
   if (target.hasAttribute('data-results-clear')) {
     clearResults();
+    goToHash('#/home');
     return;
   }
 }
@@ -205,28 +176,28 @@ function boot() {
 
   document.addEventListener('click', handleClick);
 
-  window.addEventListener('hashchange', () => showView(currentView()));
+  window.addEventListener('hashchange', renderRoute);
 
   store.subscribe(updateBadges);
   store.subscribe(() => {
-    if (currentView() === 'cart') renderCartView();
+    if (parseRoute().view === 'cart') renderCartView();
   });
   updateBadges();
 
   initHome();
-  showView(currentView());
+  renderRoute();
 
   // Shareable deep links: /?q=... opens search results, /?cat=... opens a
-  // category results view. Applied after home init so the results section
-  // exists; the plain routes stay honest (no query, no results view).
+  // category page. They become plain hash routes so the address bar carries
+  // the real screen; the plain routes stay honest (no query, no results).
   const params = new URLSearchParams(window.location.search);
   const deepQ = params.get('q');
   const deepCat = params.get('cat');
   if (deepQ) {
     store.addRecent(deepQ);
-    openResults({ type: 'search', q: deepQ.trim() || ' ' });
+    goToHash('#/search?q=' + encodeURIComponent(deepQ.trim() || ' '));
   } else if (deepCat && deepCat !== 'more') {
-    openResults({ type: 'category', id: deepCat });
+    goToHash('#/category/' + deepCat);
   }
 
   // Bell has no notification center yet; say so instead of doing nothing.
