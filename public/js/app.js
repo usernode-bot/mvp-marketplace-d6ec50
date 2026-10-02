@@ -15,9 +15,10 @@ import { initOrders, renderOrdersView } from './orders.js';
 import { renderProfileView } from './profile.js';
 import { initAddresses } from './addresses.js';
 import { initSettings } from './settings.js';
+import { renderCheckoutView } from './checkout.js';
 import { applyVoucherCode, initCart, removeCartItem, renderCartView } from './cart.js';
 
-const VIEWS = ['home', 'categories', 'cart', 'orders', 'profile'];
+const VIEWS = ['home', 'categories', 'cart', 'checkout', 'orders', 'profile'];
 
 /* ------------------------------------------------------------------ */
 /* View switching                                                      */
@@ -47,6 +48,7 @@ function showView(name) {
 
   if (name === 'categories') renderCategoriesView();
   if (name === 'cart') renderCartView();
+  if (name === 'checkout') renderCheckoutView();
   if (name === 'orders') renderOrdersView();
   if (name === 'profile') renderProfileView();
 
@@ -276,6 +278,18 @@ function boot() {
   store.subscribe(() => {
     if (currentView() === 'cart') renderCartView();
   });
+
+  // Demo seed for proposal checks and staging screenshots: ?demo=checkout
+  // fills the cart with a few mock items, in memory only (they persist only
+  // if the shopper then changes something). Plain routes never hit this.
+  if (new URLSearchParams(window.location.search).get('demo') === 'checkout') {
+    store.cart = [
+      { id: 'p01', qty: 1 },
+      { id: 'p14', qty: 2 },
+      { id: 'p26', qty: 1 },
+    ];
+  }
+
   updateBadges();
 
   initHome();

@@ -74,8 +74,28 @@ function statusOf(order) {
 
 /* Resolve seeds into full order objects. Built on demand at render time so
  * status overrides and "days ago" timestamps stay live. */
+function placedSeeds() {
+  return store.orders.map((o) => ({
+    no: o.number,
+    status: 'to_ship',
+    daysAgo: Math.max(0, (Date.now() - o.placedAt) / DAY),
+    items: o.items.map((it) => ({ id: it.id, qty: it.qty })),
+    payment: o.paymentName || 'Payment on delivery',
+    shipMethod: o.shippingName,
+    shipEta: o.etaLabel,
+    shipping: o.shipping,
+    address: {
+      name: o.address.name,
+      phone: o.address.phone,
+      line1: o.address.address,
+      city: o.address.city,
+      zip: o.address.postal,
+    },
+  }));
+}
+
 function buildOrders() {
-  return ORDER_SEEDS.map((seed) => {
+  return placedSeeds().concat(ORDER_SEEDS).map((seed) => {
     const items = seed.items
       .map((it) => ({ product: productById(it.id), qty: it.qty }))
       .filter((e) => e.product);
@@ -115,7 +135,7 @@ function orderByNo(no) {
 
 /* Total order count for the profile's quick-stats tile. */
 export function countOrders() {
-  return ORDER_SEEDS.length;
+  return ORDER_SEEDS.length + store.orders.length;
 }
 
 /* ------------------------------------------------------------------ */

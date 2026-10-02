@@ -14,6 +14,7 @@ const KEYS = {
   favorites: 'bazario:favorites',
   cart: 'bazario:cart',
   recent: 'bazario:recent',
+  orders: 'bazario:orders',
   saved: 'bazario:saved',
   voucher: 'bazario:voucher',
   orderOverrides: 'bazario:order-overrides',
@@ -77,6 +78,7 @@ export const store = {
   favorites: new Set(load(KEYS.favorites, [])),
   cart: load(KEYS.cart, []).map(normalizeCartEntry), // [{ id, qty, selected }]
   recent: load(KEYS.recent, []),
+  orders: load(KEYS.orders, []), // placed (mock) orders, newest first
   saved: new Set(load(KEYS.saved, [])), // ids moved out of the cart
   voucher: normalizeVoucher(load(KEYS.voucher, null)),
   // Order status overrides keyed by order number (Phase 5). Orders themselves
@@ -325,6 +327,19 @@ export const store = {
     this.addresses = [];
     this.profile = null;
     this.prefs = DEFAULT_PREFS();
+    this.orders = [];
+    emit();
+  },
+
+  clearCart() {
+    this.cart = [];
+    save(KEYS.cart, this.cart);
+    emit();
+  },
+
+  addOrder(order) {
+    this.orders = [order, ...this.orders].slice(0, 20);
+    save(KEYS.orders, this.orders);
     emit();
   },
 

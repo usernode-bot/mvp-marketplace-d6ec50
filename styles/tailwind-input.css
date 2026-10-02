@@ -74,6 +74,21 @@
     @apply h-11 w-full rounded-lg border border-zinc-200 bg-white pl-10 pr-3 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100;
   }
 
+  /* Form text inputs (checkout forms): no reserved icon space. */
+  .field {
+    @apply h-11 w-full rounded-lg border border-zinc-200 bg-white px-3 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100;
+  }
+
+  /* Invalid state for form inputs (checkout validation). */
+  .field-error {
+    @apply border-rose-400 focus:border-rose-500 focus:ring-rose-100;
+  }
+
+  /* Inline validation message under a field. */
+  .field-msg {
+    @apply mt-1 text-xs text-rose-600;
+  }
+
   /* Countdown chip (Flash Sale timer). */
   .chip {
     @apply inline-flex h-6 min-w-7 items-center justify-center rounded-md bg-zinc-900 px-1 text-xs font-bold tabular-nums text-white;

@@ -59,6 +59,11 @@ export function confirmDialog({ title, message, confirmLabel = 'Confirm' }) {
   return Promise.resolve(window.confirm(title + '\n\n' + message));
 }
 
+/* "Tue, Oct 6" from a Date (used for checkout delivery estimates). */
+export function fmtEtaDate(d) {
+  return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+}
+
 /* ---------------------------------------------------------------------------
  * Toast. Uses the platform's native kit when it is present (it is safe-area
  * aware and singleton); falls back to a minimal fixed pill otherwise, e.g.
