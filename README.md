@@ -24,7 +24,7 @@ Advanced Features → Production.
   empty-search state, category and deal filters (shareable via `?q=` /
   `?cat=` deep links), favorite toggles, add-to-cart with toast feedback,
   cart quantity management, and loading skeletons on boot.
-- **Mock data**: 33 invented products across 7 categories, generated SVG
+- **Mock data**: 150 invented products across 7 categories, generated SVG
   artwork (no external image requests), served from `public/js/data.js`.
 
 Out of scope until later phases: checkout, payment, order management and
@@ -55,7 +55,7 @@ soon") instead of hiding it.
   the configured variant and opens the cart (checkout remains out of scope).
 - **Recently viewed**: persisted locally (`bazario:viewed`) and shown on
   the product page.
-- **Mock data**: grown to 43 products with subcategories, brands, keywords,
+- **Mock data**: grown to 150 products with subcategories, brands, keywords,
   variants and specs; deterministic per-product reviews, shipping terms and
   rating distributions generated in `public/js/data.js`.
 

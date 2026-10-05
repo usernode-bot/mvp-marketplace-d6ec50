@@ -5,12 +5,13 @@
  */
 
 import { icon } from './icons.js';
-import { BANNERS, CATEGORIES, PRODUCTS, TRENDING, discountPct } from './data.js';
+import { BANNERS, CATEGORIES, PRODUCTS, TRENDING, discountPct, matchSearch } from './data.js';
 import { store } from './store.js';
 import {
   emptyState,
   fmtCount,
   fmtPrice,
+  hydrateLazyArt,
   productCard,
   skeletonBanner,
   skeletonCard,
@@ -156,9 +157,42 @@ function startCountdown() {
  * from router.js). The home results section now only serves the "Big deals"
  * banner CTA. */
 
+const PAGE_SIZE = 24;
+let recommendedVisible = PAGE_SIZE;
+let resultsVisible = PAGE_SIZE;
+
+/* "Load more" control shown only while more items remain. */
+function loadMoreHtml(attr, total, shown) {
+  if (shown >= total) return '';
+  return '<div class="col-span-full mt-1 flex justify-center">'
+    + '<button type="button" data-load-more ' + attr + ' class="btn-outline btn-sm">Load more products<span class="text-zinc-400">(' + (total - shown) + ')</span></button>'
+    + '</div>';
+}
+
 function productsForFilter() {
   return PRODUCTS.filter((p) => discountPct(p) >= 30);
 }
+
+/* Recommended grid on the home page: first 24, then Load more. */
+function renderRecommended(resetScroll) {
+  const grid = document.getElementById('recommended-grid');
+  if (!grid) return;
+  const slice = PRODUCTS.slice(0, recommendedVisible);
+  grid.innerHTML = slice.map((p) => productCard(p, { lazy: true })).join('')
+    + loadMoreHtml('data-recommended-more', PRODUCTS.length, recommendedVisible);
+  hydrateLazyArt(grid);
+  const btn = grid.querySelector('[data-load-more]');
+  if (btn) {
+    btn.addEventListener('click', () => {
+      recommendedVisible += PAGE_SIZE;
+      renderRecommended(false);
+    });
+  }
+  if (resetScroll) window.scrollTo({ top: 0 });
+}
+
+/* Home grids render lazily; the Flash Sale row (small, above the fold) does
+ * not, so its artwork is present immediately for the flash-images check. */
 
 function openResults() {
   closePanels();
@@ -170,7 +204,8 @@ function openResults() {
 
   const grid = document.getElementById('results-grid');
   const empty = document.getElementById('results-empty');
-  grid.innerHTML = products.map((p) => productCard(p)).join('');
+  resultsVisible = PAGE_SIZE;
+  renderResultsPage(true);
 
   if (products.length) {
     grid.classList.remove('hidden');
@@ -203,11 +238,32 @@ function openResults() {
 }
 
 export function clearResults() {
+  recommendedVisible = PAGE_SIZE;
   document.getElementById('results-section').classList.add('hidden');
   ['promo', 'categories', 'shortcuts', 'flash', 'recommended'].forEach((id) => {
     const el = document.getElementById('section-' + id);
     if (el) el.classList.remove('hidden');
   });
+}
+
+/* Render the Big deals grid up to the current page, appending the rest on
+ * "Load more". Lazy illustrations keep the initial DOM light. */
+function renderResultsPage(resetScroll) {
+  const grid = document.getElementById('results-grid');
+  if (!grid) return;
+  const products = productsForFilter();
+  const slice = products.slice(0, resultsVisible);
+  grid.innerHTML = slice.map((p) => productCard(p, { lazy: true })).join('')
+    + loadMoreHtml('data-results-more', products.length, resultsVisible);
+  hydrateLazyArt(grid);
+  const btn = grid.querySelector('[data-load-more]');
+  if (btn) {
+    btn.addEventListener('click', () => {
+      resultsVisible += PAGE_SIZE;
+      renderResultsPage(false);
+    });
+  }
+  if (resetScroll) window.scrollTo({ top: 0 });
 }
 
 /* ------------------------------------------------------------------ */
@@ -238,7 +294,7 @@ function panelRows(q) {
     if (!recent && !trending) return '<p class="p-2 text-sm text-zinc-400">Start typing to search.</p>';
     return recent + trending;
   }
-  const matches = PRODUCTS.filter((p) => p.name.toLowerCase().includes(term)).slice(0, 6);
+  const matches = PRODUCTS.filter((p) => matchSearch(p, term)).slice(0, 6);
   if (!matches.length) {
     return '<p class="p-2 text-sm text-zinc-500">No matches for "' + esc(q) + '". Press Enter to search anyway.</p>';
   }
@@ -390,8 +446,7 @@ export function initHome() {
     document.getElementById('flash-row').innerHTML =
       PRODUCTS.filter((p) => p.flash).map((p) =>
         '<div class="w-40 shrink-0 snap-start sm:w-44">' + productCard(p, { compact: true }) + '</div>').join('');
-    document.getElementById('recommended-grid').innerHTML =
-      PRODUCTS.map((p) => productCard(p)).join('');
+    renderRecommended(false);
     initCarousel();
   }, 450);
 

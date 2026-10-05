@@ -19,16 +19,20 @@ import {
   score,
 } from './data.js';
 import { store } from './store.js';
-import { emptyState, esc, productCard, skeletonCard } from './ui.js';
+import { emptyState, esc, hydrateLazyArt, productCard, skeletonCard } from './ui.js';
 import { goToHash } from './router.js';
 
 const SORT_OPTIONS = [
   { id: 'recommended', label: 'Recommended' },
   { id: 'popular', label: 'Popular' },
-  { id: 'newest', label: 'Newest' },
   { id: 'price-asc', label: 'Price: Low to High' },
   { id: 'price-desc', label: 'Price: High to Low' },
+  { id: 'top-rated', label: 'Top rated' },
+  { id: 'newest', label: 'Newest' },
 ];
+
+/* Results are revealed a page at a time by the "Load more" button. */
+const PAGE_SIZE = 24;
 
 const PRICE_BUCKETS = [
   { id: 'any', label: 'Any price', min: 0, max: Infinity },
@@ -91,6 +95,7 @@ function applySort(list) {
   const sorted = [...list];
   if (state.sort === 'recommended') sorted.sort((a, b) => score(b) - score(a));
   else if (state.sort === 'popular') sorted.sort((a, b) => b.sold - a.sold);
+  else if (state.sort === 'top-rated') sorted.sort((a, b) => (b.rating - a.rating) || (b.reviews - a.reviews));
   else if (state.sort === 'newest') sorted.sort((a, b) => a.age - b.age);
   else if (state.sort === 'price-asc') sorted.sort((a, b) => a.price - b.price);
   else if (state.sort === 'price-desc') sorted.sort((a, b) => b.price - a.price);
@@ -332,7 +337,14 @@ function renderGrid() {
   if (!grid || !empty) return;
 
   if (list.length) {
-    grid.innerHTML = list.map((p) => productCard(p)).join('');
+    const shown = list.slice(0, state.visible);
+    grid.innerHTML = shown.map((p) => productCard(p, { lazy: true })).join('')
+      + (list.length > state.visible
+        ? '<div class="col-span-full mt-1 flex justify-center">'
+          + '<button type="button" data-browse-more class="btn-outline btn-sm">Load more products<span class="text-zinc-400">(' + (list.length - state.visible) + ')</span></button>'
+          + '</div>'
+        : '');
+    hydrateLazyArt(grid);
     grid.classList.remove('hidden');
     empty.classList.add('hidden');
     empty.innerHTML = '';
@@ -364,6 +376,7 @@ function renderShell() {
       debounce = setTimeout(() => {
         if (state) {
           state.inCatQuery = catInput.value;
+          state.visible = PAGE_SIZE;
           renderGrid();
         }
       }, 200);
@@ -392,6 +405,7 @@ export function renderBrowse(route) {
       sub: route.sub || '',
       inCatQuery: '',
       sort: 'recommended',
+      visible: PAGE_SIZE,
       filters: defaultFilters(),
     };
   } else if (route.sub) {
@@ -443,12 +457,13 @@ function bindBrowseEvents() {
   if (!view) return;
 
   view.addEventListener('click', (e) => {
-    const target = e.target.closest('[data-sub], [data-sort-toggle], [data-sort-item], [data-filter-open], [data-filter-close], [data-filter-reset], [data-filter-price], [data-filter-rating], [data-filter-discount], [data-browse-reset], [data-browse-clear-search]');
+    const target = e.target.closest('[data-sub], [data-sort-toggle], [data-sort-item], [data-filter-open], [data-filter-close], [data-filter-reset], [data-filter-price], [data-filter-rating], [data-filter-discount], [data-browse-reset], [data-browse-clear-search], [data-browse-more]');
     if (!target) return;
 
     const sub = target.getAttribute('data-sub');
     if (sub !== null && target.hasAttribute('data-sub')) {
       state.sub = sub;
+      state.visible = PAGE_SIZE;
       renderShell();
       window.scrollTo({ top: 0 });
       return;
@@ -463,8 +478,15 @@ function bindBrowseEvents() {
     const sortItem = target.getAttribute('data-sort-item');
     if (sortItem) {
       state.sort = sortItem;
+      state.visible = PAGE_SIZE;
       syncSortMenu();
       closeSortMenu();
+      renderGrid();
+      return;
+    }
+
+    if (target.hasAttribute('data-browse-more')) {
+      state.visible += PAGE_SIZE;
       renderGrid();
       return;
     }
@@ -486,6 +508,7 @@ function bindBrowseEvents() {
 
     if (target.hasAttribute('data-filter-reset')) {
       state.filters = defaultFilters();
+      state.visible = PAGE_SIZE;
       closeFilter();
       renderShell();
       renderGrid();
@@ -495,6 +518,7 @@ function bindBrowseEvents() {
     const price = target.getAttribute('data-filter-price');
     if (price) {
       state.filters.price = price;
+      state.visible = PAGE_SIZE;
       setChipGroup('price', price, view.querySelectorAll('[data-filter-price]'));
       renderGrid();
       return;
@@ -503,6 +527,7 @@ function bindBrowseEvents() {
     const rating = target.getAttribute('data-filter-rating');
     if (rating) {
       state.filters.rating = Number(rating);
+      state.visible = PAGE_SIZE;
       setChipGroup('rating', rating, view.querySelectorAll('[data-filter-rating]'));
       renderGrid();
       return;
@@ -511,6 +536,7 @@ function bindBrowseEvents() {
     const discount = target.getAttribute('data-filter-discount');
     if (discount) {
       state.filters.discount = Number(discount);
+      state.visible = PAGE_SIZE;
       setChipGroup('discount', discount, view.querySelectorAll('[data-filter-discount]'));
       renderGrid();
       return;
@@ -519,6 +545,7 @@ function bindBrowseEvents() {
     if (target.hasAttribute('data-browse-reset')) {
       state.sub = '';
       state.inCatQuery = '';
+      state.visible = PAGE_SIZE;
       state.filters = defaultFilters();
       renderShell();
       window.scrollTo({ top: 0 });
@@ -539,9 +566,11 @@ function bindBrowseEvents() {
       state.filters.brands = target.checked
         ? state.filters.brands.concat([brand])
         : state.filters.brands.filter((b) => b !== brand);
+      state.visible = PAGE_SIZE;
       renderGrid();
     } else if (target.matches('[data-filter-stock]')) {
       state.filters.inStock = target.checked;
+      state.visible = PAGE_SIZE;
       renderGrid();
     }
   });

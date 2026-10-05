@@ -45,9 +45,12 @@ function galleryHtml() {
   const fav = store.isFavorite(p.id);
 
   return '<div class="relative aspect-square overflow-hidden rounded-2xl bg-zinc-100">'
-    + '<div id="pdp-img">' + productArtView(p, 0) + '</div>'
+    + '<div id="pdp-img"' + (p.oos ? ' class="h-full w-full opacity-60"' : '') + '>' + productArtView(p, 0) + '</div>'
     + (disc ? '<span class="badge-sale absolute left-3 top-3">-' + disc + '%</span>' : '')
-    + (p.oos ? '<span class="badge absolute bottom-3 left-3 bg-zinc-900/80 text-white">Sold out</span>' : '')
+    + '<div class="pointer-events-none absolute inset-x-3 bottom-3 flex items-center gap-2">'
+    + '<span data-art-caption class="badge-soft block min-w-0 truncate">' + p.name + '</span>'
+    + (p.oos ? '<span class="badge shrink-0 bg-zinc-900/80 text-white">Sold out</span>' : '')
+    + '</div>'
     + '<button type="button" data-fav="' + p.id + '" aria-label="Toggle favorite" aria-pressed="' + fav
     + '" class="fav-btn absolute right-3 top-3' + (fav ? ' fav-btn-on' : '') + '">' + icon(fav ? 'heartFilled' : 'heart', 'h-4 w-4') + '</button>'
     + '<button type="button" data-img-prev aria-label="Previous photo" class="absolute left-2 top-1/2 hidden h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-zinc-700 shadow-card md:flex">' + icon('chevronLeft', 'h-4 w-4') + '</button>'
