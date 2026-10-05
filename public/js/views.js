@@ -17,7 +17,7 @@ const CATEGORY_TINTS = {
 };
 
 const CATEGORY_ART = {
-  electronics: 'speaker',
+  electronics: 'smartphone',
   fashion: 'shirt',
   beauty: 'sparkles',
   home: 'armchair',

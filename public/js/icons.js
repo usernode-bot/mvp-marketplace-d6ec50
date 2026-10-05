@@ -81,7 +81,10 @@ const FILL_ICONS = {
 
 /* Return one icon as an SVG string. */
 export function icon(name, cls = 'w-5 h-5') {
-  const stroke = STROKE_ICONS[name];
+  // ART_ICONS holds the product-artwork glyphs on the same 24-unit stroke
+  // grid; serving them as ordinary stroke icons lets category tiles and
+  // empty states reuse the same artwork instead of rendering nothing.
+  const stroke = STROKE_ICONS[name] || ART_ICONS[name];
   if (stroke) {
     return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="' + cls + '" aria-hidden="true">' + stroke + '</svg>';
   }
