@@ -13,6 +13,18 @@
       "impact": ["public/**", "styles/tailwind-input.css", "tailwind.config.js"]
     },
     {
+      "id": "theme.swatches",
+      "name": "Header theme swatches render with all five color themes",
+      "path": "/",
+      "expectSelector": "#theme-swatches button[data-theme-swatch='midnight']"
+    },
+    {
+      "id": "theme.profile-swatches",
+      "name": "Profile page renders the mobile color theme row",
+      "path": "/#/profile",
+      "expectSelector": "[data-theme-swatch='ocean']"
+    },
+    {
       "id": "home.grid-new-cards",
       "name": "Recommended grid renders the Smart Home Hub and Vertical Mouse cards",
       "path": "/",

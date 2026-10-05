@@ -34,12 +34,13 @@
 
   /* Home section panels: a white card on the layered page background, 16px
    * radius, hairline border, soft layered shadow. `.panel-flash` swaps in
-   * the Flash Sale's peach-to-white tint. */
+   * the Flash Sale's subtle tint (--flash-tint-rgb, per theme). */
   .panel {
     @apply rounded-2xl border border-line bg-white shadow-panel;
   }
   .panel-flash {
-    @apply rounded-2xl border border-line bg-white shadow-panel bg-gradient-to-b from-sale-50 to-white;
+    @apply rounded-2xl border border-line bg-white shadow-panel;
+    background-image: linear-gradient(180deg, rgb(var(--flash-tint-rgb) / 1), rgb(var(--flash-tint-rgb) / 0));
   }
 
   /* Panel header row: accent bar or icon chip aligned with the title. */
@@ -50,10 +51,10 @@
     @apply inline-block h-[18px] w-1 shrink-0 rounded-full bg-brand-600;
   }
 
-  /* Layered Home canvas: a lavender glow at the very top that scrolls away
-   * with the banner carousel, over the #F5F6FA page base on <body>. */
+  /* Layered Home canvas: a theme-colored glow at the very top that scrolls
+   * away with the banner carousel, over the --page-rgb page base on <body>. */
   .home-canvas {
-    background-image: linear-gradient(180deg, #f3eefc 0%, rgba(243, 238, 252, 0) 360px);
+    background-image: linear-gradient(180deg, rgb(var(--canvas-from-rgb) / 1) 0%, rgb(var(--canvas-from-rgb) / 0) 360px);
     background-repeat: no-repeat;
   }
 
@@ -156,6 +157,25 @@
     @apply text-rose-500;
   }
 
+  /* Round color-theme swatches (the header switcher on desktop, the Profile
+   * "Color theme" row on mobile). The active swatch gets a double ring whose
+   * inner gap matches the surface behind it; edge/gap colors are theme vars
+   * so the ring stays visible on light and dark headers alike. */
+  .theme-swatch {
+    @apply relative h-6 w-6 shrink-0 rounded-full transition-shadow duration-200;
+    box-shadow: inset 0 0 0 1px var(--swatch-edge);
+  }
+  .theme-swatch[aria-checked='true'] {
+    box-shadow: inset 0 0 0 1px var(--swatch-edge),
+      0 0 0 2px rgb(var(--swatch-gap-rgb) / 1),
+      0 0 0 4px rgb(var(--accent-500-rgb) / 1);
+  }
+  .theme-swatch-purple { background-image: linear-gradient(135deg, #8b5cf6, #ede9fe); }
+  .theme-swatch-ocean { background-image: linear-gradient(135deg, #0ea5e9, #99f6e4); }
+  .theme-swatch-sunset { background-image: linear-gradient(135deg, #f97316, #fbcfe8); }
+  .theme-swatch-mint { background-image: linear-gradient(135deg, #16a34a, #d9f99d); }
+  .theme-swatch-midnight { background-image: linear-gradient(135deg, #0f172a, #a78bfa); }
+
   /* Filter pill for the Orders status tabs (All / To Pay / ...). */
   .tab-pill {
     @apply inline-flex h-9 shrink-0 items-center justify-center gap-1 whitespace-nowrap rounded-full border border-zinc-200 bg-white px-4 text-sm font-semibold text-zinc-600 transition-colors hover:bg-zinc-50;
@@ -215,5 +235,231 @@
   }
   .no-scrollbar::-webkit-scrollbar {
     display: none;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+ * Color themes (Purple Dream, Ocean Breeze, Sunset Glow, Fresh Mint,
+ * Midnight) — the one shared place.
+ *
+ * Every theme only swaps CSS variables on <html>: the tailwind.config.js
+ * `brand`, `page` and `line` ramps read the --accent-*-rgb / --page-rgb /
+ * --line-rgb triplets, and .home-canvas / .panel-flash / .theme-swatch read
+ * the rest, so all pages restyle together with no duplicated styling.
+ *
+ * :root is Purple Dream — exactly the colors the app shipped with, so the
+ * default rendering is pixel-identical. Accents are stored as RGB triplets
+ * so Tailwind's <alpha-value> (slash-opacity) variants keep working. Each
+ * theme keeps the codebase's two-shade pattern: 500 is the vivid identity
+ * accent (bars, dots, rings, gradient start), 600 the darkened AA-safe
+ * shade for white-on-color button fills (same rationale as sale-600).
+ * Sale/countdown red-orange, amber ratings and the category-tile pastels
+ * stay literal in every theme by design.
+ * ------------------------------------------------------------------------- */
+:root {
+  --page-rgb: 245 246 250; /* #F5F6FA */
+  --canvas-from-rgb: 243 238 252; /* top glow behind the banners, #F3EEFC */
+  --flash-tint-rgb: 255 241 240; /* Flash Sale tint, #FFF1F0 */
+  --line-rgb: 236 237 243; /* #ECEDF3 */
+  --swatch-edge: rgba(24, 24, 27, 0.12);
+  --swatch-gap-rgb: 255 255 255;
+  --accent-50-rgb: 245 243 255; /* #F5F3FF */
+  --accent-100-rgb: 237 233 254; /* #EDE9FE */
+  --accent-200-rgb: 221 214 254; /* #DDD6FE */
+  --accent-300-rgb: 196 181 253; /* #C4B5FD */
+  --accent-400-rgb: 167 139 250; /* #A78BFA */
+  --accent-500-rgb: 139 92 246; /* #8B5CF6 */
+  --accent-600-rgb: 124 58 237; /* #7C3AED */
+  --accent-700-rgb: 109 40 217; /* #6D28D9 */
+  --accent-800-rgb: 91 33 182; /* #5B21B6 */
+  --accent-900-rgb: 76 29 149; /* #4C1D95 */
+}
+
+/* Ocean Breeze: base #F0F9FF, sky-to-teal glow, sky-blue accent #0EA5E9.
+ * 600 is darkened to sky-700 so white button text clears AA (~6:1). */
+html[data-theme='ocean'] {
+  --page-rgb: 240 249 255; /* #F0F9FF */
+  --canvas-from-rgb: 219 234 254; /* #DBEAFE */
+  --flash-tint-rgb: 224 242 254; /* #E0F2FE */
+  --line-rgb: 223 236 247; /* sky-tinted hairline */
+  --accent-50-rgb: 224 242 254; /* #E0F2FE */
+  --accent-100-rgb: 186 230 253; /* #BAE6FD */
+  --accent-200-rgb: 125 211 252; /* #7DD3FC */
+  --accent-300-rgb: 56 189 248; /* #38BDF8 */
+  --accent-400-rgb: 14 165 233; /* #0EA5E9 */
+  --accent-500-rgb: 14 165 233; /* #0EA5E9 */
+  --accent-600-rgb: 3 105 161; /* #0369A1 */
+  --accent-700-rgb: 7 89 133; /* #075985 */
+  --accent-800-rgb: 12 74 110; /* #0C4A6E */
+  --accent-900-rgb: 8 47 73; /* #082F49 */
+}
+
+/* Sunset Glow: base #FFF7ED, peach-to-pink glow, orange accent #F97316.
+ * 600 is darkened to orange-700 so white button text clears AA (~4.8:1). */
+html[data-theme='sunset'] {
+  --page-rgb: 255 247 237; /* #FFF7ED */
+  --canvas-from-rgb: 255 237 213; /* #FFEDD5 */
+  --flash-tint-rgb: 255 237 213; /* #FFEDD5 */
+  --line-rgb: 247 233 219; /* peach-tinted hairline */
+  --accent-50-rgb: 255 237 213; /* #FFEDD5 */
+  --accent-100-rgb: 254 215 170; /* #FED7AA */
+  --accent-200-rgb: 253 186 116; /* #FDBA74 */
+  --accent-300-rgb: 251 146 60; /* #FB923C */
+  --accent-400-rgb: 251 146 60; /* #FB923C */
+  --accent-500-rgb: 249 115 22; /* #F97316 */
+  --accent-600-rgb: 194 65 12; /* #C2410C */
+  --accent-700-rgb: 154 52 18; /* #9A3412 */
+  --accent-800-rgb: 124 45 18; /* #7C2D12 */
+  --accent-900-rgb: 67 20 7; /* #431407 */
+}
+
+/* Fresh Mint: base #F0FDF4, mint-to-lime glow, green accent #16A34A.
+ * 600 is darkened to green-700 so white button text clears AA (~4.7:1). */
+html[data-theme='mint'] {
+  --page-rgb: 240 253 244; /* #F0FDF4 */
+  --canvas-from-rgb: 220 252 231; /* #DCFCE7 */
+  --flash-tint-rgb: 220 252 231; /* #DCFCE7 */
+  --line-rgb: 226 241 231; /* mint-tinted hairline */
+  --accent-50-rgb: 220 252 231; /* #DCFCE7 */
+  --accent-100-rgb: 187 247 208; /* #BBF7D0 */
+  --accent-200-rgb: 134 239 172; /* #86EFAC */
+  --accent-300-rgb: 74 222 128; /* #4ADE80 */
+  --accent-400-rgb: 34 197 94; /* #22C55E */
+  --accent-500-rgb: 22 163 74; /* #16A34A */
+  --accent-600-rgb: 21 128 61; /* #15803D */
+  --accent-700-rgb: 22 101 52; /* #166534 */
+  --accent-800-rgb: 20 83 45; /* #14532D */
+  --accent-900-rgb: 5 46 22; /* #052E16 */
+}
+
+/* Midnight: dark base #0F172A, deep navy-to-indigo glow, light violet
+ * accent #A78BFA. Surfaces go to #1E293B and text flips light via the
+ * scoped override block below — the vars alone only cover the accent. */
+html[data-theme='midnight'] {
+  --page-rgb: 15 23 42; /* #0F172A */
+  --canvas-from-rgb: 30 27 75; /* #1E1B4B */
+  --flash-tint-rgb: 43 33 88; /* #2B2158 wash over the dark cards */
+  --line-rgb: 51 65 85; /* #334155 */
+  --swatch-edge: rgba(255, 255, 255, 0.28);
+  --swatch-gap-rgb: 15 23 42;
+  --accent-50-rgb: 43 33 88; /* #2B2158 dark violet chip tint */
+  --accent-100-rgb: 55 48 107; /* #37306B */
+  --accent-200-rgb: 76 61 153; /* #4C3D99 */
+  --accent-300-rgb: 109 91 196; /* #6D5BC4 */
+  --accent-400-rgb: 167 139 250; /* #A78BFA */
+  --accent-500-rgb: 139 92 246; /* #8B5CF6 */
+  --accent-600-rgb: 124 58 237; /* #7C3AED — white text ~5.9:1 */
+  --accent-700-rgb: 109 40 217; /* #6D28D9 — keeps the banner gradient dark */
+  --accent-800-rgb: 76 29 149; /* #4C1D95 */
+  --accent-900-rgb: 46 16 101; /* #2E1065 */
+}
+
+/* Midnight surface + text overrides. Scoped html[data-theme] selectors beat
+ * the single-class utilities, so all white/zinc surfaces the JS templates
+ * emit restyle here with no dark: variants sprinkled through the templates. */
+html[data-theme='midnight'] body { color: #e2e8f0; }
+html[data-theme='midnight'] .bg-white { background-color: #1e293b; }
+html[data-theme='midnight'] .bg-white\/90 { background-color: rgba(30, 41, 59, 0.95); }
+html[data-theme='midnight'] .bg-white\/95 { background-color: #1e293b; }
+html[data-theme='midnight'] .bg-zinc-50 { background-color: #1e2a44; }
+html[data-theme='midnight'] .bg-zinc-100 { background-color: #334155; }
+html[data-theme='midnight'] .bg-zinc-200 { background-color: #334155; }
+html[data-theme='midnight'] .bg-zinc-300 { background-color: #475569; }
+html[data-theme='midnight'] .bg-zinc-900 {
+  background-color: #1e293b; /* fallback toast: lift it off the dark page */
+  box-shadow: 0 0 0 1px #334155, 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+html[data-theme='midnight'] .hover\:bg-zinc-50:hover { background-color: #24334d; }
+html[data-theme='midnight'] .hover\:bg-zinc-100:hover { background-color: #334155; }
+html[data-theme='midnight'] .hover\:bg-zinc-200:hover { background-color: #475569; }
+html[data-theme='midnight'] .text-zinc-900 { color: #e2e8f0; }
+html[data-theme='midnight'] .text-zinc-800 { color: #cbd5e1; }
+html[data-theme='midnight'] .text-zinc-700 { color: #b6c2d4; }
+html[data-theme='midnight'] .text-zinc-600 { color: #94a3b8; }
+html[data-theme='midnight'] .text-zinc-500 { color: #94a3b8; }
+html[data-theme='midnight'] .text-zinc-400 { color: #64748b; }
+html[data-theme='midnight'] .text-zinc-300 { color: #475569; }
+html[data-theme='midnight'] .text-zinc-200 { color: #475569; }
+html[data-theme='midnight'] .hover\:text-zinc-900:hover { color: #e2e8f0; }
+html[data-theme='midnight'] .hover\:text-zinc-600:hover { color: #94a3b8; }
+html[data-theme='midnight'] .placeholder\:text-zinc-400::placeholder { color: #64748b; }
+html[data-theme='midnight'] .border-zinc-100 { border-color: #334155; }
+html[data-theme='midnight'] .border-zinc-200 { border-color: #334155; }
+html[data-theme='midnight'] .divide-zinc-100 > :not([hidden]) ~ :not([hidden]) { border-color: #334155; }
+/* Accent text pairs: 600 (#7C3AED) is too dark as text on the dark cards,
+ * so text/icon accents lift to #A78BFA while bg-brand-600 button fills keep
+ * their AA-safe white-on-#7C3AED. 700 flips light for text on the dark
+ * violet soft chips (bg-brand-50 -> #2B2158). */
+html[data-theme='midnight'] .text-brand-600 { color: #a78bfa; }
+html[data-theme='midnight'] .nav-item-active { color: #a78bfa; }
+html[data-theme='midnight'] .text-brand-700,
+html[data-theme='midnight'] .hover\:text-brand-700:hover,
+html[data-theme='midnight'] .btn-secondary,
+html[data-theme='midnight'] .btn-ghost,
+html[data-theme='midnight'] .badge-brand,
+html[data-theme='midnight'] .nav-link-active { color: #c4b5fd; }
+/* Shadows: the light-theme purple-cast shadows vanish on dark. */
+html[data-theme='midnight'] #app-header { box-shadow: 0 1px 0 #334155, 0 4px 12px rgba(0, 0, 0, 0.45); }
+html[data-theme='midnight'] .panel { box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.35); }
+html[data-theme='midnight'] :focus-visible { --tw-ring-offset-color: #0f172a; }
+
+/* Theme switch transition: a 300ms cross-fade on the properties the themes
+ * actually change, scoped to the surfaces involved (never a blanket * rule).
+ * Still for reduced-motion users, like every other motion in this app. */
+body,
+#app-header,
+#bottom-nav,
+.home-canvas,
+.panel,
+.panel-flash,
+.card,
+.btn-primary,
+.btn-secondary,
+.btn-outline,
+.btn-ghost,
+.add-btn,
+.nav-link,
+.nav-item,
+.nav-item-active,
+.icon-btn,
+.input,
+.field,
+.chip,
+.badge-soft,
+.badge-brand,
+.tab-pill,
+.menu-row,
+.accent-bar,
+.theme-swatch {
+  transition: background-color 300ms ease, color 300ms ease,
+    border-color 300ms ease, box-shadow 300ms ease;
+}
+@media (prefers-reduced-motion: reduce) {
+  body,
+  #app-header,
+  #bottom-nav,
+  .home-canvas,
+  .panel,
+  .panel-flash,
+  .card,
+  .btn-primary,
+  .btn-secondary,
+  .btn-outline,
+  .btn-ghost,
+  .add-btn,
+  .nav-link,
+  .nav-item,
+  .nav-item-active,
+  .icon-btn,
+  .input,
+  .field,
+  .chip,
+  .badge-soft,
+  .badge-brand,
+  .tab-pill,
+  .menu-row,
+  .accent-bar,
+  .theme-swatch {
+    transition-duration: 0ms;
   }
 }

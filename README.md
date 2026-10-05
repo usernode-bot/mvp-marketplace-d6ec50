@@ -9,10 +9,15 @@ Advanced Features → Production.
 ## Phase 1 — scope
 
 - **Design system**: typography scale, buttons, cards, badges, inputs,
-  spacing/radii/shadows and a single brand accent (`brand`, violet) with
-  rose reserved for sale urgency and amber for ratings. Tokens live in
+  spacing/radii/shadows and a single brand accent (`brand`) with rose
+  reserved for sale urgency and amber for ratings. Tokens live in
   `tailwind.config.js`; reusable component classes in
   `styles/tailwind-input.css`.
+- **Color themes**: five switchable background themes (Purple Dream by
+  default, plus Ocean Breeze, Sunset Glow, Fresh Mint and the dark
+  Midnight), driven by CSS variables in `styles/tailwind-input.css` and
+  switched from the header swatches (desktop) or the Profile page (mobile);
+  the choice persists on the device under the `bazario:` prefix.
 - **App shell**: sticky header (logo, search, notification + cart), mobile
   bottom navigation (Home, Categories, Cart, Orders, Profile) and a desktop
   top navigation on wider screens.
