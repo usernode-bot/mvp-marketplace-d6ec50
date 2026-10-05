@@ -31,9 +31,14 @@ module.exports = {
   theme: {
     extend: {
       // Design-system tokens. `brand` is the app's single accent (a violet
-      // ramp, deliberately not any existing marketplace's color). Semantic
-      // colors (rose for sale urgency, amber for ratings) use Tailwind's
-      // defaults; spacing and radii use the default 4px scale.
+      // ramp, deliberately not any existing marketplace's color). `sale` is
+      // the warm orange/red reserved for sale, discount and countdown
+      // elements: 500 (#FF4D2E) is the pure accent for bars, fills, borders
+      // and icons; 600 (#C7360F) is the darkened AA-safe shade for small
+      // white-on-color text (raw 500 under white is ~3.3:1, below the 4.5:1
+      // small-text threshold); 50 (#FFF1F0) doubles as the Flash Sale tint.
+      // `page` is the layered page base, `line` the panel hairline. Amber
+      // stays the ratings color; spacing and radii use the default 4px scale.
       colors: {
         brand: {
           50: '#F5F3FF',
@@ -47,10 +52,21 @@ module.exports = {
           800: '#5B21B6',
           900: '#4C1D95',
         },
+        sale: {
+          50: '#FFF1F0',
+          500: '#FF4D2E',
+          600: '#C7360F',
+        },
+        page: '#F5F6FA',
+        line: '#ECEDF3',
       },
       boxShadow: {
         card: '0 1px 2px rgba(24, 24, 27, 0.06), 0 1px 3px rgba(24, 24, 27, 0.08)',
         'card-lg': '0 4px 12px rgba(24, 24, 27, 0.08), 0 2px 4px rgba(24, 24, 27, 0.06)',
+        // Home section panels: soft layered shadow with a faint purple cast.
+        panel: '0 1px 2px rgba(24, 24, 27, 0.04), 0 8px 24px rgba(76, 29, 149, 0.06)',
+        // Sticky header: hairline plus a soft drop so panels slide under it.
+        header: '0 1px 0 #ECEDF3, 0 4px 12px rgba(24, 24, 27, 0.06)',
       },
     },
   },

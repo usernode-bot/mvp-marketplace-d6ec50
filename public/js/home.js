@@ -75,7 +75,7 @@ const APP_SHORTCUTS = [
 function appShortcutTile(app) {
   const nav = app.current ? ' data-nav="home"' : ' data-app-shortcut="' + app.name + '"';
   return '<button type="button"' + nav
-    + ' class="flex flex-col items-center gap-1.5 rounded-xl px-1 py-2 transition-colors hover:bg-zinc-100">'
+    + ' class="flex flex-col items-center gap-1.5 rounded-xl px-1 py-2 transition duration-200 hover:-translate-y-0.5 hover:bg-zinc-100 hover:shadow-card-lg motion-reduce:transition-none motion-reduce:hover:translate-y-0">'
     + '<span class="flex h-10 w-10 items-center justify-center rounded-[10px] bg-brand-600 text-white">'
     + icon(app.icon, 'h-5 w-5') + '</span>'
     + '<span class="w-full text-center text-xs font-medium leading-tight text-zinc-600">' + app.name + '</span>'
