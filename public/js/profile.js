@@ -17,6 +17,7 @@ import { swatchButtons } from './theme.js';
 import { countOrders } from './orders.js';
 import { renderAddressesView } from './addresses.js';
 import { renderSettingsView } from './settings.js';
+import { renderPaymentView } from './payment.js';
 
 /* ------------------------------------------------------------------ */
 /* Demo seeding for staging previews and proposal checks (?demo=1)      */
@@ -27,8 +28,9 @@ const DEMO_FLAG = 'bazario:demo-account-seeded';
 /* ?demo=1 seeds a representative account once per browser: a few wishlist
  * favorites and two saved addresses. Only fills empty state, so the plain
  * routes stay honest (a fresh browser sees the real empty states). */
-function seedDemoAccount() {
-  if (new URLSearchParams(window.location.search).get('demo') !== '1') return;
+export function seedDemoAccount() {
+  const demo = new URLSearchParams(window.location.search).get('demo');
+  if (demo !== '1' && demo !== 'checkout') return;
   try {
     if (localStorage.getItem(DEMO_FLAG)) return;
     ['p02', 'p11', 'p15', 'p26'].forEach((id) => {
@@ -44,6 +46,15 @@ function seedDemoAccount() {
         name: 'Sam Taylor', phone: '+1 555 0198',
         line1: '8 Cedar Lane', city: 'Austin, TX', zip: '78701',
       });
+    }
+    // A few linked payment methods, including the default, so the
+    // populated Payment methods page is reachable from a URL. Only fills
+    // an empty list, so the plain route keeps its real empty state.
+    if (!store.payments.length) {
+      store.linkPaymentDetails('bca', { account: '1234567890', holder: 'Alex Rivera' });
+      store.linkPaymentDetails('gopay', { phone: '+62 812 3456 7890' });
+      store.linkPaymentDetails('card', { holder: 'Alex Rivera', masked: '•••• 4242' });
+      store.setDefaultPayment('bca');
     }
     localStorage.setItem(DEMO_FLAG, '1');
   } catch {
@@ -199,23 +210,6 @@ function renderCoupons() {
 }
 
 /* ------------------------------------------------------------------ */
-/* Payment methods                                                     */
-/* ------------------------------------------------------------------ */
-
-function renderPayment() {
-  const view = document.getElementById('view-profile');
-  view.innerHTML =
-    pageHeader('Payment methods', 'profile')
-    + '<div class="card mt-4">'
-    + emptyState({
-      icon: 'creditCard',
-      title: 'No payment methods yet',
-      body: 'Cards and wallets arrive with checkout in a later phase. Cash on delivery is planned too.',
-    })
-    + '</div>';
-}
-
-/* ------------------------------------------------------------------ */
 /* Notifications                                                       */
 /* ------------------------------------------------------------------ */
 
@@ -243,7 +237,7 @@ const HELP_ENTRIES = [
   ['How long does delivery take?', 'Standard delivery takes 3-5 business days. Express arrives in 1-2 business days.'],
   ['Can I cancel an order?', 'Yes, while it is To Pay or To Ship. Open the order and tap Cancel Order.'],
   ['How do returns work?', 'Returns arrive in a later phase. Use Contact Seller on the order for help meanwhile.'],
-  ['Which payment methods can I use?', 'Cards and wallets arrive with checkout in a later phase.'],
+  ['Which payment methods can I use?', 'Bank transfer and virtual accounts, e-wallets, cards, QRIS and cash on delivery. Manage them under Profile > Payment methods.'],
 ];
 
 function renderHelp() {
@@ -273,7 +267,7 @@ export function renderProfileView() {
   if (sub === 'addresses') return renderAddressesView();
   if (sub === 'settings' || sub === 'edit') return renderSettingsView();
   if (sub === 'coupons') return renderCoupons();
-  if (sub === 'payment') return renderPayment();
+  if (sub === 'payment') return renderPaymentView();
   if (sub === 'notifications') return renderNotifications();
   if (sub === 'help') return renderHelp();
   return renderProfileHome();
