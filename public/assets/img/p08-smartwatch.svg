@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400">
+<defs>
+<linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#EEF2FF"/><stop offset="1" stop-color="#C7D2FE"/></linearGradient>
+<linearGradient id="strap" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#3C414D"/><stop offset=".5" stop-color="#262A33"/><stop offset="1" stop-color="#3C414D"/></linearGradient>
+<linearGradient id="frame" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3C414D"/><stop offset="1" stop-color="#14161B"/></linearGradient>
+</defs>
+<rect width="400" height="400" fill="url(#bg)"/>
+<circle cx="330" cy="64" r="88" fill="#ffffff" opacity=".38"/>
+<circle cx="56" cy="352" r="56" fill="#ffffff" opacity=".28"/>
+<ellipse cx="200" cy="348" rx="92" ry="13" fill="#1F2937" opacity=".1"/>
+<rect x="177" y="62" width="46" height="82" rx="13" fill="url(#strap)"/>
+<rect x="177" y="256" width="46" height="84" rx="13" fill="url(#strap)"/>
+<path d="M185 78 L215 78 M185 94 L215 94 M185 110 L215 110 M185 288 L215 288 M185 304 L215 304 M185 320 L215 320" stroke="#14161B" stroke-width="3" opacity=".5" stroke-linecap="round"/>
+<rect x="146" y="124" width="108" height="152" rx="34" fill="url(#frame)"/>
+<rect x="154" y="132" width="92" height="136" rx="27" fill="#0B0D12"/>
+<circle cx="200" cy="198" r="27" fill="none" stroke="#262A33" stroke-width="7"/>
+<path d="M200 171 A27 27 0 1 1 175 211" fill="none" stroke="#7C3AED" stroke-width="7" stroke-linecap="round"/>
+<path d="M195.4 197.2c-2-2.2-5.4-2-7 .4-1.2 1.8-.9 4.1.6 5.7l6.4 6.5 6.4-6.5c1.5-1.6 1.8-3.9.6-5.7-1.6-2.4-5-2.6-7-.4z" fill="#F43F5E"/>
+</svg>

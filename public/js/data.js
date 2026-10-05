@@ -3,6 +3,10 @@
  * touching the rendering code (same shape: { id, name, cat, price, orig,
  * rating, reviews, sold, art, flash, pct }).
  *
+ * Optional `image` (site-root-relative path under /assets/img/) layers a
+ * detailed product illustration over the generated art on product cards;
+ * products without one keep the generated SVG art (icons.js).
+ *
  * Phase 2 additions: subcategories, brands, sellers, product descriptions,
  * specifications, color/size variants, gallery image views, customer
  * reviews and browse helpers (search matching, shipping).
@@ -160,12 +164,14 @@ export const PRODUCTS = [
   // Electronics
   {
     id: 'p01', name: 'Aurex Over-Ear Wireless Headphones', cat: 'electronics', sub: 'audio', brand: 'Aurex', art: 'headphones',
+    image: '/assets/img/p01-headphones.svg',
     price: 5999, orig: 8999, rating: 4.7, reviews: 2314, sold: 8231, flash: true, pct: 78, age: 34,
     colors: col('black', 'silver', 'violet'), kw: 'headphones audio bluetooth anc music wireless headset',
     desc: 'Studio-grade over-ear headphones with hybrid active noise cancelling, plush memory-foam cups and a 40-hour battery that charges over USB-C in under two hours.',
   },
   {
     id: 'p02', name: 'Novo X4 Pro Smartphone, 128GB', cat: 'electronics', sub: 'phones', brand: 'Novo', art: 'smartphone',
+    image: '/assets/img/p02-smartphone.svg',
     price: 24999, orig: 29999, rating: 4.6, reviews: 1877, sold: 5102, flash: true, pct: 64, age: 12,
     colors: col('black', 'blue', 'silver'), kw: 'phone smartphone 5g mobile android unlocked 128gb',
     desc: 'A 120 Hz AMOLED flagship killer with a 50 MP triple camera, 5000 mAh battery and 65 W fast charging. Dual SIM, unlocked for every carrier.',
@@ -184,12 +190,14 @@ export const PRODUCTS = [
   },
   {
     id: 'p05', name: 'Pikol Mini Bluetooth Speaker', cat: 'electronics', sub: 'audio', brand: 'Pikol', art: 'speaker',
+    image: '/assets/img/p05-speaker.svg',
     price: 2999, orig: 4499, rating: 4.8, reviews: 3201, sold: 9877, flash: true, pct: 85, age: 21,
     colors: col('blue', 'teal', 'red'), kw: 'speaker bluetooth portable music mini shower',
     desc: 'A pocket speaker with a surprising low end, IPX7 waterproofing for pool days and 18 hours of playtime per charge.',
   },
   {
     id: 'p06', name: 'Aurex Wireless Earbuds Pro', cat: 'electronics', sub: 'audio', brand: 'Aurex', art: 'headphones',
+    image: '/assets/img/p06-earbuds.svg',
     price: 4499, orig: 6999, rating: 4.6, reviews: 2870, sold: 11320, flash: true, pct: 91, age: 8,
     colors: col('white', 'black'), kw: 'earbuds tws bluetooth wireless earbuds airpods buds',
     desc: 'True wireless earbuds with adaptive noise cancelling, six hours per charge and a slim case that adds three more top-ups. Instant pairing on both platforms.',
@@ -202,6 +210,7 @@ export const PRODUCTS = [
   },
   {
     id: 'p08', name: 'Strida Smart Watch Fit', cat: 'electronics', sub: 'wearables', brand: 'Strida', art: 'watch',
+    image: '/assets/img/p08-smartwatch.svg',
     price: 4999, orig: 7999, rating: 4.5, reviews: 1420, sold: 4530, flash: true, pct: 55, age: 15,
     colors: col('black', 'pink', 'blue'), kw: 'smartwatch fitness tracker watch heart rate sleep',
     desc: 'A 1.4" AMOLED smartwatch with heart-rate and SpO2 tracking, 100+ workout modes and a 10-day battery. Swim-proof to 5 ATM.',
@@ -222,6 +231,7 @@ export const PRODUCTS = [
   // Fashion
   {
     id: 'p09', name: 'Vantia Oversized Cotton Tee', cat: 'fashion', sub: 'tops', brand: 'Vantia', art: 'shirt',
+    image: '/assets/img/p09-tee.svg',
     price: 1499, orig: 2299, rating: 4.6, reviews: 2103, sold: 7655, flash: true, pct: 67, age: 29,
     colors: col('white', 'black', 'beige'), sizes: APPAREL_SIZES, kw: 'tshirt tee cotton top oversized unisex',
     desc: 'A heavyweight 240 gsm combed-cotton tee with a true oversized cut, dropped shoulders and a neckline that keeps its shape wash after wash.',
@@ -252,6 +262,7 @@ export const PRODUCTS = [
   },
   {
     id: 'p36', name: 'Vantia Linen Summer Dress', cat: 'fashion', sub: 'dresses', brand: 'Vantia', art: 'shirt',
+    image: '/assets/img/p36-dress.svg',
     price: 4599, orig: 6299, rating: 4.7, reviews: 830, sold: 2640, flash: true, pct: 61, age: 16,
     colors: col('beige', 'pink', 'navy'), sizes: APPAREL_SIZES, kw: 'dress linen summer sundress midi',
     desc: 'A breathable washed-linen midi with adjustable shoulder ties and side pockets. Cut for airflow, made to wrinkle gracefully.',
@@ -266,6 +277,7 @@ export const PRODUCTS = [
   // Beauty
   {
     id: 'p14', name: 'Klarita Vitamin C Glow Serum', cat: 'beauty', sub: 'skincare', brand: 'Klarita', art: 'droplet',
+    image: '/assets/img/p14-serum.svg',
     price: 2199, orig: 3299, rating: 4.8, reviews: 3120, sold: 12040, flash: true, pct: 88, age: 19,
     kw: 'serum vitamin c skincare glow face brightening skincare set',
     desc: 'A 15% vitamin C serum with ferulic acid and hyaluronic acid. Lightweight, non-sticky, and stable in an airless pump so the last drop is as potent as the first.',
@@ -298,6 +310,7 @@ export const PRODUCTS = [
   // Home
   {
     id: 'p18', name: 'Vantia Cloud Armchair', cat: 'home', sub: 'furniture', brand: 'Vantia', art: 'armchair',
+    image: '/assets/img/p18-armchair.svg',
     price: 19999, orig: 25999, rating: 4.6, reviews: 421, sold: 980, flash: true, pct: 42, age: 95,
     colors: col('beige', 'green', 'navy'), kw: 'armchair chair lounge furniture reading accent',
     desc: 'A deep-seated lounge chair with a feather-wrapped foam cushion and solid-oak legs. Upholstered in a soft weave that stands up to daily use.',
@@ -330,6 +343,7 @@ export const PRODUCTS = [
   // Sports
   {
     id: 'p22', name: 'Strida Adjustable Dumbbell Set', cat: 'sports', sub: 'fitness', brand: 'Strida', art: 'dumbbell',
+    image: '/assets/img/p22-dumbbells.svg',
     price: 7999, orig: 9999, rating: 4.7, reviews: 940, sold: 2100, flash: true, pct: 59, age: 44,
     colors: col('black'), kw: 'dumbbell weights gym fitness set adjustable home',
     desc: 'Two adjustable dumbbells, 2.5-24 kg each, with a twist-lock collar and a compact cradle that replaces a whole rack.',
@@ -360,6 +374,7 @@ export const PRODUCTS = [
   },
   {
     id: 'p42', name: 'Strida Trail Runner Shoes', cat: 'sports', sub: 'outdoor', brand: 'Strida', art: 'shoe',
+    image: '/assets/img/p42-trail-shoes.svg',
     price: 5499, orig: 7999, rating: 4.6, reviews: 1610, sold: 5210, flash: true, pct: 51, age: 7,
     colors: col('black', 'red'), sizes: SHOE_SIZES, kw: 'running shoes sneakers trail sport trainers',
     desc: 'A cushioned trail runner with a rock plate, 4 mm lugs for loose gravel, and a mesh upper that drains after stream crossings.',
@@ -368,6 +383,7 @@ export const PRODUCTS = [
   // Groceries
   {
     id: 'p26', name: 'Mendo Arabica Coffee Beans 1kg', cat: 'groceries', sub: 'pantry', brand: 'Mendo', art: 'coffee',
+    image: '/assets/img/p26-coffee.svg',
     price: 1499, orig: 1899, rating: 4.8, reviews: 4210, sold: 15330, flash: true, pct: 93, age: 18,
     sizes: ['250g', '500g', '1kg'], kw: 'coffee beans arabica espresso 1kg roast whole bean',
     desc: 'Single-origin Colombian arabica, medium roasted in small batches for chocolate-and-caramel notes. Rested 5 days before shipping, whole bean.',
@@ -400,6 +416,7 @@ export const PRODUCTS = [
   // Accessories
   {
     id: 'p30', name: 'Strida Minimal Steel Watch', cat: 'accessories', sub: 'watches', brand: 'Strida', art: 'watch',
+    image: '/assets/img/p30-steel-watch.svg',
     price: 5999, orig: 8999, rating: 4.6, reviews: 1105, sold: 3340, flash: true, pct: 48, age: 38,
     colors: col('silver', 'black'), kw: 'watch steel minimal analog quartz bracelet',
     desc: 'A 38 mm brushed-steel case on a mesh bracelet, with a sapphire-coated crystal and a slim Swiss quartz movement. Quick-release strap pins.',

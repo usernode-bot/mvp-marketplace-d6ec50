@@ -107,6 +107,11 @@ export function toast(message) {
  * swaps the plain sold count for a sold-progress bar. Tapping anywhere on the
  * card (except the favorite/add buttons) opens the product detail page; sold
  * out items show a badge and a disabled add button.
+ *
+ * Products with an `image` path layer it over the generated art: object-contain
+ * keeps the whole illustration visible, and if the file ever fails to load the
+ * <img> hides itself, revealing the generated artwork underneath (no
+ * broken-image icon, no extra fetch).
  * ------------------------------------------------------------------------- */
 export function productCard(p, opts = {}) {
   const disc = discountPct(p);
@@ -118,9 +123,13 @@ export function productCard(p, opts = {}) {
       + '<div class="mt-1 text-[11px] font-medium text-zinc-500">' + fmtCount(p.sold) + ' sold</div></div>'
     : '<span class="text-xs text-zinc-500">' + fmtCount(p.sold) + ' sold</span>';
 
+  const image = p.image
+    ? '<img src="' + esc(p.image) + '" alt="' + esc(p.name) + '" loading="lazy" decoding="async" class="absolute inset-0 h-full w-full object-contain" onerror="this.style.display=\'none\'">'
+    : '';
+
   return '<article class="card product-card group flex cursor-pointer flex-col overflow-hidden" data-product="' + p.id + '">'
     + '<div class="relative aspect-square overflow-hidden rounded-t-xl">'
-    + '<div class="h-full w-full transition-transform duration-300 group-hover:scale-[1.03]">' + productArt(p) + '</div>'
+    + '<div class="h-full w-full transition-transform duration-300 group-hover:scale-[1.03]">' + productArt(p) + image + '</div>'
     + (disc ? '<span class="badge-sale absolute left-2 top-2">-' + disc + '%</span>' : '')
     + (p.oos ? '<span class="badge absolute bottom-2 left-2 bg-zinc-900/80 text-white">Sold out</span>' : '')
     + '<button type="button" data-fav="' + p.id + '" aria-label="Toggle favorite" aria-pressed="' + fav

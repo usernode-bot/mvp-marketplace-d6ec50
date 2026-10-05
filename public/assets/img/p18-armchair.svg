@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400">
+<defs>
+<linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#F0FDFA"/><stop offset="1" stop-color="#99F6E4"/></linearGradient>
+<linearGradient id="fab" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#DCCBA4"/><stop offset="1" stop-color="#BC9E6E"/></linearGradient>
+<linearGradient id="seat" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#E6D7B6"/><stop offset="1" stop-color="#C8AD7D"/></linearGradient>
+</defs>
+<rect width="400" height="400" fill="url(#bg)"/>
+<circle cx="330" cy="64" r="88" fill="#ffffff" opacity=".4"/>
+<circle cx="56" cy="352" r="56" fill="#ffffff" opacity=".3"/>
+<ellipse cx="200" cy="340" rx="118" ry="14" fill="#134E4A" opacity=".1"/>
+<path d="M136 292 L124 330 M264 292 L276 330 M166 296 L162 326 M234 296 L238 326" stroke="#A16207" stroke-width="10" stroke-linecap="round"/>
+<rect x="114" y="122" width="172" height="108" rx="34" fill="url(#fab)"/>
+<path d="M132 138 Q200 124 268 138" stroke="#A8874F" stroke-width="3" fill="none" opacity=".5"/>
+<rect x="86" y="180" width="48" height="102" rx="23" fill="url(#fab)"/>
+<rect x="266" y="180" width="48" height="102" rx="23" fill="url(#fab)"/>
+<rect x="102" y="214" width="196" height="62" rx="26" fill="url(#seat)"/>
+<path d="M116 226 Q200 214 284 226" stroke="#A8874F" stroke-width="3" fill="none" opacity=".5"/>
+<rect x="108" y="266" width="184" height="26" rx="12" fill="#B3945F"/>
+</svg>

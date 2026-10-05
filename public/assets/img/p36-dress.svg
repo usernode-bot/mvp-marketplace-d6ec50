@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400">
+<defs>
+<linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFF1F2"/><stop offset="1" stop-color="#FECDD3"/></linearGradient>
+<linearGradient id="linen" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#EDDFC2"/><stop offset="1" stop-color="#D2BC94"/></linearGradient>
+</defs>
+<rect width="400" height="400" fill="url(#bg)"/>
+<circle cx="330" cy="64" r="88" fill="#ffffff" opacity=".4"/>
+<circle cx="56" cy="352" r="56" fill="#ffffff" opacity=".3"/>
+<ellipse cx="200" cy="348" rx="104" ry="14" fill="#7F1D1D" opacity=".08"/>
+<path d="M176 132 L168 98 M224 132 L232 98" stroke="#C9B08A" stroke-width="5" stroke-linecap="round"/>
+<path d="M172 132 L228 132 L241 210 L266 322 Q200 340 134 322 L159 210 Z" fill="url(#linen)"/>
+<path d="M186 132 Q200 150 214 132" fill="none" stroke="#C9B08A" stroke-width="4"/>
+<path d="M161 210 Q200 222 239 210" fill="none" stroke="#C9B08A" stroke-width="3" opacity=".85"/>
+<path d="M178 224 C172 258 166 292 158 318 M200 228 L200 330 M222 224 C228 258 234 292 242 318" stroke="#C2A87C" stroke-width="3" fill="none" opacity=".45"/>
+<path d="M134 322 Q200 340 266 322" stroke="#C2A87C" stroke-width="3" fill="none" opacity=".6"/>
+</svg>

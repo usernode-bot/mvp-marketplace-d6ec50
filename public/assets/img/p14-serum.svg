@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400">
+<defs>
+<linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FAF5FF"/><stop offset="1" stop-color="#E9D5FF"/></linearGradient>
+<linearGradient id="amber" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#D89B3E"/><stop offset=".5" stop-color="#B87A22"/><stop offset="1" stop-color="#8F5A14"/></linearGradient>
+<linearGradient id="cap" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3C414D"/><stop offset="1" stop-color="#17191F"/></linearGradient>
+</defs>
+<rect width="400" height="400" fill="url(#bg)"/>
+<circle cx="330" cy="64" r="88" fill="#ffffff" opacity=".4"/>
+<circle cx="56" cy="352" r="56" fill="#ffffff" opacity=".3"/>
+<ellipse cx="200" cy="326" rx="86" ry="13" fill="#3B0764" opacity=".1"/>
+<ellipse cx="200" cy="108" rx="23" ry="17" fill="#3C414D"/>
+<rect x="186" y="118" width="28" height="12" fill="#23262E"/>
+<rect x="178" y="128" width="44" height="42" rx="9" fill="url(#cap)"/>
+<path d="M188 132 L188 166 M200 132 L200 166 M212 132 L212 166" stroke="#0F1115" stroke-width="2.5" opacity=".7"/>
+<rect x="164" y="168" width="72" height="146" rx="16" fill="url(#amber)"/>
+<rect x="172" y="178" width="9" height="112" rx="4.5" fill="#ffffff" opacity=".28"/>
+<rect x="172" y="210" width="56" height="72" rx="7" fill="#FDFBF6"/>
+<rect x="181" y="228" width="38" height="6" rx="3" fill="#9333EA" opacity=".75"/>
+<rect x="181" y="242" width="26" height="6" rx="3" fill="#D4D4D8"/>
+<rect x="181" y="256" width="32" height="6" rx="3" fill="#E4E4E7"/>
+<circle cx="200" cy="296" r="4" fill="#9333EA" opacity=".55"/>
+</svg>

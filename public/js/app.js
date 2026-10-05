@@ -48,7 +48,7 @@ function reopenSearchPanel(box, input) {
 }
 
 function handleClick(e) {
-  const target = e.target.closest('[data-fav], [data-add], [data-category], [data-nav], [data-route], [data-banner-action], [data-recent], [data-recent-remove], [data-recent-clear], [data-suggest], [data-search-suggest], [data-soon], [data-cart-plus], [data-cart-minus], [data-cart-remove], [data-cart-select], [data-cart-select-all], [data-cart-save], [data-saved-move], [data-saved-remove], [data-voucher-pick], [data-voucher-remove], [data-results-clear], [data-back], [data-app-shortcut]');
+  const target = e.target.closest('[data-fav], [data-add], [data-category], [data-nav], [data-route], [data-banner-action], [data-recent], [data-recent-remove], [data-recent-clear], [data-suggest], [data-search-suggest], [data-soon], [data-cart-plus], [data-cart-minus], [data-cart-remove], [data-cart-select], [data-cart-select-all], [data-cart-save], [data-saved-move], [data-saved-remove], [data-voucher-pick], [data-voucher-remove], [data-results-clear], [data-back], [data-app-shortcut], [data-product]');
   if (!target) return;
 
   const favId = target.getAttribute('data-fav');
@@ -231,6 +231,14 @@ function handleClick(e) {
     clearResults();
     goToHash('#/home');
     return;
+  }
+
+  // Product card tap-through: a press anywhere on a card that is not one of
+  // the buttons inside it (fav/add win, being nearer to the press) opens the
+  // product detail page. Last so the button branches above take precedence.
+  const productId = target.getAttribute('data-product');
+  if (productId) {
+    goToHash('#/product/' + productId);
   }
 }
 
