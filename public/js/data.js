@@ -231,6 +231,18 @@ export const PRODUCTS = [
     colors: col('black', 'silver'), kw: 'vertical mouse ergonomic wireless rechargeable wrist handshake silent',
     desc: 'A vertical ergonomic mouse that holds your wrist at a natural handshake angle, with a silent scroll wheel, six programmable buttons and weeks of battery per charge.',
   },
+  {
+    id: 'p46', name: 'Aurex Mechanical Keyboard, RGB Backlit', cat: 'electronics', sub: 'computing', brand: 'Aurex', art: 'keyboard',
+    price: 7999, orig: 9999, rating: 4.7, reviews: 1160, sold: 3980, flash: true, pct: 58, age: 11,
+    colors: col('black', 'silver'), kw: 'keyboard mechanical rgb backlit gaming hot swappable typing usb',
+    desc: 'A hot-swappable mechanical keyboard with gasket mounting, per-key RGB and a volume knob. Wired USB-C with a detachable cable for a clean desk.',
+  },
+  {
+    id: 'p47', name: 'Klarita Drone Camera, 4K GPS', cat: 'electronics', sub: 'cameras', brand: 'Klarita', art: 'drone',
+    price: 19999, orig: 25999, rating: 4.5, reviews: 380, sold: 940, flash: false, age: 20, oos: true,
+    colors: col('black'), kw: 'drone quadcopter camera 4k gps aerial foldable return home flying',
+    desc: 'A foldable GPS drone with a 3-axis gimbal 4K camera, 30-minute flights and automatic return-to-home. Beginner flight modes make the first takeoff easy.',
+  },
 
   // Fashion
   {
@@ -275,6 +287,24 @@ export const PRODUCTS = [
     colors: col('beige', 'navy', 'brown'), sizes: APPAREL_SIZES, kw: 'cardigan knit sweater wool button',
     desc: 'A mid-weight lambswool-blend cardigan with corozo buttons and ribbed cuffs. Warm enough for autumn, light enough for the office.',
   },
+  {
+    id: 'p48', name: 'Strida Fleece Hoodie, Pullover', cat: 'fashion', sub: 'tops', brand: 'Strida', art: 'shirt',
+    price: 3499, orig: 4999, rating: 4.6, reviews: 1520, sold: 5240, flash: false, age: 18,
+    colors: col('navy', 'green', 'black'), sizes: APPAREL_SIZES, kw: 'hoodie fleece pullover sweatshirt warm casual kangaroo pocket',
+    desc: 'A brushed-back fleece hoodie with a double-lined hood, kangaroo pocket and ribbed cuffs that hold their shape. Boxy, true-to-size cut.',
+  },
+  {
+    id: 'p49', name: 'Ombra Wrap Midi Dress, Belted', cat: 'fashion', sub: 'dresses', brand: 'Ombra', art: 'shirt',
+    price: 4299, orig: 5899, rating: 4.7, reviews: 690, sold: 2180, flash: false, age: 25,
+    colors: col('navy', 'red', 'beige'), sizes: APPAREL_SIZES, kw: 'wrap dress midi belted office elegant v-neck',
+    desc: 'A faux-wrap midi in fluid crepe with a tie belt, V-neckline and a hem that moves well. Fully lined through the bodice and no zipper to fight with.',
+  },
+  {
+    id: 'p50', name: 'Mendo Leather Backpack, 15 inch', cat: 'fashion', sub: 'bags', brand: 'Mendo', art: 'bag',
+    price: 6999, orig: 8999, rating: 4.6, reviews: 540, sold: 1240, flash: false, age: 30,
+    colors: col('brown', 'black'), kw: 'backpack leather laptop 15 inch school travel rucksack padded',
+    desc: 'A full-grain leather backpack with a padded 15-inch laptop sleeve, a hidden back pocket for valuables and waxed straps that soften with wear.',
+  },
 
   // Beauty
   {
@@ -307,6 +337,24 @@ export const PRODUCTS = [
     kw: 'lipstick matte set makeup lip long lasting',
     desc: 'Five weightless matte lipsticks in nudes through berries, with a velvet finish that wears for hours without drying.',
   },
+  {
+    id: 'p51', name: 'Klarita Hyaluronic Day Cream, 50ml', cat: 'beauty', sub: 'skincare', brand: 'Klarita', art: 'cream',
+    price: 2599, orig: 3399, rating: 4.8, reviews: 1980, sold: 7420, flash: true, pct: 82, age: 7,
+    kw: 'moisturizer day cream hyaluronic hydrating skincare face gel',
+    desc: 'A gel-cream with three weights of hyaluronic acid plus ceramides. Sinks in fast under makeup, fragrance-free and safe for sensitive skin.',
+  },
+  {
+    id: 'p52', name: 'Luma Liquid Blush Wand, Rosy', cat: 'beauty', sub: 'makeup', brand: 'Luma', art: 'droplet',
+    price: 1399, orig: 1899, rating: 4.5, reviews: 860, sold: 3210, flash: false, age: 6,
+    kw: 'blush liquid wand makeup rosy cheek tint blendable',
+    desc: 'A cushion-applicator liquid blush that blends with fingers before it sets. Sheer at the first tap, buildable to a soft flush in rosy pink.',
+  },
+  {
+    id: 'p53', name: 'Strida Vitamin E Night Cream', cat: 'beauty', sub: 'skincare', brand: 'Strida', art: 'jar',
+    price: 2199, orig: 2899, rating: 4.6, reviews: 1120, sold: 4050, flash: false, age: 35,
+    kw: 'night cream vitamin e skincare repair moisturizing overnight',
+    desc: 'A richer overnight cream with vitamin E, squalane and shea butter that seals your serum in. Wake up to skin that feels cushioned, not greasy.',
+  },
 
   // Home
   {
@@ -338,6 +386,24 @@ export const PRODUCTS = [
     price: 2199, orig: 2999, rating: 4.8, reviews: 980, sold: 3410, flash: false, age: 31,
     colors: col('white', 'beige'), kw: 'candles scented trio soy home decor gift',
     desc: 'Three soy-wax candles, 25 hours each: cedar and smoke, fig and cassis, and plain unscented. Cotton wicks, reusable glass vessels.',
+  },
+  {
+    id: 'p54', name: 'Luma LED Desk Lamp, Dimmable', cat: 'home', sub: 'lighting', brand: 'Luma', art: 'lamp',
+    price: 3299, orig: 4299, rating: 4.7, reviews: 1310, sold: 4620, flash: true, pct: 64, age: 13,
+    colors: col('white', 'black'), kw: 'desk lamp led dimmable reading touch office light usb',
+    desc: 'A slim LED desk lamp with five brightness levels and three color temperatures, a touch dimmer and a USB port on the base for charging your phone.',
+  },
+  {
+    id: 'p55', name: 'Klarita Oak Side Table, Round', cat: 'home', sub: 'furniture', brand: 'Klarita', art: 'table',
+    price: 8999, orig: 11999, rating: 4.5, reviews: 360, sold: 810, flash: false, age: 42,
+    colors: col('brown'), kw: 'side table oak round end wood furniture living room',
+    desc: 'A round solid-oak side table with a tapered three-leg base and a food-safe hardwax oil finish. 45 cm tall, sized to sit beside any sofa arm.',
+  },
+  {
+    id: 'p56', name: 'Mendo Wool Throw Blanket, Checkered', cat: 'home', sub: 'bedding', brand: 'Mendo', art: 'bed',
+    price: 4599, orig: 5999, rating: 4.8, reviews: 940, sold: 2870, flash: false, age: 16,
+    colors: col('beige', 'navy', 'green'), kw: 'throw blanket wool checkered sofa cozy couch decor',
+    desc: 'A woven merino-blend throw in a classic check, 130 × 180 cm with fringe ends. Warm without weight and soft from the first unpack.',
   },
 
   // Sports
@@ -377,6 +443,18 @@ export const PRODUCTS = [
     colors: col('black', 'red'), sizes: SHOE_SIZES, kw: 'running shoes sneakers trail sport trainers',
     desc: 'A cushioned trail runner with a rock plate, 4 mm lugs for loose gravel, and a mesh upper that drains after stream crossings.',
   },
+  {
+    id: 'p57', name: 'Strida Yoga Mat, 6mm Non-Slip', cat: 'sports', sub: 'fitness', brand: 'Strida', art: 'mat',
+    price: 2799, orig: 3799, rating: 4.6, reviews: 1740, sold: 6180, flash: true, pct: 74, age: 22,
+    colors: col('teal', 'violet'), kw: 'yoga mat non slip 6mm exercise pilates fitness carrying strap',
+    desc: 'A 6 mm TPE mat with a textured grip that holds wet hands, alignment lines for pose checks and a carry strap. Closed-cell, so it wipes clean.',
+  },
+  {
+    id: 'p58', name: 'Mendo Camping Tent, 2 Person', cat: 'sports', sub: 'outdoor', brand: 'Mendo', art: 'tent',
+    price: 8999, orig: 11499, rating: 4.5, reviews: 420, sold: 960, flash: false, age: 58,
+    colors: col('green'), kw: 'tent camping 2 person waterproof hiking dome backpacking',
+    desc: 'A freestanding two-person dome with a 3000 mm waterproof fly, two doors and a 12-minute pitch. Packs down to 4.2 kg for backpacking trips.',
+  },
 
   // Groceries
   {
@@ -409,6 +487,24 @@ export const PRODUCTS = [
     sizes: ['50 bags', '100 bags'], kw: 'green tea bags organic sencha matcha brew',
     desc: 'First-flush sencha in oxygen-barrier sachets, 100 to a box. Clean, grassy cup with zero bitterness at a 2-minute steep.',
   },
+  {
+    id: 'p59', name: 'Aurex Sparkling Water, 12 Pack', cat: 'groceries', sub: 'beverages', brand: 'Aurex', art: 'bottle',
+    price: 999, orig: 1299, rating: 4.4, reviews: 2260, sold: 8930, flash: true, pct: 88, age: 4,
+    sizes: ['6 pack', '12 pack'], kw: 'sparkling water cans 12 pack fizzy zero sugar drinks',
+    desc: 'Twelve 330 ml cans of lightly carbonated mineral water with nothing added: no sweeteners, no sodium, no calories. Chill-ready slim cans.',
+  },
+  {
+    id: 'p60', name: 'Strida Strawberry Preserve, 340g', cat: 'groceries', sub: 'pantry', brand: 'Strida', art: 'jar',
+    price: 799, orig: 1099, rating: 4.7, reviews: 1010, sold: 3840, flash: false, age: 45, oos: true,
+    sizes: ['340g'], kw: 'strawberry jam preserve spread breakfast toast 340g fruit',
+    desc: 'Small-batch preserve with whole strawberries and cane sugar, cooked in copper pans. 55 g of fruit per 100 g, on the jammy side of spreadable.',
+  },
+  {
+    id: 'p61', name: 'Pikol Bananas, 1kg', cat: 'groceries', sub: 'fresh', brand: 'Pikol', art: 'banana',
+    price: 349, orig: 0, rating: 4.5, reviews: 1420, sold: 5710, flash: false, age: 2,
+    kw: 'bananas fresh fruit 1kg bunch sweet',
+    desc: 'A full kilo of sweet Cavendish bananas, picked yellow-green so they ripen on your counter through the week. Packed to arrive unbruised.',
+  },
 
   // Accessories
   {
@@ -434,6 +530,30 @@ export const PRODUCTS = [
     price: 1599, orig: 2199, rating: 4.4, reviews: 540, sold: 1980, flash: false, age: 68,
     colors: col('navy', 'teal', 'black'), kw: 'travel pouch organizer packing cubes cables passport',
     desc: 'A zippered organizer with elastic loops for cables, a slip pocket for passports and a padded phone sleeve. Water-repellent shell.',
+  },
+  {
+    id: 'p62', name: 'Novo Leather Belt, Reversible', cat: 'accessories', sub: 'small-goods', brand: 'Novo', art: 'belt',
+    price: 2999, orig: 3999, rating: 4.6, reviews: 930, sold: 3420, flash: false, age: 28,
+    colors: col('brown', 'black'), sizes: ['S', 'M', 'L', 'XL'], kw: 'belt leather reversible buckle formal casual rotating',
+    desc: 'One belt, two colors: a rotating buckle flips between smooth brown and black full-grain leather. Cut to length at the strap, not the buckle.',
+  },
+  {
+    id: 'p63', name: 'Klarita Pearl Pendant Necklace', cat: 'accessories', sub: 'jewelry', brand: 'Klarita', art: 'gem',
+    price: 4499, orig: 5999, rating: 4.7, reviews: 610, sold: 1930, flash: false, age: 24,
+    colors: col('silver'), kw: 'necklace pearl pendant jewelry gift elegant freshwater',
+    desc: 'A single 8 mm freshwater pearl on a fine 45 cm sterling chain with a lobster clasp. Arrives in a gift box, ready to give.',
+  },
+  {
+    id: 'p64', name: 'Vantia Weekender Duffel, 40L', cat: 'accessories', sub: 'travel', brand: 'Vantia', art: 'bag',
+    price: 5999, orig: 7999, rating: 4.5, reviews: 480, sold: 1470, flash: false, age: 36,
+    colors: col('navy', 'brown'), kw: 'duffel bag weekender 40l travel gym overnight carry',
+    desc: 'A 40 L weekend duffel in coated canvas with a trolley sleeve, a shoe compartment and a detachable shoulder strap. Carry-on sized for most airlines.',
+  },
+  {
+    id: 'p65', name: 'Pikol Signet Ring, Sterling Silver', cat: 'accessories', sub: 'jewelry', brand: 'Pikol', art: 'gem',
+    price: 3499, orig: 4799, rating: 4.4, reviews: 340, sold: 890, flash: false, age: 61,
+    colors: col('silver'), sizes: ['52', '56', '60'], kw: 'ring signet sterling silver jewelry engraved classic',
+    desc: 'A 10 mm oval signet in rhodium-plated sterling silver with a flat face ready for engraving. Comfort-fit inner curve, sizes 52 to 60.',
   },
   {
     id: 'p43', name: 'Novo Clear Case for X4 Pro', cat: 'electronics', sub: 'phones', brand: 'Novo', art: 'smartphone',
@@ -609,6 +729,14 @@ const SPEC_BY_ART = {
   wallet: [['Material', 'Full-grain vegetable-tanned leather'], ['Capacity', '6 cards + cash fold'], ['Protection', 'RFID-blocking layer'], ['Dimensions', '10.5 × 8 cm']],
   gem: [['Stone', '4 mm lab-grown'], ['Metal', 'Rhodium-plated 925 silver'], ['Backing', 'Hypoallergenic posts'], ['Packaging', 'Gift box']],
   shoe: [['Upper', 'Draining mesh'], ['Midsole', 'EVA with rock plate'], ['Outsole', '4 mm lugs, rubber'], ['Drop', '8 mm']],
+  keyboard: [['Switches', 'Hot-swappable, tactile'], ['Layout', '75%, 82 keys'], ['Connection', 'USB-C, detachable'], ['Backlight', 'Per-key RGB']],
+  drone: [['Camera', '4K, 3-axis gimbal'], ['Flight time', 'Up to 30 min'], ['Range', '6 km transmission'], ['Weight', '249 g']],
+  cream: [['Volume', '50 ml'], ['Key actives', 'Hyaluronic acid, ceramides'], ['Skin types', 'All, fragrance-free'], ['Use', 'Morning, under makeup']],
+  table: [['Material', 'Solid oak'], ['Dimensions', '45 Ø × 45 H cm'], ['Finish', 'Hardwax oil'], ['Assembly', 'Legs attach, tool included']],
+  mat: [['Thickness', '6 mm'], ['Material', 'TPE, closed-cell'], ['Dimensions', '183 × 61 cm'], ['Weight', '1.1 kg']],
+  tent: [['Capacity', '2 person'], ['Waterproofing', '3000 mm fly'], ['Weight', '4.2 kg packed'], ['Pitch time', 'About 12 min']],
+  banana: [['Origin', 'Ecuador'], ['Count', 'About 9 bananas'], ['Class', 'Category I'], ['Storage', 'Ripen at room temperature']],
+  belt: [['Material', 'Full-grain leather'], ['Width', '3.5 cm'], ['Buckle', 'Rotating, reversible'], ['Lengths', 'S to XL']],
 };
 
 export function specsFor(p) {
