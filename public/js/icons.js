@@ -2,9 +2,13 @@
  *
  * One consistent style across the whole app: 24-unit stroke grid, 2px round
  * strokes (Lucide-style), currentColor, aria-hidden. Product artwork is
- * generated SVG: a soft per-category gradient with the category icon drawn
- * large in its deep hue. No external image requests, so the grid renders
- * instantly and offline.
+ * generated SVG: a soft per-category gradient with either a detailed flat
+ * product illustration (rich art, keyed by product id — used for the Flash
+ * Sale cards and every other surface that renders the same product) or the
+ * category icon drawn large in its deep hue. No external image requests, so
+ * the grid renders instantly and offline, and there is nothing that can
+ * fail to load (the legacy category tile doubles as the fallback when a
+ * product has no rich illustration).
  */
 
 const STROKE_ICONS = {
@@ -138,6 +142,200 @@ export const CATEGORY_HUES = {
   accessories: { from: '#F8FAFC', to: '#E2E8F0', fg: '#475569' },
 };
 
+/* ---------------------------------------------------------------------------
+ * Rich product illustrations. Every Flash Sale item (and the product page
+ * gallery of the same products) gets a detailed flat-vector product drawing
+ * instead of the small stroke-glyph tile. Same generated-SVG approach as
+ * everything above: no image files, no external URLs, nothing to 404.
+ *
+ * Keyed by product id, not art kind, so lookalike products diverge (over-ear
+ * headphones vs earbuds, fitness smartwatch vs steel watch, tee vs dress).
+ * Products without an entry fall back to the category tile above.
+ *
+ * Each builder returns inner SVG for the shared 400x400 canvas with the
+ * product centered on (200, ~200) above a shared ground shadow, drawn flat
+ * with one accent family + neutrals so the set reads as one catalog.
+ * --------------------------------------------------------------------------- */
+
+function groundShadow(cx, cy, rx, ry) {
+  return '<ellipse cx="' + cx + '" cy="' + cy + '" rx="' + rx + '" ry="' + ry + '" fill="#1e293b" opacity="0.10"/>';
+}
+
+function artHeadphones() {
+  return groundShadow(200, 330, 108, 16)
+    + '<path d="M112 208v-26a88 88 0 0 1 176 0v26" fill="none" stroke="#312E81" stroke-width="26" stroke-linecap="round"/>'
+    + '<path d="M124 196v-14a76 76 0 0 1 152 0v14" fill="none" stroke="#8B5CF6" stroke-width="6" stroke-linecap="round" opacity="0.85"/>'
+    + '<rect x="102" y="200" width="20" height="24" rx="9" fill="#312E81"/>'
+    + '<rect x="278" y="200" width="20" height="24" rx="9" fill="#312E81"/>'
+    + '<rect x="82" y="212" width="60" height="88" rx="28" fill="#5B21B6"/>'
+    + '<rect x="258" y="212" width="60" height="88" rx="28" fill="#5B21B6"/>'
+    + '<ellipse cx="112" cy="256" rx="17" ry="30" fill="#EDE9FE"/>'
+    + '<ellipse cx="288" cy="256" rx="17" ry="30" fill="#EDE9FE"/>'
+    + '<circle cx="288" cy="224" r="3" fill="#F5F3FF" opacity="0.9"/>';
+}
+
+function artPhone() {
+  return groundShadow(200, 330, 84, 13)
+    + '<rect x="260" y="122" width="6" height="30" rx="3" fill="#0F172A"/>'
+    + '<rect x="134" y="114" width="6" height="22" rx="3" fill="#0F172A"/>'
+    + '<rect x="142" y="72" width="116" height="232" rx="28" fill="#0F172A"/>'
+    + '<rect x="150" y="82" width="100" height="212" rx="20" fill="#3730A3"/>'
+    + '<path d="M160 82h24l-26 212h-10z" fill="#ffffff" opacity="0.10"/>'
+    + '<rect x="184" y="90" width="32" height="9" rx="4.5" fill="#0F172A"/>'
+    + '<circle cx="200" cy="278" r="9" fill="#0F172A"/>';
+}
+
+function artSpeaker() {
+  return groundShadow(200, 330, 84, 13)
+    + '<path d="M189 106c0-13 22-13 22 0" fill="none" stroke="#134E4A" stroke-width="7" stroke-linecap="round"/>'
+    + '<rect x="150" y="106" width="100" height="200" rx="46" fill="#0D9488"/>'
+    + '<circle cx="200" cy="178" r="38" fill="#115E59"/>'
+    + '<circle cx="200" cy="178" r="24" fill="none" stroke="#5EEAD4" stroke-width="3" opacity="0.9"/>'
+    + '<circle cx="200" cy="178" r="7" fill="#5EEAD4"/>'
+    + '<rect x="168" y="242" width="64" height="30" rx="15" fill="#134E4A" opacity="0.55"/>'
+    + '<circle cx="200" cy="288" r="4" fill="#99F6E4"/>';
+}
+
+function artEarbuds() {
+  return groundShadow(200, 330, 104, 15)
+    + '<g transform="rotate(-10 168 150)">'
+    + '<rect x="160" y="148" width="15" height="70" rx="7.5" fill="#F1F5F9" stroke="#CBD5E1" stroke-width="2"/>'
+    + '<circle cx="167" cy="136" r="21" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="2"/>'
+    + '<circle cx="160" cy="131" r="6" fill="#C7D2FE"/>'
+    + '</g>'
+    + '<g transform="rotate(10 232 150)">'
+    + '<rect x="224" y="148" width="15" height="70" rx="7.5" fill="#F1F5F9" stroke="#CBD5E1" stroke-width="2"/>'
+    + '<circle cx="232" cy="136" r="21" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="2"/>'
+    + '<circle cx="225" cy="131" r="6" fill="#C7D2FE"/>'
+    + '</g>'
+    + '<rect x="114" y="216" width="172" height="100" rx="34" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="2"/>'
+    + '<path d="M122 252h156" stroke="#E2E8F0" stroke-width="3"/>'
+    + '<circle cx="200" cy="268" r="5" fill="#A5B4FC"/>';
+}
+
+function artWatchFit() {
+  return groundShadow(200, 344, 86, 12)
+    + '<rect x="170" y="64" width="60" height="88" rx="20" fill="#312E81"/>'
+    + '<rect x="170" y="248" width="60" height="88" rx="20" fill="#312E81"/>'
+    + '<circle cx="200" cy="300" r="3" fill="#1E1B4B"/><circle cx="200" cy="316" r="3" fill="#1E1B4B"/>'
+    + '<rect x="146" y="140" width="108" height="122" rx="32" fill="#1E1B4B"/>'
+    + '<rect x="156" y="150" width="88" height="102" rx="26" fill="#0F172A"/>'
+    + '<circle cx="200" cy="201" r="34" fill="none" stroke="#F43F5E" stroke-width="9" stroke-dasharray="160 214" stroke-linecap="round" transform="rotate(-90 200 201)"/>'
+    + '<circle cx="200" cy="201" r="23" fill="none" stroke="#2DD4BF" stroke-width="9" stroke-dasharray="108 145" stroke-linecap="round" transform="rotate(-90 200 201)"/>'
+    + '<circle cx="200" cy="201" r="12" fill="none" stroke="#F59E0B" stroke-width="9" stroke-dasharray="57 76" stroke-linecap="round" transform="rotate(-90 200 201)"/>'
+    + '<rect x="252" y="168" width="10" height="24" rx="5" fill="#8B5CF6"/>';
+}
+
+function artTee() {
+  return groundShadow(200, 336, 104, 14)
+    + '<path d="M150 92 L94 120 L116 188 L146 176 V310 Q200 322 254 310 V176 L284 188 L306 120 L250 92 Q226 116 200 116 Q174 116 150 92 Z" fill="#FAFAF9" stroke="#D6D3D1" stroke-width="3" stroke-linejoin="round"/>'
+    + '<path d="M150 92 Q174 116 200 116 Q226 116 250 92" fill="none" stroke="#D6D3D1" stroke-width="6" stroke-linecap="round"/>'
+    + '<path d="M146 176 L156 130 M254 176 L244 130" stroke="#E7E5E4" stroke-width="3"/>'
+    + '<path d="M146 304 Q200 316 254 304" fill="none" stroke="#E7E5E4" stroke-width="3"/>'
+    + '<rect x="192" y="150" width="16" height="12" rx="2" fill="#E7E5E4"/>';
+}
+
+function artDress() {
+  return groundShadow(200, 340, 96, 14)
+    + '<path d="M164 78 L172 122 M236 78 L228 122" stroke="#B98A5A" stroke-width="5" stroke-linecap="round" fill="none"/>'
+    + '<path d="M162 120 Q200 136 238 120 L242 194 Q200 208 158 194 Z" fill="#EAD9BC" stroke="#C4A47C" stroke-width="2.5" stroke-linejoin="round"/>'
+    + '<path d="M158 196 Q200 210 242 196 L246 210 Q200 224 154 210 Z" fill="#D9BE9B"/>'
+    + '<circle cx="200" cy="218" r="6" fill="#C4A47C"/>'
+    + '<path d="M156 212 Q200 226 244 212 L274 328 Q200 348 126 328 Z" fill="#EAD9BC" stroke="#C4A47C" stroke-width="2.5" stroke-linejoin="round"/>'
+    + '<path d="M176 228 Q180 280 168 330 M200 232 Q202 288 200 340 M224 228 Q220 280 232 330" stroke="#C4A47C" stroke-width="2" fill="none" opacity="0.55"/>'
+    + '<path d="M128 330 Q200 350 272 330" stroke="#C4A47C" stroke-width="3" fill="none"/>';
+}
+
+function artSerum() {
+  return groundShadow(200, 326, 78, 12)
+    + '<circle cx="200" cy="98" r="17" fill="#1E293B"/>'
+    + '<rect x="186" y="110" width="28" height="16" rx="5" fill="#334155"/>'
+    + '<rect x="182" y="124" width="36" height="34" rx="7" fill="#D97706"/>'
+    + '<rect x="168" y="156" width="64" height="142" rx="14" fill="#F59E0B"/>'
+    + '<rect x="176" y="164" width="14" height="126" rx="7" fill="#FCD34D" opacity="0.55"/>'
+    + '<rect x="176" y="192" width="48" height="62" rx="7" fill="#FFFBEB"/>'
+    + '<rect x="184" y="204" width="32" height="5" rx="2.5" fill="#D97706" opacity="0.6"/>'
+    + '<rect x="188" y="216" width="24" height="5" rx="2.5" fill="#D97706" opacity="0.45"/>'
+    + '<rect x="184" y="228" width="28" height="5" rx="2.5" fill="#D97706" opacity="0.35"/>';
+}
+
+function artArmchair() {
+  return groundShadow(200, 322, 112, 15)
+    + '<rect x="126" y="112" width="148" height="112" rx="38" fill="#DED3C0"/>'
+    + '<circle cx="164" cy="158" r="4" fill="#B5A284" opacity="0.9"/>'
+    + '<circle cx="200" cy="150" r="4" fill="#B5A284" opacity="0.9"/>'
+    + '<circle cx="236" cy="158" r="4" fill="#B5A284" opacity="0.9"/>'
+    + '<rect x="104" y="148" width="36" height="104" rx="18" fill="#C9B99F"/>'
+    + '<rect x="260" y="148" width="36" height="104" rx="18" fill="#C9B99F"/>'
+    + '<rect x="118" y="196" width="164" height="56" rx="24" fill="#D6C6AC"/>'
+    + '<rect x="112" y="240" width="176" height="24" rx="12" fill="#C9B99F"/>'
+    + '<rect x="130" y="262" width="14" height="32" rx="5" fill="#8A5A2B"/>'
+    + '<rect x="256" y="262" width="14" height="32" rx="5" fill="#8A5A2B"/>';
+}
+
+function artDumbbell() {
+  return groundShadow(200, 318, 110, 14)
+    + '<rect x="118" y="192" width="164" height="17" rx="8.5" fill="#94A3B8"/>'
+    + '<line x1="158" y1="200.5" x2="242" y2="200.5" stroke="#64748B" stroke-width="5" stroke-dasharray="5 5"/>'
+    + '<rect x="146" y="168" width="9" height="65" rx="4.5" fill="#475569"/>'
+    + '<rect x="245" y="168" width="9" height="65" rx="4.5" fill="#475569"/>'
+    + '<rect x="122" y="152" width="24" height="98" rx="10" fill="#334155"/>'
+    + '<rect x="254" y="152" width="24" height="98" rx="10" fill="#334155"/>'
+    + '<rect x="94" y="142" width="30" height="118" rx="12" fill="#1E293B"/>'
+    + '<rect x="276" y="142" width="30" height="118" rx="12" fill="#1E293B"/>';
+}
+
+function artCoffee() {
+  return groundShadow(200, 330, 92, 14)
+    + '<rect x="140" y="102" width="120" height="30" rx="8" fill="#78350F"/>'
+    + '<path d="M138 128 L262 128 L272 314 Q200 332 128 314 Z" fill="#B45309"/>'
+    + '<path d="M138 128 L262 128 L264 152 L136 152 Z" fill="#92400E"/>'
+    + '<circle cx="200" cy="216" r="44" fill="#FEF3C7"/>'
+    + '<g transform="rotate(-28 200 216)"><ellipse cx="200" cy="216" rx="13" ry="19" fill="none" stroke="#92400E" stroke-width="4.5"/><path d="M200 197v38" stroke="#92400E" stroke-width="4.5" fill="none"/></g>';
+}
+
+function artWatchSteel() {
+  return groundShadow(200, 338, 92, 13)
+    + '<rect x="178" y="66" width="44" height="80" rx="10" fill="#CBD5E1"/>'
+    + '<path d="M182 84h36M182 100h36M182 116h36" stroke="#94A3B8" stroke-width="3"/>'
+    + '<rect x="178" y="254" width="44" height="80" rx="10" fill="#CBD5E1"/>'
+    + '<path d="M182 270h36M182 286h36M182 302h36" stroke="#94A3B8" stroke-width="3"/>'
+    + '<circle cx="200" cy="200" r="76" fill="#E2E8F0"/>'
+    + '<circle cx="200" cy="200" r="62" fill="#F8FAFC"/>'
+    + '<rect x="272" y="190" width="14" height="20" rx="6" fill="#94A3B8"/>'
+    + '<path d="M200 156v9M200 235v9M156 200h9M235 200h9" stroke="#475569" stroke-width="4" stroke-linecap="round"/>'
+    + '<path d="M200 200 L200 170" stroke="#1E293B" stroke-width="5" stroke-linecap="round"/>'
+    + '<path d="M200 200 L222 212" stroke="#1E293B" stroke-width="4" stroke-linecap="round"/>'
+    + '<circle cx="200" cy="200" r="5" fill="#1E293B"/>';
+}
+
+function artShoe() {
+  return groundShadow(200, 324, 118, 13)
+    + '<path d="M100 250 C100 238 108 232 118 230 L130 196 Q134 184 148 184 Q162 184 168 172 L178 160 Q186 150 198 154 L262 196 Q296 214 302 240 L304 250 Z" fill="#F43F5E"/>'
+    + '<path d="M262 196 Q296 214 302 240 L304 250 L282 250 Q278 218 254 204 Z" fill="#FDA4AF" opacity="0.8"/>'
+    + '<path d="M130 196 Q134 184 148 184 Q162 184 168 172 L172 166 L146 190 Q136 202 132 216 L118 230 Z" fill="#BE123C" opacity="0.5"/>'
+    + '<path d="M208 166l-15 17 M225 176l-15 17 M242 186l-15 17" stroke="#FFF1F2" stroke-width="5" stroke-linecap="round" fill="none"/>'
+    + '<rect x="92" y="244" width="224" height="30" rx="15" fill="#F8FAFC"/>'
+    + '<path d="M92 262 L316 262 Q318 282 296 282 L112 282 Q90 282 92 262 Z" fill="#0F172A"/>'
+    + '<rect x="106" y="282" width="14" height="6" rx="2" fill="#0F172A"/><rect x="134" y="282" width="14" height="6" rx="2" fill="#0F172A"/><rect x="162" y="282" width="14" height="6" rx="2" fill="#0F172A"/><rect x="190" y="282" width="14" height="6" rx="2" fill="#0F172A"/><rect x="218" y="282" width="14" height="6" rx="2" fill="#0F172A"/><rect x="246" y="282" width="14" height="6" rx="2" fill="#0F172A"/><rect x="274" y="282" width="14" height="6" rx="2" fill="#0F172A"/>';
+}
+
+const RICH_ART = {
+  p01: artHeadphones, // Aurex Over-Ear Wireless Headphones
+  p02: artPhone, // Novo X4 Pro Smartphone
+  p05: artSpeaker, // Pikol Mini Bluetooth Speaker
+  p06: artEarbuds, // Aurex Wireless Earbuds Pro
+  p08: artWatchFit, // Strida Smart Watch Fit
+  p09: artTee, // Vantia Oversized Cotton Tee
+  p14: artSerum, // Klarita Vitamin C Glow Serum
+  p18: artArmchair, // Vantia Cloud Armchair
+  p22: artDumbbell, // Strida Adjustable Dumbbell Set
+  p26: artCoffee, // Mendo Arabica Coffee Beans
+  p30: artWatchSteel, // Strida Minimal Steel Watch
+  p36: artDress, // Vantia Linen Summer Dress
+  p42: artShoe, // Strida Trail Runner Shoes
+};
+
 /* Generate the artwork SVG for a product. */
 export function productArt(p) {
   return productArtView(p, 0);
@@ -158,19 +356,40 @@ const GALLERY_VIEWS = [
 
 export function productArtView(p, view = 0) {
   const hue = CATEGORY_HUES[p.cat] || CATEGORY_HUES.accessories;
-  const paths = ART_ICONS[p.art] || ART_ICONS.bag;
   const v = GALLERY_VIEWS[view % GALLERY_VIEWS.length];
   const from = v.from || hue.from;
   const to = view % GALLERY_VIEWS.length === 1 ? hue.to : (view % GALLERY_VIEWS.length === 3 ? hue.from : hue.to);
-  const [c1x, c1y, c1r, c1o] = v.c1;
-  const [c2x, c2y, c2r, c2o] = v.c2;
-  return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" class="h-full w-full" preserveAspectRatio="xMidYMid slice" role="img" aria-hidden="true">'
-    + '<defs><linearGradient id="g-' + p.id + '-' + view + '" x1="0" y1="0" x2="1" y2="1">'
+  const gid = 'g-' + p.id + '-' + view;
+  const rich = RICH_ART[p.id];
+
+  // Rich illustration: a soft white halo behind the product, then the
+  // drawing, composed once per product (gallery views vary the background
+  // gradient instead of re-composing the drawing). The drawing is centered
+  // inside its own 400x400 square, which the square containers render
+  // 1:1 — "contain" semantics, never cropped.
+  let inner;
+  let par = 'xMidYMid slice';
+  if (rich) {
+    par = 'xMidYMid meet';
+    inner = '<circle cx="200" cy="192" r="132" fill="url(#glow-' + gid + ')"/>' + rich();
+  } else {
+    const paths = ART_ICONS[p.art] || ART_ICONS.bag;
+    const [c1x, c1y, c1r, c1o] = v.c1;
+    const [c2x, c2y, c2r, c2o] = v.c2;
+    inner = '<circle cx="' + c1x + '" cy="' + c1y + '" r="' + c1r + '" fill="#ffffff" opacity="' + c1o + '"/>'
+      + '<circle cx="' + c2x + '" cy="' + c2y + '" r="' + c2r + '" fill="#ffffff" opacity="' + c2o + '"/>'
+      + '<g transform="' + v.t + '" fill="none" stroke="' + hue.fg + '" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">' + paths + '</g>';
+  }
+
+  return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" class="product-img h-full w-full" preserveAspectRatio="' + par + '" role="img" aria-hidden="true">'
+    + '<defs><linearGradient id="' + gid + '" x1="0" y1="0" x2="1" y2="1">'
     + '<stop offset="0" stop-color="' + from + '"/><stop offset="1" stop-color="' + to + '"/>'
-    + '</linearGradient></defs>'
-    + '<rect width="400" height="400" fill="url(#g-' + p.id + '-' + view + ')"/>'
-    + '<circle cx="' + c1x + '" cy="' + c1y + '" r="' + c1r + '" fill="#ffffff" opacity="' + c1o + '"/>'
-    + '<circle cx="' + c2x + '" cy="' + c2y + '" r="' + c2r + '" fill="#ffffff" opacity="' + c2o + '"/>'
-    + '<g transform="' + v.t + '" fill="none" stroke="' + hue.fg + '" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">' + paths + '</g>'
+    + '</linearGradient>'
+    + (rich
+      ? '<radialGradient id="glow-' + gid + '"><stop offset="0" stop-color="#ffffff" stop-opacity="0.75"/><stop offset="1" stop-color="#ffffff" stop-opacity="0"/></radialGradient>'
+      : '')
+    + '</defs>'
+    + '<rect width="400" height="400" fill="url(#' + gid + ')"/>'
+    + inner
     + '</svg>';
 }
