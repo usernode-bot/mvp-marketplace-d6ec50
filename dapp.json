@@ -20,6 +20,20 @@
       "expectText": "Mendo Smart Home Hub"
     },
     {
+      "id": "home.grid-rich-art",
+      "name": "Recommended grid renders rich illustrations for previously placeholder products",
+      "path": "/",
+      "expectSelector": "[data-product='p03'] svg.product-img[data-art='rich']",
+      "expectText": "Klarita 4K Action Camera"
+    },
+    {
+      "id": "home.sold-out-art",
+      "name": "Sold out TV card keeps its badge and renders rich art",
+      "path": "/",
+      "expectSelector": "[data-product='p04'] svg.product-img[data-art='rich']",
+      "expectText": "Sold out"
+    },
+    {
       "id": "product.smarthome-hub",
       "name": "Smart Home Hub product page renders with price and discount",
       "path": "/#/product/p44",
