@@ -125,6 +125,14 @@ const ART_ICONS = {
   shoe: '<path d="M2.5 17.5h19V15a4 4 0 0 0-4-4h-5.5L9 8.5 6.5 11H4a1.5 1.5 0 0 0-1.5 1.5z"/><path d="M2.5 17.5v1h19v-1"/><path d="m9 8.5 2 2.6"/>',
   smarthome: '<circle cx="12" cy="10" r="7"/><circle cx="12" cy="8.2" r="1"/><circle cx="9.9" cy="11.6" r="1"/><circle cx="14.1" cy="11.6" r="1"/><path d="M12 17v2.5"/><path d="M8.5 21.5h7"/>',
   mouse: '<rect x="7.5" y="3.5" width="9" height="17" rx="4.5"/><path d="M12 3.5v2.5"/><rect x="11.2" y="6" width="1.6" height="3" rx="0.8"/>',
+  keyboard: '<rect x="2.5" y="6.5" width="19" height="11" rx="2"/><path d="M6 10h.01M9.5 10h.01M13 10h.01M16.5 10h.01M18 13.5H6"/>',
+  drone: '<rect x="9" y="9" width="6" height="6" rx="1.5"/><path d="M9.2 9.2 6.3 6.3M14.8 9.2l2.9-2.9M9.2 14.8l-2.9 2.9M14.8 14.8l2.9 2.9"/><path d="M3.5 5.5h5M15.5 5.5h5M3.5 18.5h5M15.5 18.5h5"/>',
+  cream: '<rect x="5.5" y="10.5" width="13" height="9.5" rx="3"/><path d="M7 10.5V9.2a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v1.3"/><path d="M12 7.2V4.5"/><path d="M9 4.5h6"/>',
+  table: '<ellipse cx="12" cy="6" rx="7.5" ry="2.4"/><path d="M4.5 6.4V19M19.5 6.4V19M12 8.4V19"/><path d="M4.5 19h15"/>',
+  mat: '<circle cx="7.5" cy="12" r="4"/><circle cx="7.5" cy="12" r="1.2"/><path d="M7.5 8H16a4 4 0 0 1 0 8H7.5"/><path d="M16 9.5v5"/>',
+  tent: '<path d="m12 3.5 9.5 17h-19z"/><path d="m12 11 3 9.5h-6z"/>',
+  banana: '<path d="M4.5 3.5c.4 6.7 5.3 12 12 12 1.7 0 3.2-.4 4.4-1.2-.9 4.6-5.4 7.2-9.7 7.2C5.7 21.5 2.5 16.6 2.5 10.5c0-2.5.7-5 2-7z"/><path d="M4.5 3.5 3 2"/>',
+  belt: '<rect x="10" y="7" width="9.5" height="10" rx="2.5"/><path d="M10 10.5H5a2 2 0 0 0 0 4h5"/><path d="M14.5 7v10"/><path d="M19.5 12h1.5"/>',
 };
 
 /* Soft gradient (light -> deeper tint of the category hue) + deep icon stroke. */
