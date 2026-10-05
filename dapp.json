@@ -201,6 +201,34 @@
       "expectText": "Notification settings"
     },
     {
+      "id": "profile.payment-default",
+      "name": "Payment methods page lists grouped methods with a default badge",
+      "path": "/?demo=1#/profile/payment",
+      "expectSelector": "[data-pay-row='bca'] .badge-brand",
+      "expectText": "Bank Transfer / Virtual Account",
+      "visual": true,
+      "impact": [
+        "public/js/payment.js",
+        "public/js/profile.js",
+        "public/js/store.js",
+        "public/js/app.js",
+        "public/js/checkout.js",
+        "public/index.html"
+      ]
+    },
+    {
+      "id": "profile.payment-empty",
+      "name": "Payment methods page shows the empty state when nothing is saved",
+      "path": "/#/profile/payment",
+      "expectText": "No payment methods saved"
+    },
+    {
+      "id": "checkout.default-payment",
+      "name": "Checkout preselects the saved default payment method",
+      "path": "/?demo=checkout#/checkout",
+      "expectText": "BCA"
+    },
+    {
       "id": "home.search-quoted",
       "name": "Search query with quotes and angle brackets renders as text",
       "path": "/?q=wireless%20%22pro%22%20%3Ctest%3E",

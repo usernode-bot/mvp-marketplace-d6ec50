@@ -18,9 +18,10 @@ import { toast } from './ui.js';
 import { initTheme, setTheme } from './theme.js';
 import { clearResults, initHome, panelRows, runBannerAction, submitSearch } from './home.js';
 import { initOrders } from './orders.js';
-import { renderProfileView } from './profile.js';
+import { renderProfileView, seedDemoAccount } from './profile.js';
 import { initAddresses } from './addresses.js';
 import { initSettings } from './settings.js';
+import { initPayment } from './payment.js';
 import { applyVoucherCode, initCart, removeCartItem, renderCartView } from './cart.js';
 import { goToHash, parseRoute, renderRoute } from './router.js';
 
@@ -252,6 +253,7 @@ function boot() {
   initOrders();
   initAddresses();
   initSettings();
+  initPayment();
 
   window.addEventListener('hashchange', renderRoute);
 
@@ -260,10 +262,13 @@ function boot() {
     if (parseRoute().view === 'cart') renderCartView();
   });
 
-  // Demo seed for proposal checks and staging screenshots: ?demo=checkout
+  // Demo seed for proposal checks and staging screenshots. ?demo=1 fills
+  // the account (wishlist, addresses, payment methods); ?demo=checkout also
   // fills the cart with a few mock items, in memory only (they persist only
   // if the shopper then changes something). Plain routes never hit this.
-  if (new URLSearchParams(window.location.search).get('demo') === 'checkout') {
+  const demoParam = new URLSearchParams(window.location.search).get('demo');
+  if (demoParam) seedDemoAccount();
+  if (demoParam === 'checkout') {
     store.cart = ['p01|1', 'p14|2', 'p26|1'].map((spec) => {
       const [id, qty] = spec.split('|');
       return { id, qty: Number(qty), color: '', size: '', key: id + '||', selected: true };

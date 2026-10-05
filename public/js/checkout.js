@@ -12,6 +12,7 @@
 import { icon, productArt } from './icons.js';
 import { store } from './store.js';
 import { fmtEtaDate, fmtPrice, emptyState, toast } from './ui.js';
+import { methodById } from './payment.js';
 
 const view = document.getElementById('view-checkout');
 const ADDRESS_KEY = 'bazario:address';
@@ -30,12 +31,39 @@ const VOUCHERS = {
   WELCOME5: { kind: 'flat', value: 500, label: '$5.00 off your order' },
 };
 
-const PAYMENT_METHODS = [
-  { id: 'card', name: 'Credit / debit card', icon: 'creditCard', desc: 'Visa, Mastercard, American Express' },
-  { id: 'bank', name: 'Bank transfer', icon: 'bank', desc: 'Transfer details are shown after you place the order' },
-  { id: 'ewallet', name: 'E-wallet', icon: 'smartphone', desc: 'Pay from your stored e-wallet balance' },
-  { id: 'cod', name: 'Cash on delivery', icon: 'banknote', desc: 'Pay the courier when your order arrives' },
+/* Quick options offered when the shopper has not saved anything yet (a
+ * fresh browser or a guest). Once they save methods on the Profile page,
+ * those saved methods are offered here instead. */
+const FALLBACK_METHODS = [
+  { id: 'card', name: 'Credit / Debit Card', icon: 'creditCard', desc: 'Visa, Mastercard, JCB' },
+  { id: 'bank', name: 'Bank Transfer', icon: 'bank', desc: 'Virtual Account' },
+  { id: 'ewallet', name: 'E-Wallet', icon: 'smartphone', desc: 'DANA, GoPay, OVO' },
+  { id: 'cod', name: 'Cash on Delivery', icon: 'banknote', desc: 'Pay the courier on arrival' },
 ];
+
+/* The shopper's saved methods (from Profile > Payment methods) as checkout
+ * options, or the fallback list when none are saved. The default method is
+ * flagged so the picker can mark it. */
+function paymentOptions() {
+  const saved = store.payments.map((p) => {
+    const m = methodById(p.id);
+    if (!m) return null;
+    return {
+      id: m.id, name: m.name, icon: m.icon, badge: m.badge, color: m.color,
+      desc: m.subtitle, isDefault: store.defaultPayment === m.id,
+    };
+  }).filter(Boolean);
+  return saved.length ? saved : FALLBACK_METHODS;
+}
+
+/* Round leading avatar for a payment option: the coloured initial badge when
+ * the method has one, else its icon on a neutral chip. */
+function payAvatar(m) {
+  if (m.badge) {
+    return '<span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full ' + (m.color || 'bg-zinc-100') + ' text-[11px] font-bold text-white">' + esc(m.badge) + '</span>';
+  }
+  return '<span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-zinc-100 text-zinc-500">' + icon(m.icon || 'creditCard', 'h-5 w-5') + '</span>';
+}
 
 const FIELDS = [
   { key: 'name', label: 'Name', type: 'text', placeholder: 'Full name', autocomplete: 'name' },
@@ -221,11 +249,11 @@ function voucherSection() {
 }
 
 function paymentSection() {
-  const m = PAYMENT_METHODS.find((x) => x.id === state.paymentId) || null;
+  const m = paymentOptions().find((x) => x.id === state.paymentId) || null;
   let body;
   if (m) {
     body = '<div class="mt-3 flex items-center gap-3 rounded-xl border border-brand-200 bg-brand-50/50 px-3 py-2.5">'
-      + '<span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-100 text-brand-700">' + icon(m.icon, 'h-4 w-4') + '</span>'
+      + payAvatar(m)
       + '<div class="min-w-0 flex-1"><p class="text-sm font-semibold text-zinc-900">' + m.name + '</p>'
       + '<p class="truncate text-xs text-zinc-500">' + m.desc + '</p></div>'
       + '<span class="text-brand-600">' + icon('check', 'h-4 w-4') + '</span>'
@@ -263,6 +291,13 @@ export function renderCheckoutView() {
   }
 
   const entries = store.cartItems();
+
+  // Preselect the shopper's saved default method the first time they open
+  // checkout. They can still change it for this order.
+  if (!state.paymentId && store.defaultPayment && methodById(store.defaultPayment)) {
+    state.paymentId = store.defaultPayment;
+  }
+
   if (!entries.length) {
     view.innerHTML =
       '<div class="flex items-center gap-2">'
@@ -402,7 +437,7 @@ function updatePlaceButton() {
 function completeOrder(entries) {
   const s = ship();
   const t = totals();
-  const method = PAYMENT_METHODS.find((x) => x.id === state.paymentId);
+  const method = paymentOptions().find((x) => x.id === state.paymentId);
   const order = {
     number: 'BZ-' + Math.floor(100000 + Math.random() * 900000),
     placedAt: Date.now(),
@@ -482,9 +517,9 @@ function payRow(m) {
   return '<button type="button" data-payment-pick="' + m.id
     + '" class="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition-colors hover:bg-zinc-50'
     + (sel ? ' bg-brand-50' : '') + '">'
-    + '<span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full '
-    + (sel ? 'bg-brand-100 text-brand-700' : 'bg-zinc-100 text-zinc-500') + '">' + icon(m.icon, 'h-5 w-5') + '</span>'
-    + '<span class="min-w-0 flex-1"><span class="block text-sm font-semibold text-zinc-900">' + m.name + '</span>'
+    + payAvatar(m)
+    + '<span class="min-w-0 flex-1"><span class="flex items-center gap-2"><span class="block truncate text-sm font-semibold text-zinc-900">' + m.name + '</span>'
+    + (m.isDefault ? '<span class="badge-brand shrink-0">Default</span>' : '') + '</span>'
     + '<span class="block truncate text-xs text-zinc-500">' + m.desc + '</span></span>'
     + (sel
       ? '<span class="text-brand-600">' + icon('check', 'h-5 w-5') + '</span>'
@@ -505,7 +540,7 @@ function closePaymentModal() {
 }
 
 function choosePayment(id) {
-  const m = PAYMENT_METHODS.find((x) => x.id === id);
+  const m = paymentOptions().find((x) => x.id === id);
   if (!m) return;
   state.paymentId = m.id;
   closePaymentModal();
@@ -531,7 +566,7 @@ function openPaymentModal() {
     + '<h2 class="text-sm font-semibold text-zinc-900">Payment method</h2>'
     + '<button type="button" class="icon-btn h-8 w-8" data-payment-close aria-label="Close">' + icon('x', 'h-4 w-4') + '</button>'
     + '</div>'
-    + '<div class="p-3">' + PAYMENT_METHODS.map(payRow).join('') + '</div>'
+    + '<div class="p-3">' + paymentOptions().map(payRow).join('') + '</div>'
     + '<div class="hidden sm:block h-2"></div>'
     + '<div class="sm:hidden" style="padding-bottom: var(--un-safe-inset-bottom, env(safe-area-inset-bottom, 0px));"></div>'
     + '</div>';
