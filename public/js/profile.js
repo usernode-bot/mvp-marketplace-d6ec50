@@ -13,6 +13,7 @@ import { icon } from './icons.js';
 import { VOUCHERS, productById, voucherDescription } from './data.js';
 import { store } from './store.js';
 import { emptyState, esc, productCard } from './ui.js';
+import { swatchButtons } from './theme.js';
 import { countOrders } from './orders.js';
 import { renderAddressesView } from './addresses.js';
 import { renderSettingsView } from './settings.js';
@@ -118,6 +119,14 @@ function renderProfileHome() {
     + statTile('Orders', countOrders(), 'data-nav="orders"', 'package')
     + statTile('Wishlist', store.favoriteCount(), 'data-route="profile/wishlist"', 'heart')
     + statTile('Coupons', VOUCHERS.length, 'data-route="profile/coupons"', 'ticket')
+    + '</div>'
+    + /* Color theme switcher (mobile; the desktop header hosts the same
+       * swatches next to the bell, so this row hides there). */
+      '<div class="card mt-4 flex items-center gap-3 p-4 lg:hidden">'
+    + '<span class="text-sm font-medium text-zinc-800">Color theme</span>'
+    + '<div class="ml-auto flex items-center gap-2" role="radiogroup" aria-label="Color theme">'
+    + swatchButtons()
+    + '</div>'
     + '</div>'
     + '<div class="card mt-4 divide-y divide-zinc-100 overflow-hidden">'
     + menuRow('package', 'My Orders', 'data-nav="orders"')

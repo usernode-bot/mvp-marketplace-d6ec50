@@ -15,6 +15,7 @@ import { hydrateIcons, icon } from './icons.js';
 import { productById } from './data.js';
 import { store } from './store.js';
 import { toast } from './ui.js';
+import { initTheme, setTheme } from './theme.js';
 import { clearResults, initHome, panelRows, runBannerAction, submitSearch } from './home.js';
 import { initOrders } from './orders.js';
 import { renderProfileView } from './profile.js';
@@ -48,8 +49,14 @@ function reopenSearchPanel(box, input) {
 }
 
 function handleClick(e) {
-  const target = e.target.closest('[data-fav], [data-add], [data-category], [data-nav], [data-route], [data-banner-action], [data-recent], [data-recent-remove], [data-recent-clear], [data-suggest], [data-search-suggest], [data-soon], [data-cart-plus], [data-cart-minus], [data-cart-remove], [data-cart-select], [data-cart-select-all], [data-cart-save], [data-saved-move], [data-saved-remove], [data-voucher-pick], [data-voucher-remove], [data-results-clear], [data-back], [data-app-shortcut], [data-product]');
+  const target = e.target.closest('[data-fav], [data-add], [data-category], [data-nav], [data-route], [data-banner-action], [data-recent], [data-recent-remove], [data-recent-clear], [data-suggest], [data-search-suggest], [data-soon], [data-cart-plus], [data-cart-minus], [data-cart-remove], [data-cart-select], [data-cart-select-all], [data-cart-save], [data-saved-move], [data-saved-remove], [data-voucher-pick], [data-voucher-remove], [data-results-clear], [data-back], [data-app-shortcut], [data-theme-swatch], [data-product]');
   if (!target) return;
+
+  const themeId = target.getAttribute('data-theme-swatch');
+  if (themeId) {
+    setTheme(themeId);
+    return;
+  }
 
   const favId = target.getAttribute('data-fav');
   if (favId) {
@@ -250,6 +257,7 @@ function boot() {
   hydrateIcons();
 
   document.addEventListener('click', handleClick);
+  initTheme();
   initCart();
   initOrders();
   initAddresses();
