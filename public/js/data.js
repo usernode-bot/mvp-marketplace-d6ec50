@@ -27,6 +27,7 @@ export const SUBCATEGORIES = {
     { id: 'cameras', name: 'Cameras' },
     { id: 'tv', name: 'TV & Video' },
     { id: 'wearables', name: 'Wearables' },
+    { id: 'smarthome', name: 'Smart Home' },
   ],
   fashion: [
     { id: 'tops', name: 'Tops' },
@@ -217,6 +218,18 @@ export const PRODUCTS = [
     price: 3999, orig: 4999, rating: 4.6, reviews: 720, sold: 2410, flash: false, age: 14,
     colors: col('silver'), kw: 'usb hub type-c docking adapter hdmi sd laptop',
     desc: 'Seven ports in an aluminum shell: 4K HDMI, 100 W USB-C power pass-through, two USB-A, plus SD and microSD card readers for quick photo offloads.',
+  },
+  {
+    id: 'p44', name: 'Mendo Smart Home Hub', cat: 'electronics', sub: 'smarthome', brand: 'Mendo', art: 'smarthome',
+    price: 11999, orig: 14100, rating: 4.8, reviews: 1100, sold: 4200, flash: false, age: 9,
+    colors: col('white', 'black'), kw: 'smart home hub orb assistant automation zigbee matter sensors lights',
+    desc: 'A spherical smart home hub that unifies your lights, locks and sensors, with a glowing status light, offline automations and support for the major voice assistants.',
+  },
+  {
+    id: 'p45', name: 'Ombra Vertical Mouse', cat: 'electronics', sub: 'computing', brand: 'Ombra', art: 'mouse',
+    price: 4999, orig: 5550, rating: 4.6, reviews: 950, sold: 3100, flash: false, age: 6,
+    colors: col('black', 'silver'), kw: 'vertical mouse ergonomic wireless rechargeable wrist handshake silent',
+    desc: 'A vertical ergonomic mouse that holds your wrist at a natural handshake angle, with a silent scroll wheel, six programmable buttons and weeks of battery per charge.',
   },
 
   // Fashion
