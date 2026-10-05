@@ -20,6 +20,13 @@
       "expectText": "Flash Sale"
     },
     {
+      "id": "home.grid-new-products",
+      "name": "Recommended grid renders the Smart Home Hub and Vertical Mouse cards",
+      "path": "/",
+      "expectSelector": "#recommended-grid .product-card",
+      "expectText": "Mendo Smart Home Hub"
+    },
+    {
       "id": "home.app-shortcuts",
       "name": "App shortcuts strip renders the seven app tiles",
       "path": "/",

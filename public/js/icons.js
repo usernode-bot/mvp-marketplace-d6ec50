@@ -229,6 +229,37 @@ function artWatchFit() {
     + '<rect x="252" y="168" width="10" height="24" rx="5" fill="#8B5CF6"/>';
 }
 
+function artSmartHub() {
+  return groundShadow(200, 334, 92, 13)
+    + '<circle cx="200" cy="188" r="98" fill="#312E81"/>'
+    + '<path d="M118 160 a86 86 0 0 1 128 -62" fill="none" stroke="#5B21B6" stroke-width="14" stroke-linecap="round" opacity="0.7"/>'
+    + '<circle cx="200" cy="188" r="56" fill="#5B21B6"/>'
+    + '<circle cx="200" cy="188" r="32" fill="#8B5CF6"/>'
+    + '<circle cx="200" cy="188" r="13" fill="#EDE9FE"/>'
+    + '<circle cx="148" cy="128" r="5" fill="#EDE9FE" opacity="0.9"/>'
+    + '<circle cx="258" cy="140" r="4" fill="#EDE9FE" opacity="0.7"/>'
+    + '<circle cx="130" cy="212" r="4" fill="#C7D2FE" opacity="0.7"/>'
+    + '<circle cx="268" cy="220" r="5" fill="#C7D2FE" opacity="0.6"/>'
+    + '<circle cx="200" cy="94" r="4" fill="#C7D2FE" opacity="0.7"/>'
+    + '<rect x="186" y="282" width="28" height="14" rx="6" fill="#1E1B4B"/>'
+    + '<rect x="154" y="294" width="92" height="22" rx="11" fill="#1E1B4B"/>'
+    + '<rect x="166" y="300" width="68" height="5" rx="2.5" fill="#8B5CF6" opacity="0.55"/>';
+}
+
+function artVerticalMouse() {
+  return '<g transform="rotate(-14 200 200)">'
+    + groundShadow(200, 306, 76, 12)
+    + '<path d="M200 92 C 240 92 256 130 254 182 C 252 242 240 300 200 300 C 160 300 150 244 148 186 C 146 130 162 92 200 92 Z" fill="#312E81"/>'
+    + '<path d="M156 172 C 150 212 152 254 166 284 C 172 296 182 300 190 300 L 190 176 C 178 172 164 168 156 172 Z" fill="#5B21B6" opacity="0.85"/>'
+    + '<path d="M164 142 C 174 106 226 106 236 142" fill="none" stroke="#8B5CF6" stroke-width="5" stroke-linecap="round"/>'
+    + '<path d="M200 100 L 200 158" stroke="#EDE9FE" stroke-width="4" stroke-linecap="round"/>'
+    + '<rect x="190" y="114" width="20" height="38" rx="10" fill="#EDE9FE"/>'
+    + '<rect x="196" y="122" width="8" height="22" rx="4" fill="#8B5CF6"/>'
+    + '<circle cx="200" cy="172" r="6" fill="#5B21B6"/>'
+    + '<path d="M162 232 q 12 14 30 18 M 158 258 q 14 16 34 20" stroke="#4C1D95" stroke-width="5" stroke-linecap="round" fill="none"/>'
+    + '</g>';
+}
+
 function artTee() {
   return groundShadow(200, 336, 104, 14)
     + '<path d="M150 92 L94 120 L116 188 L146 176 V310 Q200 322 254 310 V176 L284 188 L306 120 L250 92 Q226 116 200 116 Q174 116 150 92 Z" fill="#FAFAF9" stroke="#D6D3D1" stroke-width="3" stroke-linejoin="round"/>'
@@ -337,6 +368,8 @@ const RICH_ART = {
   p30: artWatchSteel, // Strida Minimal Steel Watch
   p36: artDress, // Vantia Linen Summer Dress
   p42: artShoe, // Strida Trail Runner Shoes
+  p44: artSmartHub, // Mendo Smart Home Hub
+  p45: artVerticalMouse, // Ombra Vertical Mouse
 };
 
 /* Generate the artwork SVG for a product. */

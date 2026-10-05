@@ -218,6 +218,18 @@ export const PRODUCTS = [
     colors: col('silver'), kw: 'usb hub type-c docking adapter hdmi sd laptop',
     desc: 'Seven ports in an aluminum shell: 4K HDMI, 100 W USB-C power pass-through, two USB-A, plus SD and microSD card readers for quick photo offloads.',
   },
+  {
+    id: 'p44', name: 'Mendo Smart Home Hub', cat: 'electronics', sub: 'computing', brand: 'Mendo', art: 'smartHub',
+    price: 11999, orig: 14199, rating: 4.8, reviews: 1100, sold: 4200, flash: false, age: 18,
+    colors: col('black', 'white'), kw: 'smart home hub orb assistant automation zigbee voice',
+    desc: 'A palm-sized orb that ties every smart device in your home together: Zigbee, Wi-Fi and Matter in one glowing hub, with offline automations that keep the lights on even when the internet does not cooperate.',
+  },
+  {
+    id: 'p45', name: 'Ombra Vertical Mouse', cat: 'electronics', sub: 'computing', brand: 'Ombra', art: 'verticalMouse',
+    price: 4999, orig: 5549, rating: 4.6, reviews: 950, sold: 3100, flash: false, age: 25,
+    colors: col('black', 'silver'), kw: 'vertical mouse ergonomic wrist wireless office',
+    desc: 'A vertical mouse that holds your hand in a natural handshake position to take the twist out of long desk days, with a silent scroll wheel, four DPI steps and weeks of battery per charge.',
+  },
 
   // Fashion
   {
@@ -596,6 +608,8 @@ const SPEC_BY_ART = {
   wallet: [['Material', 'Full-grain vegetable-tanned leather'], ['Capacity', '6 cards + cash fold'], ['Protection', 'RFID-blocking layer'], ['Dimensions', '10.5 × 8 cm']],
   gem: [['Stone', '4 mm lab-grown'], ['Metal', 'Rhodium-plated 925 silver'], ['Backing', 'Hypoallergenic posts'], ['Packaging', 'Gift box']],
   shoe: [['Upper', 'Draining mesh'], ['Midsole', 'EVA with rock plate'], ['Outsole', '4 mm lugs, rubber'], ['Drop', '8 mm']],
+  smartHub: [['Radios', 'Zigbee, Wi-Fi, Matter'], ['Voice', 'Built-in assistant'], ['Connections', 'Up to 128 devices'], ['Power', 'USB-C, 15 W adapter included']],
+  verticalMouse: [['Grip', 'Vertical handshake hold'], ['Sensor', 'Optical, 4 DPI steps'], ['Battery', 'Rechargeable, up to 8 weeks'], ['Connection', '2.4 GHz USB-C dongle']],
 };
 
 export function specsFor(p) {
