@@ -173,6 +173,27 @@
   .field {
     @apply h-11 w-full rounded-lg border border-zinc-200 bg-white px-3 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100;
   }
+
+  /* Product artwork fade-in. Every product illustration (inline SVG,
+   * generated on the client — no image requests, so there is nothing to
+   * lazy-load; the grid must build synchronously to avoid layout shift)
+   * carries .product-img. The animation gives freshly-built grids a short
+   * fade instead of a hard pop; reduced-motion users see the art instantly. */
+  .product-img {
+    animation: product-img-fade 250ms ease-out both;
+  }
+
+  @keyframes product-img-fade {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .product-img {
+      animation: none;
+      opacity: 1;
+    }
+  }
 }
 
 /* Keyboard focus: visible ring for keyboard navigation only (WCAG 2.4.7).

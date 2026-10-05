@@ -120,7 +120,10 @@ export function productCard(p, opts = {}) {
 
   return '<article class="card product-card group flex cursor-pointer flex-col overflow-hidden" data-product="' + p.id + '">'
     + '<div class="relative aspect-square overflow-hidden rounded-t-xl">'
-    + '<div class="h-full w-full transition-transform duration-300 group-hover:scale-[1.03]">' + productArt(p) + '</div>'
+    // Sold-out items keep their illustration but render muted (~60%) so the
+    // status reads at a glance; only the card art dims — cart, order and
+    // product-page art stays full color.
+    + '<div class="h-full w-full transition-transform duration-300 group-hover:scale-[1.03]' + (p.oos ? ' opacity-60' : '') + '">' + productArt(p) + '</div>'
     + (disc ? '<span class="badge-sale absolute left-2 top-2">-' + disc + '%</span>' : '')
     + (p.oos ? '<span class="badge absolute bottom-2 left-2 bg-zinc-900/80 text-white">Sold out</span>' : '')
     + '<button type="button" data-fav="' + p.id + '" aria-label="Toggle favorite" aria-pressed="' + fav
