@@ -1,5 +1,6 @@
 {
   "description": "A modern mobile-first marketplace: deals, categories and everyday essentials.",
+  "icon": { "image": "brand/icon.png" },
   "secrets": [],
   "tests": [
     {
@@ -10,6 +11,13 @@
       "expectText": "Flash Sale",
       "visual": true,
       "impact": ["public/**", "styles/tailwind-input.css", "tailwind.config.js"]
+    },
+    {
+      "id": "home.app-shortcuts",
+      "name": "App shortcuts strip renders the seven app tiles",
+      "path": "/",
+      "expectText": "App shortcuts",
+      "expectSelector": "[data-app-shortcut='Game Corner']"
     },
     {
       "id": "home.categories-tab",
