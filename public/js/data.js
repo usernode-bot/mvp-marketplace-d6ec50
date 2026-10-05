@@ -486,7 +486,7 @@ export const ORDER_SEEDS = [
   {
     no: 'BZ-48073', status: 'to_ship', daysAgo: 1.3,
     items: [{ id: 'p05', qty: 2 }],
-    payment: 'Bazario Pay', shipMethod: 'Standard delivery', shipEta: '3-5 business days',
+    payment: 'MVP Marketplace Pay', shipMethod: 'Standard delivery', shipEta: '3-5 business days',
     shipping: 0,
     address: { name: 'Alex Rivera', phone: '+1 555 0134', line1: '221 Maple Street, Apt 4B', city: 'Portland, OR', zip: '97205' },
   },
@@ -500,7 +500,7 @@ export const ORDER_SEEDS = [
   {
     no: 'BZ-46402', status: 'shipped', daysAgo: 3.4,
     items: [{ id: 'p06', qty: 1 }, { id: 'p07', qty: 1 }],
-    payment: 'Bazario Pay', shipMethod: 'Standard delivery', shipEta: '3-5 business days',
+    payment: 'MVP Marketplace Pay', shipMethod: 'Standard delivery', shipEta: '3-5 business days',
     shipping: 0,
     address: { name: 'Sam Taylor', phone: '+1 555 0198', line1: '8 Cedar Lane', city: 'Austin, TX', zip: '78701' },
   },
@@ -514,7 +514,7 @@ export const ORDER_SEEDS = [
   {
     no: 'BZ-43810', status: 'completed', daysAgo: 15,
     items: [{ id: 'p14', qty: 3 }],
-    payment: 'Bazario Pay', shipMethod: 'Standard delivery', shipEta: '3-5 business days',
+    payment: 'MVP Marketplace Pay', shipMethod: 'Standard delivery', shipEta: '3-5 business days',
     shipping: 0,
     address: { name: 'Sam Taylor', phone: '+1 555 0198', line1: '8 Cedar Lane', city: 'Austin, TX', zip: '78701' },
   },

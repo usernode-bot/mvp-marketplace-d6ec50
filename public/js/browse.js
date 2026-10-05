@@ -244,7 +244,7 @@ function searchHomeShell() {
     + '<div class="mt-3">' + searchInputHtml('search-page-input', 'Search products, brands, and more', '') + '</div>'
     + '<div class="card mt-4">' + emptyState({
       icon: 'search',
-      title: 'Search Bazario',
+      title: 'Search MVP Marketplace',
       body: 'Find products across every category. Start with a word, a brand or a category name.',
     }) + '</div>'
     + recent + popular;
@@ -347,7 +347,7 @@ function renderShell() {
   const view = document.getElementById('view-browse');
   view.innerHTML = shellHtml();
   const cat = state.mode === 'category' ? categoryById(state.id) : null;
-  document.title = state.mode === 'category' && cat ? cat.name + ' · Bazario' : 'Search · Bazario';
+  document.title = state.mode === 'category' && cat ? cat.name + ' · MVP Marketplace' : 'Search · MVP Marketplace';
 
   // Sort menu + filter overlay reflect current state.
   syncSortMenu();

@@ -88,7 +88,7 @@ tables you've marked private), etc.
 
 ## About MVP Marketplace
 
-The consumer app is branded **Bazario** (original brand: violet accent,
+The consumer app is branded **MVP Marketplace** (violet accent,
 bag glyph — deliberately unlike any existing marketplace). Roadmap:
 MVP → Beta → Add Seller → Payment → Logistics → Advanced Features →
 Production. Phase 1 (shipped) is the design system, app shell, Home page

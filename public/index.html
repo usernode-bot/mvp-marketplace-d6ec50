@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>Bazario Marketplace</title>
+  <title>MVP Marketplace</title>
 
   <script>
   // usernode-dev-console@1
@@ -99,15 +99,15 @@
       <div class="flex h-14 items-center gap-2 md:h-16 md:gap-4">
 
         <!-- Logo -->
-        <button data-nav="home" class="flex shrink-0 items-center gap-2 rounded-lg py-1 pr-2 text-left" aria-label="Bazario home">
+        <button data-nav="home" class="flex shrink-0 items-center gap-2 rounded-lg py-1 pr-2 text-left" aria-label="MVP Marketplace home">
           <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-600 text-white shadow-card">
             <span data-icon="bag" data-cls="h-5 w-5"></span>
           </span>
-          <span class="text-lg font-bold tracking-tight text-zinc-900">Bazario</span>
+          <span class="text-lg font-bold tracking-tight text-zinc-900">MVP Marketplace</span>
         </button>
 
         <!-- Desktop navigation (bottom nav covers mobile) -->
-        <nav class="hidden items-center gap-1 md:flex" aria-label="Primary">
+        <nav class="hidden items-center gap-1 lg:flex" aria-label="Primary">
           <button class="nav-link nav-link-active" data-nav="home"><span data-icon="home" data-cls="h-4 w-4"></span>Home</button>
           <button class="nav-link" data-nav="categories"><span data-icon="grid" data-cls="h-4 w-4"></span>Categories</button>
           <button class="nav-link" data-nav="cart">
@@ -120,7 +120,7 @@
         </nav>
 
         <!-- Desktop search -->
-        <div class="search-box relative ml-2 hidden max-w-md flex-1 md:block">
+        <div class="search-box relative ml-2 hidden max-w-md flex-1 lg:block">
           <div class="relative">
             <span class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400"><span data-icon="search" data-cls="h-5 w-5"></span></span>
             <input type="search" class="input" placeholder="Search products, brands, and more" autocomplete="off" aria-label="Search products">
@@ -129,7 +129,7 @@
         </div>
 
         <!-- Actions -->
-        <div class="ml-auto flex items-center gap-0.5 md:ml-0">
+        <div class="ml-auto flex items-center gap-0.5 lg:ml-0">
           <button class="icon-btn" id="bell-btn" aria-label="Notifications">
             <span data-icon="bell" data-cls="h-5 w-5"></span>
             <span aria-hidden="true" class="absolute right-2 top-2 h-2 w-2 rounded-full bg-rose-500"></span>
@@ -144,7 +144,7 @@
       </div>
 
       <!-- Mobile search (second row) -->
-      <div class="pb-3 md:hidden">
+      <div class="pb-3 lg:hidden">
         <div class="search-box relative">
           <div class="relative">
             <span class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400"><span data-icon="search" data-cls="h-5 w-5"></span></span>
@@ -156,7 +156,7 @@
     </div>
   </header>
 
-  <main class="mx-auto max-w-7xl px-4 pb-28 pt-4 md:pb-12">
+  <main class="mx-auto max-w-7xl px-4 pb-28 pt-4 lg:pb-12">
     <div id="view-home" data-view="home">
       <!-- Promotional carousel -->
       <section id="section-promo" aria-label="Promotions">
@@ -219,7 +219,7 @@
   </main>
 
   <!-- Bottom navigation (mobile) -->
-  <nav id="bottom-nav" class="fixed inset-x-0 bottom-0 z-40 border-t border-zinc-100 bg-white md:hidden" aria-label="Primary" style="padding-bottom: var(--un-safe-inset-bottom, env(safe-area-inset-bottom, 0px));">
+  <nav id="bottom-nav" class="fixed inset-x-0 bottom-0 z-40 border-t border-zinc-100 bg-white lg:hidden" aria-label="Primary" style="padding-bottom: var(--un-safe-inset-bottom, env(safe-area-inset-bottom, 0px));">
     <div class="mx-auto flex max-w-lg">
       <button class="nav-item nav-item-active" data-nav="home"><span data-icon="home" data-cls="h-5 w-5"></span>Home</button>
       <button class="nav-item" data-nav="categories"><span data-icon="grid" data-cls="h-5 w-5"></span>Categories</button>
