@@ -2,13 +2,16 @@
  *
  * One consistent style across the whole app: 24-unit stroke grid, 2px round
  * strokes (Lucide-style), currentColor, aria-hidden. Product artwork is
- * generated SVG: a soft per-category gradient with either a detailed flat
- * product illustration (rich art, keyed by product id — used for the Flash
- * Sale cards and every other surface that renders the same product) or the
- * category icon drawn large in its deep hue. No external image requests, so
- * the grid renders instantly and offline, and there is nothing that can
- * fail to load (the legacy category tile doubles as the fallback when a
- * product has no rich illustration).
+ * generated SVG: a soft per-category gradient with a detailed flat product
+ * illustration (rich art, keyed by product id — every current catalog
+ * product has one, and the same artwork feeds the Flash Sale cards and every
+ * other surface that renders the product). There are no external image
+ * requests, so the grid renders instantly and offline and nothing can fail
+ * to load — there is also nothing to "lazy load" (no network fetch at all);
+ * the art is built synchronously on the client and the .product-img fade-in
+ * in styles/tailwind-input.css supplies the perceived-loading polish. The
+ * category glyph tier below remains as the fallback for any future product
+ * without a rich illustration.
  */
 
 const STROKE_ICONS = {
@@ -324,20 +327,546 @@ function artShoe() {
     + '<rect x="106" y="282" width="14" height="6" rx="2" fill="#0F172A"/><rect x="134" y="282" width="14" height="6" rx="2" fill="#0F172A"/><rect x="162" y="282" width="14" height="6" rx="2" fill="#0F172A"/><rect x="190" y="282" width="14" height="6" rx="2" fill="#0F172A"/><rect x="218" y="282" width="14" height="6" rx="2" fill="#0F172A"/><rect x="246" y="282" width="14" height="6" rx="2" fill="#0F172A"/><rect x="274" y="282" width="14" height="6" rx="2" fill="#0F172A"/>';
 }
 
+/* -----------------------------------------------------------------------
+ * Second wave: the remaining catalog products. Same drawing rules as the
+ * builders above — 400x400 canvas, product centered near (200, ~200) over
+ * the shared ground shadow, flat rounded shapes, a soft white highlight,
+ * one accent family + indigo/slate neutrals. No backgrounds here: the
+ * halo circle and per-category gradient come from productArtView().
+ * ----------------------------------------------------------------------- */
+
+function artActionCamera() {
+  return groundShadow(200, 314, 104, 13)
+    + '<rect x="186" y="98" width="28" height="16" rx="6" fill="#475569"/>'
+    + '<rect x="118" y="110" width="164" height="116" rx="26" fill="#312E81"/>'
+    + '<rect x="130" y="122" width="12" height="92" rx="6" fill="#ffffff" opacity="0.10"/>'
+    + '<circle cx="180" cy="168" r="44" fill="#1E1B4B"/>'
+    + '<circle cx="180" cy="168" r="33" fill="none" stroke="#8B5CF6" stroke-width="5"/>'
+    + '<circle cx="180" cy="168" r="18" fill="#7C3AED"/>'
+    + '<circle cx="174" cy="161" r="5" fill="#F5F3FF" opacity="0.85"/>'
+    + '<rect x="238" y="132" width="32" height="56" rx="8" fill="#E0E7FF"/>'
+    + '<circle cx="246" cy="144" r="4" fill="#F43F5E"/>'
+    + '<rect x="242" y="154" width="24" height="24" rx="4" fill="#A5B4FC"/>'
+    + '<rect x="134" y="226" width="16" height="44" rx="6" fill="#475569"/>'
+    + '<rect x="250" y="226" width="16" height="44" rx="6" fill="#475569"/>'
+    + '<rect x="126" y="268" width="148" height="16" rx="8" fill="#334155"/>';
+}
+
+function artSmartTV() {
+  return groundShadow(200, 320, 122, 13)
+    + '<defs><clipPath id="tvs-p04"><rect x="72" y="120" width="256" height="150" rx="7"/></clipPath></defs>'
+    + '<rect x="60" y="108" width="280" height="174" rx="12" fill="#0F172A"/>'
+    + '<g clip-path="url(#tvs-p04)">'
+    + '<rect x="72" y="120" width="256" height="150" fill="#1E1B4B"/>'
+    + '<circle cx="130" cy="150" r="90" fill="#7C3AED" opacity="0.9"/>'
+    + '<circle cx="260" cy="250" r="110" fill="#4C1D95" opacity="0.9"/>'
+    + '<circle cx="310" cy="140" r="70" fill="#2DD4BF" opacity="0.45"/>'
+    + '<circle cx="205" cy="205" r="55" fill="#F43F5E" opacity="0.28"/>'
+    + '<circle cx="110" cy="250" r="50" fill="#2DD4BF" opacity="0.3"/>'
+    + '<circle cx="150" cy="128" r="3" fill="#F5F3FF" opacity="0.9"/>'
+    + '<circle cx="286" cy="236" r="2.5" fill="#F5F3FF" opacity="0.8"/>'
+    + '</g>'
+    + '<rect x="138" y="280" width="18" height="28" rx="5" fill="#334155"/>'
+    + '<rect x="244" y="280" width="18" height="28" rx="5" fill="#334155"/>';
+}
+
+function artSleeve() {
+  return groundShadow(200, 304, 112, 13)
+    + '<rect x="236" y="88" width="56" height="66" rx="8" fill="#E2E8F0"/>'
+    + '<rect x="242" y="94" width="44" height="54" rx="5" fill="#F8FAFC"/>'
+    + '<rect x="236" y="144" width="56" height="10" rx="5" fill="#94A3B8"/>'
+    + '<rect x="100" y="142" width="190" height="134" rx="20" fill="#1E3A8A"/>'
+    + '<rect x="100" y="142" width="190" height="28" rx="14" fill="#1E40AF"/>'
+    + '<path d="M106 170 H284" stroke="#E2E8F0" stroke-width="3" stroke-dasharray="3 5"/>'
+    + '<rect x="266" y="176" width="20" height="9" rx="4" fill="#CBD5E1"/>'
+    + '<rect x="114" y="152" width="12" height="112" rx="6" fill="#ffffff" opacity="0.10"/>';
+}
+
+function artChargingStand() {
+  return groundShadow(200, 306, 96, 12)
+    + '<rect x="170" y="140" width="60" height="124" rx="12" fill="#1E293B"/>'
+    + '<g transform="rotate(-14 200 190)">'
+    + '<rect x="152" y="88" width="96" height="196" rx="20" fill="#0F172A"/>'
+    + '<rect x="160" y="96" width="80" height="180" rx="14" fill="#312E81"/>'
+    + '<rect x="166" y="102" width="12" height="120" rx="6" fill="#ffffff" opacity="0.10"/>'
+    + '<circle cx="206" cy="180" r="40" fill="#2DD4BF" opacity="0.18"/>'
+    + '<path d="M206 158 l-20 34 h16 l-8 30 26 -40 h-16 z" fill="#5EEAD4"/>'
+    + '</g>'
+    + '<rect x="128" y="252" width="144" height="24" rx="12" fill="#0F172A"/>'
+    + '<circle cx="200" cy="264" r="4" fill="#5EEAD4"/>';
+}
+
+function artUsbHub() {
+  return groundShadow(200, 306, 126, 12)
+    + '<path d="M304 204 C338 204 348 226 348 252" fill="none" stroke="#475569" stroke-width="10" stroke-linecap="round"/>'
+    + '<rect x="338" y="252" width="20" height="32" rx="5" fill="#1E293B"/>'
+    + '<rect x="342" y="284" width="12" height="14" rx="2" fill="#94A3B8"/>'
+    + '<rect x="118" y="236" width="18" height="12" rx="4" fill="#94A3B8"/>'
+    + '<rect x="264" y="236" width="18" height="12" rx="4" fill="#94A3B8"/>'
+    + '<rect x="96" y="176" width="208" height="64" rx="16" fill="#CBD5E1"/>'
+    + '<rect x="96" y="170" width="208" height="20" rx="10" fill="#E2E8F0"/>'
+    + '<rect x="104" y="173" width="56" height="5" rx="2.5" fill="#ffffff" opacity="0.6"/>'
+    + '<rect x="114" y="196" width="54" height="20" rx="3" fill="#0F172A"/>'
+    + '<rect x="119" y="202" width="44" height="8" rx="2" fill="#334155"/>'
+    + '<rect x="180" y="196" width="34" height="20" rx="3" fill="#0F172A"/>'
+    + '<rect x="185" y="201" width="24" height="10" rx="2" fill="#94A3B8"/>'
+    + '<rect x="222" y="196" width="34" height="20" rx="3" fill="#0F172A"/>'
+    + '<rect x="227" y="201" width="24" height="10" rx="2" fill="#94A3B8"/>'
+    + '<rect x="264" y="196" width="32" height="20" rx="3" fill="#0F172A"/>'
+    + '<rect x="268" y="200" width="24" height="12" rx="2" fill="#64748B"/>';
+}
+
+function artHomeHub() {
+  return groundShadow(200, 298, 92, 12)
+    + '<ellipse cx="200" cy="272" rx="66" ry="14" fill="#334155"/>'
+    + '<ellipse cx="200" cy="264" rx="66" ry="14" fill="#475569"/>'
+    + '<circle cx="200" cy="192" r="76" fill="#8B5CF6"/>'
+    + '<ellipse cx="176" cy="162" rx="24" ry="17" fill="#ffffff" opacity="0.25"/>'
+    + '<ellipse cx="200" cy="212" rx="42" ry="13" fill="none" stroke="#C4B5FD" stroke-width="6" opacity="0.95"/>'
+    + '<circle cx="200" cy="212" r="7" fill="#EDE9FE"/>';
+}
+
+function artVerticalMouse() {
+  return groundShadow(200, 318, 84, 12)
+    + '<g transform="rotate(-14 200 200)">'
+    + '<rect x="166" y="106" width="68" height="188" rx="34" fill="#312E81"/>'
+    + '<path d="M200 114 V152" stroke="#1E1B4B" stroke-width="3"/>'
+    + '<rect x="193" y="120" width="14" height="28" rx="7" fill="#C4B5FD"/>'
+    + '<rect x="162" y="170" width="8" height="20" rx="4" fill="#8B5CF6"/>'
+    + '<rect x="162" y="196" width="8" height="20" rx="4" fill="#8B5CF6"/>'
+    + '<rect x="178" y="126" width="10" height="110" rx="5" fill="#ffffff" opacity="0.12"/>'
+    + '<rect x="176" y="280" width="48" height="8" rx="4" fill="#1E1B4B"/>'
+    + '</g>';
+}
+
+function artClearCase() {
+  return groundShadow(200, 338, 82, 12)
+    + '<rect x="148" y="86" width="104" height="228" rx="24" fill="#334155"/>'
+    + '<rect x="156" y="96" width="88" height="208" rx="16" fill="#1E293B"/>'
+    + '<rect x="140" y="80" width="120" height="240" rx="27" fill="#ffffff" opacity="0.26"/>'
+    + '<rect x="140" y="80" width="120" height="240" rx="27" fill="none" stroke="#ffffff" stroke-width="3" opacity="0.7"/>'
+    + '<rect x="152" y="94" width="42" height="42" rx="15" fill="#ffffff" opacity="0.55"/>'
+    + '<circle cx="166" cy="108" r="7" fill="#334155"/>'
+    + '<circle cx="181" cy="122" r="7" fill="#334155"/>'
+    + '<path d="M154 306 L242 100" stroke="#ffffff" stroke-width="12" stroke-linecap="round" opacity="0.14"/>';
+}
+
+function artDenimJacket() {
+  return groundShadow(200, 322, 112, 14)
+    + '<path d="M126 130 L158 108 H242 L274 130 L296 158 L272 192 L262 174 V298 Q200 312 138 298 V174 L128 192 L104 158 Z" fill="#2563EB"/>'
+    + '<path d="M158 108 L134 148 M242 108 L266 148" stroke="#1E40AF" stroke-width="4" fill="none"/>'
+    + '<path d="M158 108 L180 128 L166 144 L148 122 Z" fill="#1E40AF"/>'
+    + '<path d="M242 108 L220 128 L234 144 L252 122 Z" fill="#1E40AF"/>'
+    + '<path d="M200 128 V302" stroke="#1E40AF" stroke-width="5"/>'
+    + '<rect x="146" y="178" width="42" height="34" rx="6" fill="#1E40AF"/>'
+    + '<rect x="212" y="178" width="42" height="34" rx="6" fill="#1E40AF"/>'
+    + '<circle cx="167" cy="196" r="3" fill="#D97706"/><circle cx="233" cy="196" r="3" fill="#D97706"/>'
+    + '<circle cx="200" cy="158" r="4" fill="#D97706"/><circle cx="200" cy="192" r="4" fill="#D97706"/>'
+    + '<circle cx="200" cy="226" r="4" fill="#D97706"/><circle cx="200" cy="260" r="4" fill="#D97706"/>'
+    + '<path d="M138 292 q62 14 124 0 v10 q-62 14 -124 0 z" fill="#1E40AF"/>'
+    + '<path d="M156 128 l-24 22 12 40" stroke="#ffffff" stroke-width="6" opacity="0.12" fill="none" stroke-linecap="round"/>';
+}
+
+function artCrossbody() {
+  return groundShadow(200, 292, 104, 13)
+    + '<path d="M132 92 C164 58 236 58 268 92 M132 92 L154 152 M268 92 L246 152" fill="none" stroke="#B98A5A" stroke-width="9" stroke-linecap="round"/>'
+    + '<rect x="130" y="148" width="140" height="110" rx="28" fill="#1F2937"/>'
+    + '<path d="M130 176 h140 v14 q-70 24 -140 0 z" fill="#374151"/>'
+    + '<rect x="188" y="188" width="24" height="13" rx="4" fill="#D97706"/>'
+    + '<circle cx="146" cy="152" r="5" fill="#D97706"/>'
+    + '<circle cx="254" cy="152" r="5" fill="#D97706"/>'
+    + '<path d="M146 244 h108" stroke="#4B5563" stroke-width="3" stroke-dasharray="4 4"/>'
+    + '<rect x="142" y="156" width="10" height="88" rx="5" fill="#ffffff" opacity="0.08"/>';
+}
+
+function artRetroSunglasses() {
+  return groundShadow(200, 276, 112, 11)
+    + '<path d="M104 192 L74 172" stroke="#92400E" stroke-width="10" stroke-linecap="round"/>'
+    + '<path d="M296 192 L326 172" stroke="#92400E" stroke-width="10" stroke-linecap="round"/>'
+    + '<circle cx="148" cy="196" r="37" fill="#44403C"/>'
+    + '<circle cx="252" cy="196" r="37" fill="#44403C"/>'
+    + '<circle cx="148" cy="196" r="44" fill="none" stroke="#92400E" stroke-width="13"/>'
+    + '<circle cx="252" cy="196" r="44" fill="none" stroke="#92400E" stroke-width="13"/>'
+    + '<path d="M186 186 q14 -14 28 0" fill="none" stroke="#92400E" stroke-width="11" stroke-linecap="round"/>'
+    + '<ellipse cx="134" cy="182" rx="11" ry="7" fill="#ffffff" opacity="0.3"/>'
+    + '<ellipse cx="238" cy="182" rx="11" ry="7" fill="#ffffff" opacity="0.3"/>';
+}
+
+function artTote() {
+  return groundShadow(200, 322, 106, 13)
+    + '<path d="M156 152 C156 100 244 100 244 152" fill="none" stroke="#C4A47C" stroke-width="10"/>'
+    + '<path d="M168 152 C168 114 232 114 232 152" fill="none" stroke="#C4A47C" stroke-width="5" opacity="0.6"/>'
+    + '<path d="M114 152 H286 L268 294 Q200 308 132 294 Z" fill="#D9C5A0"/>'
+    + '<path d="M120 170 H280" stroke="#C4A47C" stroke-width="3" stroke-dasharray="7 6"/>'
+    + '<path d="M162 176 L152 288" stroke="#C4A47C" stroke-width="3" opacity="0.55"/>'
+    + '<path d="M238 176 L248 288" stroke="#C4A47C" stroke-width="3" opacity="0.55"/>'
+    + '<rect x="126" y="180" width="12" height="100" rx="6" fill="#ffffff" opacity="0.14"/>';
+}
+
+function artCardigan() {
+  return groundShadow(200, 318, 108, 13)
+    + '<path d="M150 98 L96 124 L114 190 L146 178 V294 Q200 308 254 294 V178 L286 190 L304 124 L250 98 Q226 122 200 122 Q174 122 150 98 Z" fill="#D9C5A0"/>'
+    + '<path d="M150 98 Q200 130 250 98" fill="none" stroke="#B98A5A" stroke-width="6"/>'
+    + '<path d="M200 126 V296" stroke="#B98A5A" stroke-width="5"/>'
+    + '<circle cx="200" cy="156" r="4.5" fill="#8A5A2B"/><circle cx="200" cy="196" r="4.5" fill="#8A5A2B"/>'
+    + '<circle cx="200" cy="236" r="4.5" fill="#8A5A2B"/><circle cx="200" cy="276" r="4.5" fill="#8A5A2B"/>'
+    + '<rect x="100" y="176" width="20" height="18" rx="5" fill="#C4A47C"/>'
+    + '<rect x="280" y="176" width="20" height="18" rx="5" fill="#C4A47C"/>'
+    + '<path d="M146 288 q54 12 108 0 v14 q-54 12 -108 0 z" fill="#C4A47C"/>'
+    + '<path d="M166 292 v8 M186 294 v8 M206 294 v8 M226 292 v8" stroke="#B98A5A" stroke-width="2"/>'
+    + '<rect x="150" y="140" width="12" height="120" rx="6" fill="#ffffff" opacity="0.12"/>';
+}
+
+function artEyeshadowPalette() {
+  return groundShadow(200, 306, 116, 12)
+    + '<rect x="118" y="90" width="164" height="52" rx="14" fill="#374151"/>'
+    + '<rect x="128" y="98" width="144" height="36" rx="9" fill="#E2E8F0" opacity="0.92"/>'
+    + '<rect x="138" y="102" width="40" height="8" rx="4" fill="#ffffff" opacity="0.8"/>'
+    + '<path d="M112 156 H288" stroke="#D97706" stroke-width="4"/>'
+    + '<rect x="100" y="158" width="200" height="122" rx="16" fill="#1F2937"/>'
+    + '<rect x="108" y="166" width="184" height="106" rx="10" fill="none" stroke="#D97706" stroke-width="2.5" opacity="0.8"/>'
+    + '<circle cx="134" cy="200" r="12" fill="#F5D0C5"/><circle cx="162" cy="200" r="12" fill="#EAB6A2"/>'
+    + '<circle cx="190" cy="200" r="12" fill="#D98E73"/><circle cx="218" cy="200" r="12" fill="#B96D55"/>'
+    + '<circle cx="246" cy="200" r="12" fill="#8C4A3A"/><circle cx="274" cy="200" r="12" fill="#5C3327"/>'
+    + '<circle cx="134" cy="236" r="12" fill="#F9A8D4"/><circle cx="162" cy="236" r="12" fill="#FDA4AF"/>'
+    + '<circle cx="190" cy="236" r="12" fill="#FCD34D"/><circle cx="218" cy="236" r="12" fill="#A78BFA"/>'
+    + '<circle cx="246" cy="236" r="12" fill="#FDBA74"/><circle cx="274" cy="236" r="12" fill="#FDE68A"/>'
+    + '<circle cx="159" cy="232" r="2.5" fill="#ffffff" opacity="0.9"/>'
+    + '<circle cx="215" cy="232" r="2.5" fill="#ffffff" opacity="0.9"/>'
+    + '<circle cx="271" cy="232" r="2.5" fill="#ffffff" opacity="0.9"/>';
+}
+
+function artFaceMist() {
+  return groundShadow(200, 308, 78, 12)
+    + '<circle cx="242" cy="84" r="4" fill="#ffffff" opacity="0.85"/>'
+    + '<circle cx="252" cy="72" r="3" fill="#ffffff" opacity="0.7"/>'
+    + '<circle cx="260" cy="62" r="2.5" fill="#ffffff" opacity="0.55"/>'
+    + '<path d="M232 80 l14 -10 M240 88 l16 -6" stroke="#ffffff" stroke-width="2" opacity="0.5" stroke-linecap="round"/>'
+    + '<rect x="212" y="92" width="16" height="12" rx="3" fill="#DB2777"/>'
+    + '<rect x="182" y="86" width="36" height="28" rx="7" fill="#F472B6"/>'
+    + '<rect x="188" y="112" width="24" height="22" rx="4" fill="#FBCFE8"/>'
+    + '<rect x="168" y="132" width="64" height="158" rx="16" fill="#F9A8D4"/>'
+    + '<rect x="174" y="140" width="10" height="132" rx="5" fill="#ffffff" opacity="0.4"/>'
+    + '<rect x="176" y="192" width="48" height="62" rx="8" fill="#FFF1F2"/>'
+    + '<circle cx="200" cy="212" r="9" fill="#FB7185"/>'
+    + '<path d="M184 232 h32 M184 240 h24" stroke="#F9A8D4" stroke-width="3" stroke-linecap="round"/>';
+}
+
+function artClayMaskKit() {
+  return groundShadow(200, 302, 114, 13)
+    + '<path d="M118 96 C158 70 242 70 282 96" fill="none" stroke="#FFF7ED" stroke-width="16" stroke-linecap="round"/>'
+    + '<path d="M176 79 q12 6 24 0" stroke="#FDBA74" stroke-width="4" fill="none" opacity="0.7"/>'
+    + '<g transform="rotate(-8 150 210)">'
+    + '<rect x="108" y="156" width="84" height="108" rx="10" fill="#CD6B4F"/>'
+    + '<path d="M118 156 l8 8 M132 156 l8 8" stroke="#B14E36" stroke-width="3"/>'
+    + '<rect x="120" y="184" width="60" height="42" rx="6" fill="#FFEDD5"/>'
+    + '<path d="M128 196 h44 M128 206 h32" stroke="#CD6B4F" stroke-width="3" stroke-linecap="round"/>'
+    + '</g>'
+    + '<g transform="rotate(26 258 200)">'
+    + '<rect x="250" y="112" width="16" height="92" rx="8" fill="#D97706"/>'
+    + '<rect x="248" y="202" width="20" height="14" rx="3" fill="#94A3B8"/>'
+    + '<rect x="246" y="214" width="24" height="42" rx="10" fill="#8A5A2B"/>'
+    + '</g>'
+    + '<ellipse cx="200" cy="258" rx="24" ry="10" fill="#CD6B4F" opacity="0.85"/>'
+    + '<ellipse cx="222" cy="250" rx="14" ry="7" fill="#B14E36" opacity="0.85"/>';
+}
+
+function artLipstickSet() {
+  return groundShadow(200, 306, 104, 12)
+    + '<path d="M156 152 v-22 q0 -10 9 -14 l9 5 v31 z" fill="#E11D48"/>'
+    + '<rect x="152" y="152" width="30" height="114" rx="7" fill="#FDA4AF"/>'
+    + '<rect x="158" y="160" width="6" height="98" rx="3" fill="#ffffff" opacity="0.5"/>'
+    + '<path d="M200 178 v-16 q0 -8 7 -11 l7 4 v23 z" fill="#9D174D"/>'
+    + '<rect x="196" y="178" width="30" height="88" rx="7" fill="#F9A8D4"/>'
+    + '<path d="M244 164 v-18 q0 -9 8 -12 l8 4 v26 z" fill="#BE185D"/>'
+    + '<rect x="240" y="164" width="30" height="102" rx="7" fill="#FBCFE8"/>'
+    + '<rect x="116" y="266" width="168" height="18" rx="9" fill="#881337"/>'
+    + '<path d="M148 296 q52 16 104 0" fill="none" stroke="#E11D48" stroke-width="9" stroke-linecap="round" opacity="0.5"/>';
+}
+
+function artTableLamp() {
+  return groundShadow(200, 292, 92, 12)
+    + '<ellipse cx="200" cy="184" rx="60" ry="12" fill="#FDE68A" opacity="0.8"/>'
+    + '<path d="M148 96 H252 L268 178 H132 Z" fill="#FEF3C7"/>'
+    + '<path d="M148 96 H252" stroke="#D97706" stroke-width="4" stroke-linecap="round"/>'
+    + '<path d="M132 178 H268" stroke="#D97706" stroke-width="4" stroke-linecap="round"/>'
+    + '<path d="M162 108 L150 170" stroke="#ffffff" stroke-width="10" opacity="0.35" stroke-linecap="round"/>'
+    + '<rect x="192" y="176" width="16" height="18" fill="#B45309"/>'
+    + '<circle cx="200" cy="228" r="36" fill="#FFEDD5"/>'
+    + '<ellipse cx="188" cy="216" rx="11" ry="15" fill="#ffffff" opacity="0.5"/>'
+    + '<ellipse cx="200" cy="262" rx="27" ry="8" fill="#92400E"/>';
+}
+
+function artBedSheets() {
+  return groundShadow(200, 302, 114, 13)
+    + '<rect x="112" y="234" width="176" height="46" rx="10" fill="#93C5FD"/>'
+    + '<rect x="120" y="196" width="160" height="42" rx="10" fill="#BFDBFE"/>'
+    + '<path d="M132 196 H268" stroke="#60A5FA" stroke-width="2.5" opacity="0.5"/>'
+    + '<rect x="132" y="148" width="136" height="52" rx="20" fill="#F8FAFC" stroke="#BFDBFE" stroke-width="2.5"/>'
+    + '<path d="M148 172 q52 10 104 0" stroke="#BFDBFE" stroke-width="3" fill="none"/>'
+    + '<ellipse cx="154" cy="162" rx="18" ry="9" fill="#ffffff" opacity="0.7"/>'
+    + '<path d="M124 234 H276" stroke="#60A5FA" stroke-width="2.5" opacity="0.7"/>'
+    + '<path d="M124 266 H276" stroke="#3B82F6" stroke-width="2.5" stroke-dasharray="6 5" opacity="0.8"/>';
+}
+
+function artWeightedBlanket() {
+  return groundShadow(200, 312, 116, 13)
+    + '<rect x="104" y="234" width="192" height="48" rx="10" fill="#64748B"/>'
+    + '<path d="M124 238 V278 M148 238 V278 M172 238 V278 M196 238 V278 M220 238 V278 M244 238 V278 M268 238 V278" stroke="#475569" stroke-width="2.5" opacity="0.7"/>'
+    + '<rect x="112" y="190" width="176" height="48" rx="10" fill="#94A3B8"/>'
+    + '<path d="M136 194 V234 M160 194 V234 M184 194 V234 M208 194 V234 M232 194 V234 M256 194 V234" stroke="#64748B" stroke-width="2.5" opacity="0.7"/>'
+    + '<path d="M112 240 H288" stroke="#475569" stroke-width="2.5"/>'
+    + '<rect x="104" y="276" width="192" height="12" rx="6" fill="#475569"/>'
+    + '<rect x="118" y="196" width="12" height="38" rx="6" fill="#ffffff" opacity="0.18"/>';
+}
+
+function artCandleTrio() {
+  return groundShadow(200, 296, 104, 12)
+    + '<circle cx="152" cy="207" r="16" fill="#FDE68A" opacity="0.35"/>'
+    + '<rect x="124" y="196" width="56" height="80" rx="10" fill="#FFFBEB" stroke="#FDE68A" stroke-width="2.5"/>'
+    + '<rect x="129" y="220" width="46" height="52" rx="7" fill="#FCD34D"/>'
+    + '<path d="M152 220 v-12" stroke="#78350F" stroke-width="3" stroke-linecap="round"/>'
+    + '<path d="M152 200 C158 208 156 214 152 214 C148 214 146 208 152 200 Z" fill="#F59E0B"/>'
+    + '<circle cx="152" cy="208" r="3" fill="#FFF7ED"/>'
+    + '<rect x="188" y="210" width="52" height="66" rx="10" fill="#FFFBEB" stroke="#FDE68A" stroke-width="2.5"/>'
+    + '<rect x="193" y="232" width="42" height="40" rx="7" fill="#FDE68A"/>'
+    + '<path d="M214 232 v-10" stroke="#78350F" stroke-width="3" stroke-linecap="round"/>'
+    + '<circle cx="214" cy="219" r="2.5" fill="#78350F"/>'
+    + '<rect x="248" y="224" width="44" height="52" rx="10" fill="#FFFBEB" stroke="#FDE68A" stroke-width="2.5"/>'
+    + '<rect x="253" y="244" width="34" height="28" rx="7" fill="#FCD34D"/>'
+    + '<rect x="130" y="202" width="5" height="64" rx="2.5" fill="#ffffff" opacity="0.6"/>'
+    + '<rect x="193" y="216" width="5" height="50" rx="2.5" fill="#ffffff" opacity="0.6"/>'
+    + '<rect x="253" y="230" width="5" height="38" rx="2.5" fill="#ffffff" opacity="0.6"/>'
+    + '<rect x="134" y="236" width="36" height="18" rx="4" fill="#FEF3C7" stroke="#FDE68A" stroke-width="2"/>'
+    + '<path d="M140 245 h24" stroke="#D97706" stroke-width="2" stroke-linecap="round"/>';
+}
+
+function artSoccerBall() {
+  return groundShadow(200, 314, 96, 12)
+    + '<defs><clipPath id="ball-p23"><circle cx="200" cy="196" r="86"/></clipPath></defs>'
+    + '<circle cx="200" cy="196" r="86" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="2"/>'
+    + '<g clip-path="url(#ball-p23)">'
+    + '<polygon points="200,166 228,187 218,220 182,220 172,187" fill="#1E293B"/>'
+    + '<polygon points="250,100 275,118 265,148 235,148 225,118" fill="#334155"/>'
+    + '<polygon points="290,198 308,223 280,248 259,238 259,208" fill="#334155"/>'
+    + '<polygon points="226,282 208,307 179,297 179,267 208,257" fill="#334155"/>'
+    + '<polygon points="126,248 97,238 97,208 126,198 144,223" fill="#7C3AED"/>'
+    + '<polygon points="128,141 128,111 157,101 175,126 157,151" fill="#334155"/>'
+    + '<path d="M250 126 L228 187 M282 223 L218 220 M200 282 L182 220 M118 223 L182 220 M149 126 L200 166" stroke="#CBD5E1" stroke-width="2.5" fill="none"/>'
+    + '</g>'
+    + '<ellipse cx="170" cy="162" rx="22" ry="13" fill="#ffffff" opacity="0.5"/>';
+}
+
+function artWaterBottle() {
+  return groundShadow(200, 318, 84, 12)
+    + '<rect x="188" y="78" width="24" height="16" rx="6" fill="#1E3A8A"/>'
+    + '<rect x="176" y="92" width="48" height="30" rx="9" fill="#1E40AF"/>'
+    + '<rect x="216" y="96" width="12" height="10" rx="3" fill="#93C5FD"/>'
+    + '<rect x="164" y="122" width="72" height="176" rx="24" fill="#60A5FA"/>'
+    + '<rect x="164" y="206" width="72" height="20" fill="#2563EB"/>'
+    + '<path d="M164 206 h72 M164 226 h72" stroke="#1D4ED8" stroke-width="3"/>'
+    + '<circle cx="216" cy="160" r="3" fill="#DBEAFE" opacity="0.8"/>'
+    + '<circle cx="206" cy="256" r="2.5" fill="#DBEAFE" opacity="0.8"/>'
+    + '<circle cx="222" cy="180" r="2" fill="#DBEAFE" opacity="0.7"/>'
+    + '<rect x="172" y="130" width="10" height="156" rx="5" fill="#ffffff" opacity="0.45"/>';
+}
+
+function artTrailSunglasses() {
+  return groundShadow(200, 278, 118, 11)
+    + '<path d="M98 184 L60 168" stroke="#F43F5E" stroke-width="10" stroke-linecap="round"/>'
+    + '<path d="M302 184 L340 168" stroke="#F43F5E" stroke-width="10" stroke-linecap="round"/>'
+    + '<rect x="96" y="162" width="90" height="72" rx="28" fill="#1E293B"/>'
+    + '<rect x="214" y="162" width="90" height="72" rx="28" fill="#1E293B"/>'
+    + '<rect x="96" y="162" width="90" height="72" rx="28" fill="none" stroke="#F43F5E" stroke-width="10"/>'
+    + '<rect x="214" y="162" width="90" height="72" rx="28" fill="none" stroke="#F43F5E" stroke-width="10"/>'
+    + '<path d="M186 180 q14 -12 28 0" fill="none" stroke="#F43F5E" stroke-width="9" stroke-linecap="round"/>'
+    + '<ellipse cx="126" cy="186" rx="12" ry="7" fill="#ffffff" opacity="0.35"/>'
+    + '<ellipse cx="244" cy="186" rx="12" ry="7" fill="#ffffff" opacity="0.35"/>';
+}
+
+function artResistanceBands() {
+  return groundShadow(200, 302, 108, 12)
+    + '<path d="M110 200 C114 228 158 240 188 244" fill="none" stroke="#94A3B8" stroke-width="4"/>'
+    + '<path d="M290 200 C286 228 242 240 212 244" fill="none" stroke="#94A3B8" stroke-width="4"/>'
+    + '<ellipse cx="200" cy="252" rx="56" ry="20" fill="none" stroke="#2DD4BF" stroke-width="14"/>'
+    + '<ellipse cx="200" cy="214" rx="56" ry="20" fill="none" stroke="#14B8A6" stroke-width="14"/>'
+    + '<ellipse cx="200" cy="176" rx="56" ry="20" fill="none" stroke="#0D9488" stroke-width="14"/>'
+    + '<g transform="rotate(24 118 168)">'
+    + '<rect x="108" y="128" width="20" height="72" rx="10" fill="#134E4A"/>'
+    + '<rect x="112" y="132" width="12" height="24" rx="6" fill="#5EEAD4" opacity="0.6"/>'
+    + '</g>'
+    + '<g transform="rotate(-24 282 168)">'
+    + '<rect x="272" y="128" width="20" height="72" rx="10" fill="#134E4A"/>'
+    + '<rect x="276" y="132" width="12" height="24" rx="6" fill="#5EEAD4" opacity="0.6"/>'
+    + '</g>';
+}
+
+function artApples() {
+  return groundShadow(200, 306, 108, 12)
+    + '<ellipse cx="200" cy="286" rx="98" ry="12" fill="#FEF3C7" opacity="0.85"/>'
+    + '<circle cx="248" cy="230" r="42" fill="#EF4444"/>'
+    + '<path d="M248 188 q2 -12 10 -18" stroke="#78350F" stroke-width="5" fill="none" stroke-linecap="round"/>'
+    + '<circle cx="158" cy="242" r="48" fill="#DC2626"/>'
+    + '<path d="M158 194 q0 -14 10 -20" stroke="#78350F" stroke-width="5" fill="none" stroke-linecap="round"/>'
+    + '<path d="M168 176 q24 -12 34 2 q-16 12 -34 -2 z" fill="#22C55E"/>'
+    + '<ellipse cx="142" cy="226" rx="11" ry="17" fill="#ffffff" opacity="0.35"/>'
+    + '<ellipse cx="234" cy="216" rx="8" ry="12" fill="#ffffff" opacity="0.3"/>';
+}
+
+function artOliveOil() {
+  return groundShadow(200, 318, 92, 12)
+    + '<path d="M292 148 q-16 46 -46 70" fill="none" stroke="#65A30D" stroke-width="4" stroke-linecap="round"/>'
+    + '<ellipse cx="282" cy="164" rx="13" ry="5" fill="#84CC16" transform="rotate(-32 282 164)"/>'
+    + '<ellipse cx="266" cy="192" rx="12" ry="5" fill="#84CC16" transform="rotate(24 266 192)"/>'
+    + '<circle cx="252" cy="212" r="8" fill="#4D7C0F"/>'
+    + '<circle cx="268" cy="226" r="7" fill="#65A30D"/>'
+    + '<rect x="190" y="76" width="20" height="24" rx="5" fill="#D97706"/>'
+    + '<rect x="184" y="98" width="32" height="44" rx="6" fill="#3F6212"/>'
+    + '<path d="M184 142 H216 L248 178 H152 Z" fill="#3F6212"/>'
+    + '<rect x="152" y="176" width="96" height="120" rx="15" fill="#3F6212"/>'
+    + '<rect x="164" y="206" width="72" height="54" rx="6" fill="#FEF9C3"/>'
+    + '<circle cx="200" cy="226" r="7" fill="#65A30D"/>'
+    + '<path d="M174 244 h52" stroke="#65A30D" stroke-width="3" stroke-linecap="round"/>'
+    + '<rect x="160" y="186" width="9" height="98" rx="4.5" fill="#A3E635" opacity="0.35"/>';
+}
+
+function artHoney() {
+  return groundShadow(200, 310, 104, 12)
+    + '<g transform="rotate(26 292 168)">'
+    + '<rect x="288" y="84" width="11" height="86" rx="5.5" fill="#B98A5A"/>'
+    + '<ellipse cx="293.5" cy="184" rx="16" ry="7" fill="#D97706"/>'
+    + '<ellipse cx="293.5" cy="194" rx="13" ry="6" fill="#D97706"/>'
+    + '<ellipse cx="293.5" cy="203" rx="9" ry="5" fill="#B45309"/>'
+    + '</g>'
+    + '<circle cx="292" cy="226" r="4" fill="#F59E0B" opacity="0.85"/>'
+    + '<rect x="154" y="180" width="92" height="100" rx="12" fill="#F59E0B"/>'
+    + '<rect x="146" y="152" width="108" height="134" rx="18" fill="none" stroke="#FCD34D" stroke-width="3"/>'
+    + '<rect x="146" y="152" width="108" height="134" rx="18" fill="#ffffff" opacity="0.15"/>'
+    + '<rect x="142" y="126" width="116" height="30" rx="10" fill="#92400E"/>'
+    + '<path d="M158 126 v30 M176 126 v30 M194 126 v30 M212 126 v30 M230 126 v30 M248 126 v30" stroke="#78350F" stroke-width="3"/>'
+    + '<rect x="160" y="200" width="80" height="46" rx="7" fill="#FFFBEB" stroke="#F59E0B" stroke-width="2.5"/>'
+    + '<path d="M200 212 q8 10 0 18 q-8 -8 0 -18" fill="#F59E0B"/>'
+    + '<path d="M172 238 h56" stroke="#F59E0B" stroke-width="3" stroke-linecap="round"/>'
+    + '<path d="M246 258 q7 12 0 19 q-7 -7 0 -19" fill="#F59E0B"/>'
+    + '<rect x="152" y="158" width="6" height="112" rx="3" fill="#ffffff" opacity="0.5"/>';
+}
+
+function artGreenTea() {
+  return groundShadow(200, 314, 112, 13)
+    + '<g transform="rotate(8 288 226)">'
+    + '<rect x="252" y="170" width="72" height="102" rx="8" fill="#F0FDF4" stroke="#86EFAC" stroke-width="2.5"/>'
+    + '<rect x="252" y="170" width="72" height="14" rx="7" fill="#86EFAC"/>'
+    + '<path d="M282 220 q16 -10 24 2 q-14 10 -24 -2 z" fill="#22C55E"/>'
+    + '<path d="M266 244 h44 M266 254 h30" stroke="#86EFAC" stroke-width="3" stroke-linecap="round"/>'
+    + '</g>'
+    + '<rect x="112" y="150" width="122" height="136" rx="10" fill="#166534"/>'
+    + '<path d="M112 168 H234" stroke="#22C55E" stroke-width="2.5" opacity="0.8"/>'
+    + '<circle cx="173" cy="216" r="30" fill="none" stroke="#BBF7D0" stroke-width="6" stroke-dasharray="150 40" stroke-linecap="round" transform="rotate(-60 173 216)"/>'
+    + '<rect x="112" y="256" width="122" height="30" rx="10" fill="#14532D"/>'
+    + '<path d="M124 271 h40" stroke="#4ADE80" stroke-width="3" stroke-linecap="round"/>'
+    + '<path d="M176 236 q8 -14 0 -26 M198 236 q-8 -14 0 -26" fill="none" stroke="#BBF7D0" stroke-width="4" stroke-linecap="round" opacity="0.85"/>'
+    + '<path d="M148 244 h78 l-7 42 q-1.5 10 -11 10 h-42 q-9.5 0 -11 -10 z" fill="#F0FDF4" stroke="#86EFAC" stroke-width="2.5"/>'
+    + '<path d="M226 252 q18 6 0 26" fill="none" stroke="#86EFAC" stroke-width="5"/>'
+    + '<ellipse cx="187" cy="244" rx="39" ry="6" fill="#4ADE80"/>';
+}
+
+function artCardWallet() {
+  return groundShadow(200, 296, 106, 13)
+    + '<g transform="rotate(-6 176 168)">'
+    + '<rect x="138" y="144" width="76" height="50" rx="8" fill="#60A5FA"/>'
+    + '<rect x="146" y="152" width="20" height="14" rx="3" fill="#DBEAFE"/>'
+    + '</g>'
+    + '<g transform="rotate(5 224 166)">'
+    + '<rect x="186" y="140" width="76" height="50" rx="8" fill="#FDA4AF"/>'
+    + '<rect x="194" y="148" width="20" height="14" rx="3" fill="#FFE4E6"/>'
+    + '</g>'
+    + '<rect x="116" y="168" width="168" height="106" rx="15" fill="#92400E"/>'
+    + '<path d="M284 206 h-46 q-10 0 -10 11 v18 q0 11 10 11 h46 z" fill="#7C2D12"/>'
+    + '<circle cx="262" cy="226" r="5.5" fill="#FBBF24"/>'
+    + '<rect x="126" y="178" width="148" height="86" rx="10" fill="none" stroke="#FBBF24" stroke-width="2.5" stroke-dasharray="6 5" opacity="0.85"/>'
+    + '<rect x="124" y="176" width="10" height="88" rx="5" fill="#ffffff" opacity="0.12"/>';
+}
+
+function artStudEarrings() {
+  return groundShadow(200, 278, 92, 11)
+    + '<polygon points="156,166 179,179 179,205 156,218 133,205 133,179" fill="#A78BFA" stroke="#DDD6FE" stroke-width="2.5"/>'
+    + '<path d="M156 166 V218 M133 179 L179 205 M179 179 L133 205" stroke="#8B5CF6" stroke-width="2" opacity="0.7" fill="none"/>'
+    + '<polygon points="156,180 167,186 167,198 156,204 145,198 145,186" fill="#C4B5FD"/>'
+    + '<rect x="152" y="218" width="8" height="30" rx="4" fill="#CBD5E1"/>'
+    + '<rect x="146" y="244" width="20" height="12" rx="5" fill="#94A3B8"/>'
+    + '<polygon points="244,166 267,179 267,205 244,218 221,205 221,179" fill="#C4B5FD" stroke="#DDD6FE" stroke-width="2.5"/>'
+    + '<path d="M244 166 V218 M221 179 L267 205 M267 179 L221 205" stroke="#8B5CF6" stroke-width="2" opacity="0.7" fill="none"/>'
+    + '<polygon points="244,180 255,186 255,198 244,204 233,198 233,186" fill="#EDE9FE"/>'
+    + '<rect x="240" y="218" width="8" height="30" rx="4" fill="#CBD5E1"/>'
+    + '<rect x="234" y="244" width="20" height="12" rx="5" fill="#94A3B8"/>'
+    + '<path d="M200 128 l5 12 12 5 -12 5 -5 12 -5 -12 -12 -5 12 -5 z" fill="#EDE9FE"/>';
+}
+
+function artTravelPouch() {
+  return groundShadow(200, 302, 110, 13)
+    + '<rect x="104" y="146" width="192" height="44" rx="14" fill="#1E40AF"/>'
+    + '<g transform="rotate(-4 162 152)">'
+    + '<rect x="136" y="132" width="52" height="36" rx="6" fill="#E2E8F0"/>'
+    + '<rect x="136" y="140" width="52" height="10" fill="#334155"/>'
+    + '</g>'
+    + '<circle cx="240" cy="152" r="17" fill="none" stroke="#2DD4BF" stroke-width="6"/>'
+    + '<rect x="104" y="178" width="192" height="102" rx="18" fill="#1E3A8A"/>'
+    + '<path d="M104 178 H296" stroke="#FBBF24" stroke-width="3" stroke-dasharray="2 5"/>'
+    + '<circle cx="112" cy="178" r="5" fill="#FBBF24"/>'
+    + '<circle cx="288" cy="178" r="5" fill="#FBBF24"/>'
+    + '<rect x="122" y="198" width="58" height="11" rx="5.5" fill="#3B82F6"/>'
+    + '<rect x="122" y="218" width="58" height="11" rx="5.5" fill="#3B82F6"/>'
+    + '<rect x="194" y="198" width="84" height="38" rx="9" fill="none" stroke="#93C5FD" stroke-width="2.5"/>'
+    + '<path d="M202 210 h68" stroke="#93C5FD" stroke-width="2.5" stroke-dasharray="4 4"/>'
+    + '<rect x="112" y="186" width="10" height="84" rx="5" fill="#ffffff" opacity="0.10"/>';
+}
+
 const RICH_ART = {
   p01: artHeadphones, // Aurex Over-Ear Wireless Headphones
   p02: artPhone, // Novo X4 Pro Smartphone
+  p03: artActionCamera, // Klarita 4K Action Camera
+  p04: artSmartTV, // Vantia 55" Smart TV (sold out — card dims it)
   p05: artSpeaker, // Pikol Mini Bluetooth Speaker
   p06: artEarbuds, // Aurex Wireless Earbuds Pro
+  p07: artSleeve, // Mendo Laptop Sleeve 14 inch
   p08: artWatchFit, // Strida Smart Watch Fit
   p09: artTee, // Vantia Oversized Cotton Tee
+  p10: artDenimJacket, // Ombra Classic Denim Jacket
+  p11: artCrossbody, // Pikol Everyday Crossbody Bag
+  p12: artRetroSunglasses, // Ombra Retro Sunglasses
+  p13: artTote, // Pikol Canvas Tote Bag
   p14: artSerum, // Klarita Vitamin C Glow Serum
+  p15: artEyeshadowPalette, // Luma 12-Shade Eyeshadow Palette
+  p16: artFaceMist, // Ombra Rosewater Face Mist
+  p17: artClayMaskKit, // Strida Clay Mask Kit
   p18: artArmchair, // Vantia Cloud Armchair
+  p19: artTableLamp, // Mendo Ceramic Table Lamp
+  p20: artBedSheets, // Klarita Cotton Bed Sheet Set
+  p21: artWeightedBlanket, // Vantia Weighted Blanket 5kg
   p22: artDumbbell, // Strida Adjustable Dumbbell Set
+  p23: artSoccerBall, // Mendo Match Soccer Ball
+  p24: artWaterBottle, // Aurex Sport Water Bottle 1L
+  p25: artTrailSunglasses, // Pikol Trail Sport Sunglasses
   p26: artCoffee, // Mendo Arabica Coffee Beans
+  p27: artApples, // Pikol Organic Apples, 6 Pack
+  p28: artOliveOil, // Klarita Extra Virgin Olive Oil 750ml
+  p29: artHoney, // Ombra Wildflower Honey 500g
   p30: artWatchSteel, // Strida Minimal Steel Watch
+  p31: artCardWallet, // Ombra Leather Card Wallet
+  p32: artStudEarrings, // Pikol Gemstone Stud Earrings
+  p33: artTravelPouch, // Vantia Travel Organizer Pouch
+  p34: artChargingStand, // Luma Wireless Charging Stand
+  p35: artUsbHub, // Novo USB-C Hub, 7-in-1
   p36: artDress, // Vantia Linen Summer Dress
+  p37: artCardigan, // Pikol Knit Cardigan
+  p38: artLipstickSet, // Luma Matte Lipstick Set
+  p39: artCandleTrio, // Mendo Scented Candle Trio
+  p40: artResistanceBands, // Pikol Resistance Band Set
+  p41: artGreenTea, // Klarita Green Tea, 100 Bags
   p42: artShoe, // Strida Trail Runner Shoes
+  p43: artClearCase, // Novo Clear Case for X4 Pro
+  p44: artHomeHub, // Mendo Smart Home Hub
+  p45: artVerticalMouse, // Ombra Vertical Mouse
 };
 
 /* ---------------------------------------------------------------------------
@@ -1277,6 +1806,12 @@ export function productArt(p) {
  * the PDP carousel has real images to switch between without any external
  * image requests.
  * ------------------------------------------------------------------------- */
+/* Escape a product name for use inside the artwork SVG's aria-label
+ * attribute (names can contain quotes, e.g. Vantia 55" Smart TV). */
+function attrEsc(s) {
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+}
+
 const GALLERY_VIEWS = [
   { c1: [330, 64, 88, 0.4], c2: [56, 352, 56, 0.3], t: 'translate(140 140) scale(5)' },
   { c1: [60, 70, 100, 0.35], c2: [340, 340, 70, 0.3], t: 'translate(92 92) scale(9)' },
@@ -1311,8 +1846,10 @@ export function productArtView(p, view = 0) {
       + '<g transform="' + v.t + '" fill="none" stroke="' + hue.fg + '" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">' + paths + '</g>';
   }
 
-  const label = String(p.name || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
-  return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" class="product-img h-full w-full" preserveAspectRatio="' + par + '" role="img" aria-label="' + label + '">'
+  // The artwork is an <img>-equivalent, so it exposes the product name to
+  // assistive tech (data-art marks the tier: "rich" illustration vs the
+  // glyph fallback — dapp.json tests assert on it).
+  return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" class="product-img h-full w-full" preserveAspectRatio="' + par + '" data-art="' + (rich ? 'rich' : 'glyph') + '" role="img" aria-label="' + attrEsc(p.name || 'Product') + '">'
     + '<defs><linearGradient id="' + gid + '" x1="0" y1="0" x2="1" y2="1">'
     + '<stop offset="0" stop-color="' + from + '"/><stop offset="1" stop-color="' + to + '"/>'
     + '</linearGradient>'

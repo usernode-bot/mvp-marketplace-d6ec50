@@ -75,6 +75,20 @@
        Class names must be written as whole literals in markup and JS strings
        for the compiler to see them. -->
   <link rel="stylesheet" href="/tailwind.css">
+  <script>
+  // Theme bootstrap: restore the saved color theme before first paint so a
+  // saved Midnight never flashes the light default. Mirrors the validation
+  // in public/js/theme.js; anything missing or unrecognized stays Purple
+  // Dream (the CSS :root variables), so the attribute is simply not set.
+  (function () {
+    try {
+      var t = localStorage.getItem('bazario:theme');
+      if (t && t !== 'purple' && ['ocean', 'sunset', 'mint', 'midnight'].indexOf(t) !== -1) {
+        document.documentElement.setAttribute('data-theme', t);
+      }
+    } catch (e) {}
+  })();
+  </script>
   <!-- The platform's native-feel UI kit (opt-in). Provides automatic pressed
        states on buttons and `unNative.toast()` for add-to-cart feedback.
        Centrally hosted by RELATIVE path, like the bridge: never vendor it,
@@ -131,6 +145,10 @@
 
         <!-- Actions -->
         <div class="ml-auto flex items-center gap-0.5 lg:ml-0">
+          <!-- Color theme switcher (desktop; the Profile page hosts the
+               swatches on mobile, where this header has no room). Filled by
+               theme.js at boot. -->
+          <div id="theme-swatches" class="hidden items-center gap-1.5 lg:flex" role="radiogroup" aria-label="Color theme"></div>
           <button class="icon-btn" id="bell-btn" aria-label="Notifications">
             <span data-icon="bell" data-cls="h-5 w-5"></span>
             <span aria-hidden="true" class="absolute right-2 top-2 h-2 w-2 rounded-full bg-rose-500"></span>

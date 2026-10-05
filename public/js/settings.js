@@ -2,15 +2,17 @@
  * language and theme, privacy), the Edit Profile form and Log out.
  *
  * Toggle rows are the native kit's `un-switch` on a checkbox; changes go
- * through the store's prefs (persisted under the bazario: prefix). The app
- * is light-theme by design (see CLAUDE.md), so the Theme row states that
- * instead of offering a dark variant. Language: English is the only shipped
- * locale so far; the picker lists the upcoming ones as disabled rows.
+ * through the store's prefs (persisted under the bazario: prefix). The
+ * Theme row shows the active color theme (the swatches themselves live in
+ * the desktop header and the Profile page, see theme.js). Language: English
+ * is the only shipped locale so far; the picker lists the upcoming ones as
+ * disabled rows.
  */
 
 import { icon } from './icons.js';
 import { store } from './store.js';
 import { confirmDialog, esc, toast } from './ui.js';
+import { getTheme, themeName } from './theme.js';
 import { displayName } from './profile.js';
 
 const LOCALES = [
@@ -79,7 +81,7 @@ export function renderSettingsView() {
     + sectionLabel('Preferences')
     + '<div class="card divide-y divide-zinc-100 overflow-hidden">'
     + valueRow('globe', 'Language', 'data-lang-pick', localeLabel())
-    + valueRow('moon', 'Theme', 'data-theme-info', 'Light')
+    + valueRow('moon', 'Theme', 'data-theme-info', themeName(getTheme()))
     + '</div>'
 
     + sectionLabel('Privacy')
@@ -173,7 +175,7 @@ export function initSettings() {
       return;
     }
     if (el.hasAttribute('data-theme-info')) {
-      toast('MVP Marketplace uses a light theme');
+      toast('Use the color swatches to change the theme (header on desktop, Profile page on mobile)');
       return;
     }
     logout();

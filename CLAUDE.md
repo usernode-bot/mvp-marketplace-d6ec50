@@ -106,6 +106,12 @@ soon" on those entry points rather than hiding them.
 - Client state (favorites, cart, recent searches) persists in localStorage
   under the `bazario:` prefix and is deliberately NOT keyed per user, so an
   offline load without a token never destroys the user's data.
-- The app is light-theme only by design; do not add dark-mode variants.
+- The app ships five switchable background color themes (Purple Dream
+  default, Ocean Breeze, Sunset Glow, Fresh Mint and the dark Midnight).
+  The theme CSS variables and the Midnight dark overrides live in
+  `styles/tailwind-input.css` (one shared place); switching and persistence
+  (`bazario:theme`, Purple Dream fallback) live in `public/js/theme.js`.
+  Sale/discount/countdown elements stay red/orange in every theme. Do not
+  add per-page dark variants outside Midnight's scoped override block.
 - Product artwork is generated SVG (`public/js/icons.js`), never external
   image URLs and never image bytes in the database.
