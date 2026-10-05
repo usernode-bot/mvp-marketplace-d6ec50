@@ -53,32 +53,6 @@ const CATEGORY_TILES = {
 const TILE_HOVER = 'transition duration-200 hover:scale-105 hover:shadow-card-lg motion-reduce:transition-none motion-reduce:hover:scale-100';
 
 /* ------------------------------------------------------------------ */
-/* App shortcuts                                                       */
-/* ------------------------------------------------------------------ */
-
-/* Text-only shortcut chips for the other Homeroom apps. MVP Marketplace is
- * this app; the others are Homeroom apps whose addresses this app does not
- * know, so their chips explain where to open them instead of linking
- * somewhere fake. */
-const APP_SHORTCUTS = [
-  { name: 'MVP Marketplace', current: true },
-  { name: 'Appraise' },
-  { name: 'Quick Count' },
-  { name: 'Homeroom Maps' },
-  { name: 'Game Corner' },
-  { name: 'Trading Journal' },
-  { name: 'RecipeBot' },
-];
-
-function appShortcutTile(app) {
-  const nav = app.current ? ' data-nav="home"' : ' data-app-shortcut="' + app.name + '"';
-  return '<button type="button"' + nav
-    + ' class="inline-flex items-center whitespace-nowrap rounded-full bg-zinc-100 px-3 py-1.5 text-xs font-medium text-zinc-700 transition-colors hover:bg-zinc-200">'
-    + app.name
-    + '</button>';
-}
-
-/* ------------------------------------------------------------------ */
 /* Banners                                                             */
 /* ------------------------------------------------------------------ */
 
@@ -194,7 +168,7 @@ function openResults() {
   }
 
   // Swap the home sections for the results view.
-  ['promo', 'categories', 'shortcuts', 'flash', 'recommended'].forEach((id) => {
+  ['promo', 'categories', 'flash', 'recommended'].forEach((id) => {
     const el = document.getElementById('section-' + id);
     if (el) el.classList.add('hidden');
   });
@@ -204,7 +178,7 @@ function openResults() {
 
 export function clearResults() {
   document.getElementById('results-section').classList.add('hidden');
-  ['promo', 'categories', 'shortcuts', 'flash', 'recommended'].forEach((id) => {
+  ['promo', 'categories', 'flash', 'recommended'].forEach((id) => {
     const el = document.getElementById('section-' + id);
     if (el) el.classList.remove('hidden');
   });
@@ -378,8 +352,6 @@ export function initHome() {
   document.getElementById('flash-row').innerHTML = Array.from({ length: 5 }, () =>
     '<div class="w-40 shrink-0 snap-start sm:w-44">' + skeletonCard(true) + '</div>').join('');
   document.getElementById('recommended-grid').innerHTML = Array.from({ length: 8 }, () => skeletonCard()).join('');
-  // App shortcuts are static, so they render straight away.
-  document.getElementById('app-shortcut-grid').innerHTML = APP_SHORTCUTS.map(appShortcutTile).join('');
 
   // 2. Real content shortly after. The data is static, so this is only long
   //    enough for the skeleton state to be visible (and testable).
