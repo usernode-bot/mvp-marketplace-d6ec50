@@ -56,6 +56,36 @@ const CATEGORY_ART = {
 };
 
 /* ------------------------------------------------------------------ */
+/* App shortcuts                                                       */
+/* ------------------------------------------------------------------ */
+
+/* One shared icon style for every shortcut: a 40px rounded square with a
+ * solid brand-purple background and a white line glyph centered inside
+ * (consistent 2px stroke, balanced padding). Only the symbol varies per
+ * app. MVP Marketplace is this app; the others are Homeroom apps whose
+ * addresses this app does not know, so their tiles explain where to open
+ * them instead of linking somewhere fake. */
+const APP_SHORTCUTS = [
+  { name: 'MVP Marketplace', icon: 'bag', current: true },
+  { name: 'Appraise', icon: 'starOutline' },
+  { name: 'Quick Count', icon: 'tally' },
+  { name: 'Homeroom Maps', icon: 'map' },
+  { name: 'Game Corner', icon: 'gamepad' },
+  { name: 'Trading Journal', icon: 'chartLine' },
+  { name: 'RecipeBot', icon: 'chefHat' },
+];
+
+function appShortcutTile(app) {
+  const nav = app.current ? ' data-nav="home"' : ' data-app-shortcut="' + app.name + '"';
+  return '<button type="button"' + nav
+    + ' class="flex flex-col items-center gap-1.5 rounded-xl px-1 py-2 transition-colors hover:bg-zinc-100">'
+    + '<span class="flex h-10 w-10 items-center justify-center rounded-[10px] bg-brand-600 text-white">'
+    + icon(app.icon, 'h-5 w-5') + '</span>'
+    + '<span class="w-full text-center text-xs font-medium leading-tight text-zinc-600">' + app.name + '</span>'
+    + '</button>';
+}
+
+/* ------------------------------------------------------------------ */
 /* Banners                                                             */
 /* ------------------------------------------------------------------ */
 
@@ -172,7 +202,7 @@ function openResults() {
   }
 
   // Swap the home sections for the results view.
-  ['promo', 'categories', 'flash', 'recommended'].forEach((id) => {
+  ['promo', 'categories', 'shortcuts', 'flash', 'recommended'].forEach((id) => {
     const el = document.getElementById('section-' + id);
     if (el) el.classList.add('hidden');
   });
@@ -182,7 +212,7 @@ function openResults() {
 
 export function clearResults() {
   document.getElementById('results-section').classList.add('hidden');
-  ['promo', 'categories', 'flash', 'recommended'].forEach((id) => {
+  ['promo', 'categories', 'shortcuts', 'flash', 'recommended'].forEach((id) => {
     const el = document.getElementById('section-' + id);
     if (el) el.classList.remove('hidden');
   });
@@ -356,6 +386,8 @@ export function initHome() {
   document.getElementById('flash-row').innerHTML = Array.from({ length: 5 }, () =>
     '<div class="w-40 shrink-0 snap-start sm:w-44">' + skeletonCard(true) + '</div>').join('');
   document.getElementById('recommended-grid').innerHTML = Array.from({ length: 8 }, () => skeletonCard()).join('');
+  // App shortcuts are static, so they render straight away.
+  document.getElementById('app-shortcut-grid').innerHTML = APP_SHORTCUTS.map(appShortcutTile).join('');
 
   // 2. Real content shortly after. The data is static, so this is only long
   //    enough for the skeleton state to be visible (and testable).

@@ -48,7 +48,7 @@ function reopenSearchPanel(box, input) {
 }
 
 function handleClick(e) {
-  const target = e.target.closest('[data-fav], [data-add], [data-category], [data-nav], [data-route], [data-banner-action], [data-recent], [data-recent-remove], [data-recent-clear], [data-suggest], [data-search-suggest], [data-soon], [data-cart-plus], [data-cart-minus], [data-cart-remove], [data-cart-select], [data-cart-select-all], [data-cart-save], [data-saved-move], [data-saved-remove], [data-voucher-pick], [data-voucher-remove], [data-results-clear], [data-back]');
+  const target = e.target.closest('[data-fav], [data-add], [data-category], [data-nav], [data-route], [data-banner-action], [data-recent], [data-recent-remove], [data-recent-clear], [data-suggest], [data-search-suggest], [data-soon], [data-cart-plus], [data-cart-minus], [data-cart-remove], [data-cart-select], [data-cart-select-all], [data-cart-save], [data-saved-move], [data-saved-remove], [data-voucher-pick], [data-voucher-remove], [data-results-clear], [data-back], [data-app-shortcut]');
   if (!target) return;
 
   const favId = target.getAttribute('data-fav');
@@ -87,6 +87,16 @@ function handleClick(e) {
   const cat = target.getAttribute('data-category');
   if (cat) {
     goToHash('#/category/' + cat);
+    return;
+  }
+
+  // An app-shortcuts tile for another Homeroom app. This app does not know
+  // the sibling apps' addresses (their subdomains are not derivable here),
+  // so the tile points at where they can be opened today rather than
+  // navigating somewhere fake.
+  const shortcut = target.getAttribute('data-app-shortcut');
+  if (shortcut) {
+    toast('Open ' + shortcut + ' from the Homeroom home screen');
     return;
   }
 

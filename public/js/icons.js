@@ -58,6 +58,15 @@ const STROKE_ICONS = {
   messageCircle: '<path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/>',
   copy: '<rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>',
   sparkles: '<path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/>',
+  /* Line glyphs for the app-shortcuts strip (same 24-unit grid, 2px round
+   * strokes, so the set reads as one icon family). `star` above (fill) is
+   * reserved for ratings; shortcuts use the outline. */
+  starOutline: '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>',
+  tally: '<path d="M5 5v14M9 5v14M13 5v14M17 5v14"/><path d="M2.5 17 21.5 7"/>',
+  map: '<path d="M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3z"/><path d="M9 3v15"/><path d="M15 6v15"/>',
+  gamepad: '<line x1="6" x2="10" y1="11" y2="11"/><line x1="8" x2="8" y1="9" y2="13"/><line x1="15" x2="15.01" y1="12" y2="12"/><line x1="18" x2="18.01" y1="10" y2="10"/><path d="M17.32 5H6.68a4 4 0 0 0-3.978 3.59c-.006.052-.01.101-.017.152C2.604 9.416 2 14.456 2 16a3 3 0 0 0 3 3c1 0 1.5-.5 2-1l1.414-1.414A2 2 0 0 1 9.828 16h4.344a2 2 0 0 1 1.414.586L17 18c.5.5 1 1 2 1a3 3 0 0 0 3-3c0-1.545-.604-6.584-.685-7.258-.007-.05-.011-.1-.017-.151A4 4 0 0 0 17.32 5z"/>',
+  chartLine: '<path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="m7 12 3-3 4 2 5-5"/>',
+  chefHat: '<path d="M17 21a1 1 0 0 0 1-1v-5.35c0-.457.316-.844.727-1.1A5 5 0 1 0 6.273 13.55c.411.256.727.643.727 1.1V20a1 1 0 0 0 1 1Z"/><path d="M6 17h12"/>',
 };
 
 const FILL_ICONS = {
