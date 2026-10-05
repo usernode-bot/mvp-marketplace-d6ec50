@@ -5,7 +5,7 @@
  */
 
 import { icon, productArt } from './icons.js';
-import { discountPct } from './data.js';
+import { discountPct, productById } from './data.js';
 import { store } from './store.js';
 
 /* $12.99 from integer cents. */
@@ -103,6 +103,47 @@ export function toast(message) {
 }
 
 /* ---------------------------------------------------------------------------
+ * Lazy illustrations. Product artwork is inline SVG with no network request,
+ * so "lazy" here means deferring the (non-trivial) string build and DOM
+ * weight until a tile scrolls near the viewport. One shared observer serves
+ * every grid; the wrapper keeps a skeleton until it fires, so layout never
+ * shifts. Called after each grid render.
+ * ------------------------------------------------------------------------- */
+function fillArt(el) {
+  const id = el.getAttribute('data-lazy-art');
+  const p = id ? productById(id) : null;
+  if (p) el.innerHTML = productArt(p);
+  el.removeAttribute('data-lazy-art');
+}
+
+let artObserver = null;
+
+export function hydrateLazyArt(root) {
+  const scope = root || document;
+  const nodes = scope.querySelectorAll('[data-lazy-art]');
+  if (!nodes.length) return;
+  if (typeof window === 'undefined' || !('IntersectionObserver' in window)) {
+    nodes.forEach(fillArt);
+    return;
+  }
+  if (!artObserver) {
+    artObserver = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          fillArt(entry.target);
+          artObserver.unobserve(entry.target);
+        }
+      });
+    }, { rootMargin: '200px 0px' });
+  }
+  nodes.forEach((n) => {
+    if (n.getAttribute('data-lazy-observed')) return;
+    n.setAttribute('data-lazy-observed', '1');
+    artObserver.observe(n);
+  });
+}
+
+/* ---------------------------------------------------------------------------
  * Product card. `opts.compact` narrows the layout for the flash-sale row and
  * swaps the plain sold count for a sold-progress bar. Tapping anywhere on the
  * card (except the favorite/add buttons) opens the product detail page; sold
@@ -123,9 +164,12 @@ export function productCard(p, opts = {}) {
     // Sold-out items keep their illustration but render muted (~60%) so the
     // status reads at a glance; only the card art dims — cart, order and
     // product-page art stays full color.
-    + '<div class="h-full w-full transition-transform duration-300 group-hover:scale-[1.03]' + (p.oos ? ' opacity-60' : '') + '">' + productArt(p) + '</div>'
+    + '<div class="h-full w-full transition-transform duration-300 group-hover:scale-[1.03]' + (p.oos ? ' opacity-60' : '') + '"' + (opts.lazy ? ' data-lazy-art="' + p.id + '"' : '') + '>' + (opts.lazy ? '<div class="h-full w-full animate-pulse bg-zinc-100"></div>' : productArt(p)) + '</div>'
     + (disc ? '<span class="badge-sale absolute left-2 top-2">-' + disc + '%</span>' : '')
-    + (p.oos ? '<span class="badge absolute bottom-2 left-2 bg-zinc-900/80 text-white">Sold out</span>' : '')
+    + '<div class="pointer-events-none absolute inset-x-2 bottom-2 flex items-center gap-1.5">'
+    + '<span data-art-caption class="badge-soft block min-w-0 truncate">' + esc(p.name) + '</span>'
+    + (p.oos ? '<span class="badge shrink-0 bg-zinc-900/80 text-white">Sold out</span>' : '')
+    + '</div>'
     + '<button type="button" data-fav="' + p.id + '" aria-label="Toggle favorite" aria-pressed="' + fav
     + '" class="fav-btn absolute right-2 top-2' + (fav ? ' fav-btn-on' : '') + '">' + heart + '</button>'
     + '</div>'

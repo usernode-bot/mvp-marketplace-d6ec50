@@ -1,6 +1,8 @@
 {
   "description": "A modern mobile-first marketplace: deals, categories and everyday essentials.",
-  "icon": { "image": "brand/icon.png" },
+  "icon": {
+    "image": "brand/icon.png"
+  },
   "secrets": [],
   "tests": [
     {
@@ -10,7 +12,59 @@
       "expectSelector": "[data-view='home'] .product-card",
       "expectText": "Flash Sale",
       "visual": true,
-      "impact": ["public/**", "styles/tailwind-input.css", "tailwind.config.js"]
+      "impact": [
+        "public/**",
+        "styles/tailwind-input.css",
+        "tailwind.config.js"
+      ]
+    },
+    {
+      "id": "browse.load-more",
+      "name": "Category page shows 24 tiles and a Load more control",
+      "path": "/#/category/electronics",
+      "expectSelector": "#view-browse [data-browse-more]",
+      "expectText": "Load more products"
+    },
+    {
+      "id": "browse.top-rated",
+      "name": "Sort menu offers the Top rated option",
+      "path": "/#/category/electronics",
+      "expectSelector": "#sort-menu [data-sort-item=\"top-rated\"]",
+      "expectText": "Sort:"
+    },
+    {
+      "id": "home.load-more",
+      "name": "Recommended grid reveals more products on Load more",
+      "path": "/",
+      "expectSelector": "#recommended-grid [data-recommended-more]",
+      "expectText": "Load more products"
+    },
+    {
+      "id": "product.new-caption",
+      "name": "A new product page shows its hero caption chip and name",
+      "path": "/#/product/p66",
+      "expectSelector": "#view-product [data-art-caption]",
+      "expectText": "Aurex On-Ear Bluetooth Headphones, 30h"
+    },
+    {
+      "id": "browse.search-subcategory",
+      "name": "Search matches a subcategory term across products",
+      "path": "/#/search?q=boots",
+      "expectSelector": "#view-browse .product-card",
+      "expectText": "Results for"
+    },
+    {
+      "id": "home.search-brand-term",
+      "name": "Header suggestions match a brand term (Freshly)",
+      "path": "/?q=Freshly",
+      "expectText": "Freshly"
+    },
+    {
+      "id": "product.sold-out-lazy",
+      "name": "A sold-out new product page renders with its badge",
+      "path": "/#/product/p78",
+      "expectSelector": "#view-product .add-btn",
+      "expectText": "Sold out"
     },
     {
       "id": "theme.swatches",
@@ -92,7 +146,12 @@
       "expectSelector": "#view-browse .product-card",
       "expectText": "Sort:",
       "visual": true,
-      "impact": ["public/js/browse.js", "public/js/router.js", "public/js/data.js", "public/index.html"]
+      "impact": [
+        "public/js/browse.js",
+        "public/js/router.js",
+        "public/js/data.js",
+        "public/index.html"
+      ]
     },
     {
       "id": "browse.search-results",
@@ -120,7 +179,13 @@
       "expectSelector": "#view-product .add-btn",
       "expectText": "Add to Cart",
       "visual": true,
-      "impact": ["public/js/product.js", "public/js/router.js", "public/js/data.js", "public/js/store.js", "public/index.html"]
+      "impact": [
+        "public/js/product.js",
+        "public/js/router.js",
+        "public/js/data.js",
+        "public/js/store.js",
+        "public/index.html"
+      ]
     },
     {
       "id": "checkout.default",
@@ -153,7 +218,11 @@
       "expectSelector": "[data-cart-row]",
       "expectText": "Order summary",
       "visual": true,
-      "impact": ["public/**", "styles/tailwind-input.css", "tailwind.config.js"]
+      "impact": [
+        "public/**",
+        "styles/tailwind-input.css",
+        "tailwind.config.js"
+      ]
     },
     {
       "id": "cart.vouchers",
@@ -168,7 +237,12 @@
       "expectSelector": "[data-order-card]",
       "expectText": "To Pay",
       "visual": true,
-      "impact": ["public/js/orders.js", "public/js/app.js", "public/index.html", "styles/tailwind-input.css"]
+      "impact": [
+        "public/js/orders.js",
+        "public/js/app.js",
+        "public/index.html",
+        "styles/tailwind-input.css"
+      ]
     },
     {
       "id": "orders.detail",
@@ -177,7 +251,9 @@
       "expectSelector": "[data-order-timeline]",
       "expectText": "Shipping address",
       "visual": true,
-      "impact": ["public/js/orders.js"]
+      "impact": [
+        "public/js/orders.js"
+      ]
     },
     {
       "id": "profile.default",
@@ -185,7 +261,10 @@
       "path": "/#/profile",
       "expectText": "Edit Profile",
       "visual": true,
-      "impact": ["public/js/profile.js", "public/js/app.js"]
+      "impact": [
+        "public/js/profile.js",
+        "public/js/app.js"
+      ]
     },
     {
       "id": "profile.wishlist-demo",

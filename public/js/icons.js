@@ -869,6 +869,932 @@ const RICH_ART = {
   p45: artVerticalMouse, // Ombra Vertical Mouse
 };
 
+/* ---------------------------------------------------------------------------
+ * Expanded catalog artwork. One builder per product type, so every new
+ * product resolves to a distinct, type-matching drawing. Composed from the
+ * same shared pieces (groundShadow, the gradient/glow canvas in
+ * productArtView) so the whole set reads as one catalog. Purple/indigo base
+ * with a single accent colour per product; each occupies the same visual
+ * weight (a centred footprint) on the shared 400x400 canvas.
+ * --------------------------------------------------------------------------- */
+
+function artSweater() {
+  return groundShadow(200, 338, 96, 13)
+    + '<path d="M150 100 L96 128 L74 200 L108 216 L128 178 V320 Q200 336 272 320 V178 L292 216 L326 200 L304 128 L250 100 Q226 120 200 120 Q174 120 150 100 Z" fill="#5B21B6" stroke="#4C1D95" stroke-width="3" stroke-linejoin="round"/>'
+    + '<path d="M150 100 Q174 120 200 120 Q226 120 250 100" fill="none" stroke="#C4B5FD" stroke-width="7" stroke-linecap="round"/>'
+    + '<path d="M128 178 L150 150 M272 178 L250 150" stroke="#4C1D95" stroke-width="3"/>'
+    + '<path d="M118 296 Q200 312 282 296" fill="none" stroke="#4C1D95" stroke-width="3"/>'
+    + '<path d="M74 200 L108 216" stroke="#4C1D95" stroke-width="3"/>';
+}
+
+function artTrousers() {
+  return groundShadow(200, 342, 92, 12)
+    + '<path d="M140 84 H260 L266 200 L242 336 H204 L200 220 L196 336 H158 L134 200 Z" fill="#3730A3" stroke="#312E81" stroke-width="3" stroke-linejoin="round"/>'
+    + '<path d="M200 84 V220" stroke="#312E81" stroke-width="3"/>'
+    + '<rect x="140" y="76" width="120" height="18" rx="6" fill="#312E81"/>'
+    + '<path d="M162 110 h20 M218 110 h20" stroke="#818CF8" stroke-width="3" stroke-linecap="round"/>';
+}
+
+function artLeggings() {
+  return groundShadow(200, 336, 74, 12)
+    + '<path d="M158 96 H242 L248 210 L232 326 H206 L200 226 L194 326 H168 L152 210 Z" fill="#1E293B" stroke="#0F172A" stroke-width="3" stroke-linejoin="round"/>'
+    + '<rect x="158" y="88" width="84" height="24" rx="8" fill="#0F172A"/>'
+    + '<path d="M200 112 V226" stroke="#334155" stroke-width="3"/>'
+    + '<rect x="230" y="150" width="10" height="44" rx="5" fill="#334155"/>';
+}
+
+function artJoggers() {
+  return groundShadow(200, 340, 88, 12)
+    + '<path d="M146 96 H254 L262 210 L240 330 H208 L200 232 L192 330 H160 L138 210 Z" fill="#334155" stroke="#1E293B" stroke-width="3" stroke-linejoin="round"/>'
+    + '<rect x="146" y="88" width="108" height="20" rx="7" fill="#1E293B"/>'
+    + '<path d="M200 108 V232" stroke="#1E293B" stroke-width="3"/>'
+    + '<path d="M152 300 Q200 312 248 300" fill="none" stroke="#1E293B" stroke-width="4"/>'
+    + '<path d="M152 316 Q200 328 248 316" fill="none" stroke="#1E293B" stroke-width="4"/>';
+}
+
+function artSneakers() {
+  return groundShadow(200, 330, 110, 13)
+    + '<path d="M112 250 L112 210 Q112 196 128 192 L150 186 L170 150 L196 158 L206 190 L268 214 Q300 226 302 250 Z" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="3" stroke-linejoin="round"/>'
+    + '<path d="M170 150 L196 158 L206 190 L150 186 Z" fill="#E2E8F0"/>'
+    + '<path d="M172 186 h24 M176 200 h24" stroke="#94A3B8" stroke-width="3" stroke-linecap="round"/>'
+    + '<path d="M112 250 H302 Q304 282 280 282 H134 Q110 282 112 250 Z" fill="#0F172A"/>'
+    + '<circle cx="200" cy="186" r="7" fill="#6366F1"/>';
+}
+
+function artBoots() {
+  return groundShadow(200, 332, 96, 13)
+    + '<path d="M148 140 H196 V246 L250 262 Q286 272 288 296 L288 306 H132 Q116 306 116 288 V262 L148 246 Z" fill="#78350F" stroke="#5B21B6" stroke-width="3" stroke-linejoin="round"/>'
+    + '<path d="M148 140 H196 V168 H148 Z" fill="#5B21B6" opacity="0.5"/>'
+    + '<path d="M116 288 H288 V306 Q288 312 280 312 H124 Q116 312 116 304 Z" fill="#1E293B"/>'
+    + '<path d="M196 176 q18 6 0 14 M196 200 q18 6 0 14" stroke="#F59E0B" stroke-width="3" fill="none"/>';
+}
+
+function artOvercoat() {
+  return groundShadow(200, 344, 96, 13)
+    + '<path d="M150 96 L104 124 L84 200 L114 214 L132 180 V326 Q200 340 268 326 V180 L286 214 L316 200 L296 124 L250 96 Q226 116 200 116 Q174 116 150 96 Z" fill="#1E3A8A" stroke="#1E293B" stroke-width="3" stroke-linejoin="round"/>'
+    + '<path d="M200 116 V326" stroke="#1E293B" stroke-width="3"/>'
+    + '<path d="M150 96 L200 150 L250 96" fill="none" stroke="#1E293B" stroke-width="3"/>'
+    + '<circle cx="200" cy="210" r="5" fill="#E2E8F0"/><circle cx="200" cy="252" r="5" fill="#E2E8F0"/>';
+}
+
+function artJacket() {
+  return groundShadow(200, 330, 100, 13)
+    + '<path d="M152 96 L104 124 L84 196 L114 210 L132 176 V312 Q200 326 268 312 V176 L286 210 L316 196 L296 124 L248 96 Q224 116 200 116 Q176 116 152 96 Z" fill="#2563EB" stroke="#1E40AF" stroke-width="3" stroke-linejoin="round"/>'
+    + '<path d="M200 116 V312" stroke="#1E40AF" stroke-width="3"/>'
+    + '<path d="M152 96 L200 150 L248 96" fill="none" stroke="#1E40AF" stroke-width="3"/>'
+    + '<path d="M148 198 h16 M236 198 h16" stroke="#93C5FD" stroke-width="4" stroke-linecap="round"/>'
+    + '<circle cx="200" cy="180" r="4" fill="#E2E8F0"/><circle cx="200" cy="220" r="4" fill="#E2E8F0"/>';
+}
+
+function artScarf() {
+  return groundShadow(200, 330, 96, 12)
+    + '<path d="M120 120 Q200 96 280 120 Q300 190 280 266 Q200 292 120 266 Q100 190 120 120 Z" fill="#E11D48" stroke="#BE123C" stroke-width="3" stroke-linejoin="round"/>'
+    + '<path d="M148 112 Q200 150 252 112 M144 150 Q200 190 256 150 M144 190 Q200 230 256 190" fill="none" stroke="#FDA4AF" stroke-width="5" opacity="0.8"/>'
+    + '<path d="M120 250 Q200 278 280 250 L282 286 Q200 314 118 286 Z" fill="#BE123C"/>';
+}
+
+function artVest() {
+  return groundShadow(200, 336, 90, 13)
+    + '<path d="M150 96 L120 116 L112 300 Q200 322 288 300 L280 116 L250 96 Q226 116 200 116 Q174 116 150 96 Z" fill="#334155" stroke="#1E293B" stroke-width="3" stroke-linejoin="round"/>'
+    + '<path d="M200 116 V308" stroke="#1E293B" stroke-width="3"/>'
+    + '<path d="M158 160 H242 M158 200 H242 M158 240 H242" stroke="#475569" stroke-width="4" stroke-dasharray="6 8"/>'
+    + '<path d="M150 96 L200 140 L250 96" fill="none" stroke="#1E293B" stroke-width="3"/>';
+}
+
+function artSkirt() {
+  return groundShadow(200, 336, 92, 13)
+    + '<rect x="168" y="86" width="64" height="20" rx="7" fill="#0F172A"/>'
+    + '<path d="M164 106 H236 L286 320 Q200 340 114 320 Z" fill="#0D9488" stroke="#0F766E" stroke-width="3" stroke-linejoin="round"/>'
+    + '<path d="M178 116 L152 316 M200 116 L200 328 M222 116 L248 316" stroke="#5EEAD4" stroke-width="3" opacity="0.8"/>';
+}
+
+function artTankTop() {
+  return groundShadow(200, 328, 84, 12)
+    + '<path d="M164 92 L150 104 Q144 112 148 126 L158 168 Q200 180 242 168 L252 126 Q256 112 250 104 L236 92 Q222 108 200 108 Q178 108 164 92 Z" fill="#F1F5F9" stroke="#CBD5E1" stroke-width="3" stroke-linejoin="round"/>'
+    + '<path d="M158 168 Q200 182 242 168 L252 300 Q200 316 148 300 Z" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="3" stroke-linejoin="round"/>'
+    + '<path d="M172 176 L164 300 M228 176 L236 300" stroke="#E2E8F0" stroke-width="4"/>';
+}
+
+function artShoulderBag() {
+  return groundShadow(200, 322, 90, 12)
+    + '<path d="M158 146 Q158 128 200 128 Q242 128 242 146" fill="none" stroke="#B45309" stroke-width="6"/>'
+    + '<path d="M122 166 H278 L268 300 Q200 318 132 300 Z" fill="#E11D48" stroke="#BE123C" stroke-width="3" stroke-linejoin="round"/>'
+    + '<path d="M122 166 H278 L276 190 H124 Z" fill="#BE123C"/>'
+    + '<path d="M150 178 q50 14 100 0 M150 208 q50 14 100 0 M150 238 q50 14 100 0" fill="none" stroke="#FDA4AF" stroke-width="3" opacity="0.8"/>'
+    + '<circle cx="200" cy="176" r="6" fill="#FBBF24"/>';
+}
+
+function artShampoo() {
+  return groundShadow(200, 330, 74, 12)
+    + '<rect x="184" y="82" width="32" height="20" rx="5" fill="#334155"/>'
+    + '<path d="M188 102 h24 l14 20 v12 h-52 v-12 z" fill="#1E293B"/>'
+    + '<rect x="156" y="130" width="88" height="182" rx="18" fill="#7C3AED"/>'
+    + '<rect x="166" y="196" width="68" height="72" rx="10" fill="#F5F3FF"/>'
+    + '<rect x="176" y="212" width="48" height="7" rx="3.5" fill="#7C3AED" opacity="0.7"/>'
+    + '<rect x="180" y="228" width="40" height="6" rx="3" fill="#7C3AED" opacity="0.5"/>'
+    + '<rect x="176" y="244" width="44" height="6" rx="3" fill="#7C3AED" opacity="0.35"/>';
+}
+
+function artHairMask() { return artJarBase('#7C3AED', '#6D28D9', '#C4B5FD'); }
+function artBodyLotion() { return artJarBase('#F472B6', '#DB2777', '#FBCFE8'); }
+function artBodyScrub() { return artJarBase('#D97706', '#B45309', '#FCD34D'); }
+
+function artJarBase(body, deep, accent) {
+  return groundShadow(200, 330, 78, 12)
+    + '<rect x="172" y="86" width="56" height="20" rx="8" fill="' + deep + '"/>'
+    + '<rect x="178" y="104" width="44" height="16" rx="5" fill="#334155"/>'
+    + '<rect x="150" y="120" width="100" height="176" rx="24" fill="' + body + '"/>'
+    + '<rect x="164" y="132" width="16" height="150" rx="8" fill="' + accent + '" opacity="0.55"/>'
+    + '<rect x="168" y="176" width="64" height="76" rx="10" fill="#FFFFFF" opacity="0.85"/>'
+    + '<rect x="180" y="196" width="40" height="7" rx="3.5" fill="' + deep + '" opacity="0.7"/>'
+    + '<rect x="184" y="212" width="32" height="6" rx="3" fill="' + deep + '" opacity="0.5"/>'
+    + '<rect x="180" y="228" width="36" height="6" rx="3" fill="' + deep + '" opacity="0.35"/>';
+}
+
+function artHairOil() {
+  return groundShadow(200, 328, 68, 11)
+    + '<rect x="188" y="66" width="24" height="18" rx="6" fill="#1E293B"/>'
+    + '<rect x="184" y="84" width="32" height="22" rx="6" fill="#334155"/>'
+    + '<path d="M168 106 h64 l-8 12 v172 a12 12 0 0 1 -12 12 h-24 a12 12 0 0 1 -12 -12 z" fill="#F59E0B"/>'
+    + '<path d="M176 118 h48 v150 a8 8 0 0 1 -8 8 h-32 a8 8 0 0 1 -8 -8 z" fill="#FCD34D" opacity="0.55"/>'
+    + '<rect x="176" y="180" width="48" height="64" rx="8" fill="#FFFBEB"/>'
+    + '<ellipse cx="200" cy="212" rx="14" ry="20" fill="none" stroke="#B45309" stroke-width="4"/>'
+    + '<path d="M200 192 v40" stroke="#B45309" stroke-width="4"/>';
+}
+
+function artPerfume() {
+  return groundShadow(200, 326, 66, 11)
+    + '<rect x="186" y="60" width="28" height="18" rx="4" fill="#1E293B"/>'
+    + '<rect x="192" y="78" width="16" height="20" rx="4" fill="#334155"/>'
+    + '<rect x="160" y="98" width="80" height="200" rx="16" fill="#9333EA"/>'
+    + '<rect x="170" y="106" width="16" height="182" rx="8" fill="#C084FC" opacity="0.5"/>'
+    + '<rect x="176" y="150" width="48" height="76" rx="10" fill="#FAF5FF"/>'
+    + '<rect x="184" y="168" width="32" height="6" rx="3" fill="#9333EA" opacity="0.6"/>'
+    + '<rect x="190" y="184" width="24" height="5" rx="2.5" fill="#9333EA" opacity="0.45"/>'
+    + '<circle cx="200" cy="206" r="8" fill="#E9D5FF"/>';
+}
+
+function artMascara() {
+  return groundShadow(200, 330, 60, 10)
+    + '<rect x="176" y="70" width="48" height="46" rx="8" fill="#0F172A"/>'
+    + '<rect x="182" y="80" width="36" height="26" rx="4" fill="#334155"/>'
+    + '<path d="M186 116 h28 v18 h-28 z" fill="#1E293B"/>'
+    + '<path d="M184 134 h32 l6 30 v138 a12 12 0 0 1 -12 12 h-20 a12 12 0 0 1 -12 -12 v-138 z" fill="#7C3AED"/>'
+    + '<rect x="188" y="196" width="24" height="90" rx="10" fill="#151226"/>'
+    + '<rect x="192" y="150" width="16" height="34" rx="4" fill="#EDE9FE" opacity="0.7"/>';
+}
+
+function artFoundation() {
+  return groundShadow(200, 330, 74, 12)
+    + '<rect x="164" y="96" width="72" height="34" rx="8" fill="#1E293B"/>'
+    + '<rect x="184" y="84" width="32" height="16" rx="5" fill="#334155"/>'
+    + '<rect x="160" y="130" width="80" height="182" rx="14" fill="#E2B98E"/>'
+    + '<rect x="168" y="138" width="14" height="166" rx="7" fill="#F5DBBB" opacity="0.6"/>'
+    + '<rect x="174" y="196" width="52" height="70" rx="8" fill="#FBF3E7"/>'
+    + '<rect x="184" y="212" width="32" height="6" rx="3" fill="#A16207" opacity="0.6"/>'
+    + '<rect x="188" y="228" width="24" height="5" rx="2.5" fill="#A16207" opacity="0.45"/>';
+}
+
+function nailBottle(body, cap) {
+  return '<rect x="182" y="96" width="36" height="44" rx="8" fill="' + body + '"/>'
+    + '<rect x="188" y="82" width="24" height="18" rx="5" fill="' + cap + '"/>'
+    + '<rect x="172" y="140" width="56" height="150" rx="12" fill="' + body + '"/>'
+    + '<rect x="180" y="150" width="12" height="130" rx="6" fill="#FFFFFF" opacity="0.25"/>';
+}
+
+function artNailPolish() {
+  return groundShadow(200, 328, 96, 12)
+    + '<g transform="translate(-56 -4)">' + nailBottle('#E11D48', '#F8FAFC') + '</g>'
+    + '<g transform="translate(0 -14)">' + nailBottle('#7C3AED', '#F8FAFC') + '</g>'
+    + '<g transform="translate(56 -4)">' + nailBottle('#EC4899', '#F8FAFC') + '</g>';
+}
+
+function artToothbrush() {
+  return groundShadow(200, 344, 48, 10)
+    + '<rect x="188" y="60" width="24" height="60" rx="10" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="2"/>'
+    + '<path d="M194 66 h3 M200 64 h3 M206 66 h3" stroke="#94A3B8" stroke-width="3" stroke-linecap="round"/>'
+    + '<path d="M188 120 h24 l-6 202 a12 12 0 0 1 -12 0 z" fill="#7C3AED"/>'
+    + '<rect x="192" y="150" width="6" height="140" rx="3" fill="#A78BFA" opacity="0.7"/>'
+    + '<circle cx="200" cy="196" r="6" fill="#EDE9FE"/>';
+}
+
+function lipBalm(color) {
+  return '<rect x="176" y="130" width="48" height="176" rx="14" fill="' + color + '"/>'
+    + '<path d="M180 130 q20 -22 40 0 z" fill="#FFFFFF" opacity="0.55"/>'
+    + '<rect x="184" y="200" width="32" height="8" rx="4" fill="#FFFFFF" opacity="0.6"/>';
+}
+
+function artLipBalm() {
+  return groundShadow(200, 330, 96, 11)
+    + '<g transform="translate(-50 6)">' + lipBalm('#F43F5E') + '</g>'
+    + '<g transform="translate(0 -6)">' + lipBalm('#F472B6') + '</g>'
+    + '<g transform="translate(50 6)">' + lipBalm('#9333EA') + '</g>';
+}
+
+function artKnife() {
+  return groundShadow(200, 336, 96, 11)
+    + '<path d="M120 214 L120 176 Q120 150 150 150 L196 150 L220 214 Z" fill="#CBD5E1" stroke="#94A3B8" stroke-width="3" stroke-linejoin="round"/>'
+    + '<path d="M132 168 Q170 156 200 168" fill="none" stroke="#F1F5F9" stroke-width="5"/>'
+    + '<path d="M196 150 L220 214 L196 214 Z" fill="#E2E8F0" opacity="0.7"/>'
+    + '<rect x="220" y="196" width="76" height="26" rx="10" fill="#78350F"/>'
+    + '<path d="M232 202 v14 M248 202 v14 M264 202 v14 M280 202 v14" stroke="#5B21B6" stroke-width="3"/>';
+}
+
+function artBlender() {
+  return groundShadow(200, 332, 82, 13)
+    + '<path d="M148 118 H252 L242 236 H158 Z" fill="#E2E8F0" stroke="#CBD5E1" stroke-width="3" stroke-linejoin="round"/>'
+    + '<path d="M156 190 Q200 214 244 190 L242 236 H158 Z" fill="#A78BFA" opacity="0.85"/>'
+    + '<rect x="152" y="112" width="96" height="16" rx="6" fill="#CBD5E1"/>'
+    + '<path d="M150 236 H250 L244 268 H156 Z" fill="#94A3B8"/>'
+    + '<rect x="138" y="268" width="124" height="42" rx="12" fill="#334155"/>'
+    + '<circle cx="242" cy="289" r="7" fill="#A78BFA"/>';
+}
+
+function artFryingPan() {
+  return groundShadow(200, 300, 104, 14)
+    + '<rect x="272" y="186" width="84" height="16" rx="8" fill="#1E293B"/>'
+    + '<circle cx="180" cy="196" r="92" fill="#1E293B"/>'
+    + '<circle cx="180" cy="196" r="80" fill="#334155"/>'
+    + '<circle cx="180" cy="196" r="64" fill="#0F172A"/>'
+    + '<circle cx="180" cy="196" r="64" fill="none" stroke="#8B5CF6" stroke-width="3" opacity="0.6"/>';
+}
+
+function artKettle() {
+  return groundShadow(200, 332, 86, 13)
+    + '<path d="M150 150 Q150 116 180 112 h40 Q250 116 250 150 v122 a34 34 0 0 1 -34 34 h-32 a34 34 0 0 1 -34 -34 z" fill="#E2E8F0" stroke="#CBD5E1" stroke-width="3"/>'
+    + '<path d="M160 160 Q160 130 184 126 h32 Q240 130 240 160 v108 a26 26 0 0 1 -26 26 h-28 a26 26 0 0 1 -26 -26 z" fill="#BFDBFE" opacity="0.7"/>'
+    + '<path d="M250 190 Q296 196 292 236 Q290 262 262 258" fill="none" stroke="#94A3B8" stroke-width="12" stroke-linecap="round"/>'
+    + '<path d="M200 96 v14" stroke="#94A3B8" stroke-width="10" stroke-linecap="round"/>'
+    + '<rect x="176" y="278" width="48" height="18" rx="6" fill="#334155"/>';
+}
+
+function artAccentChair() {
+  return groundShadow(200, 324, 96, 14)
+    + '<path d="M132 150 Q132 112 176 112 h48 Q268 112 268 150 v92 H132 Z" fill="#047857"/>'
+    + '<path d="M132 242 Q132 200 176 200 h48 Q268 200 268 242 v30 H132 Z" fill="#0F766E"/>'
+    + '<path d="M132 176 Q116 176 116 200 v72 H134" fill="#065F46"/>'
+    + '<path d="M268 176 Q284 176 284 200 v72 H266" fill="#065F46"/>'
+    + '<rect x="146" y="272" width="14" height="34" rx="5" fill="#92400E"/>'
+    + '<rect x="240" y="272" width="14" height="34" rx="5" fill="#92400E"/>';
+}
+
+function artNightstand() {
+  return groundShadow(200, 336, 92, 13)
+    + '<rect x="126" y="120" width="148" height="188" rx="12" fill="#92400E" stroke="#78350F" stroke-width="3"/>'
+    + '<rect x="138" y="138" width="124" height="70" rx="6" fill="#B45309"/>'
+    + '<rect x="138" y="218" width="124" height="70" rx="6" fill="#B45309"/>'
+    + '<rect x="186" y="168" width="28" height="8" rx="4" fill="#78350F"/>'
+    + '<rect x="186" y="248" width="28" height="8" rx="4" fill="#78350F"/>'
+    + '<rect x="134" y="302" width="12" height="22" rx="4" fill="#78350F"/>'
+    + '<rect x="254" y="302" width="12" height="22" rx="4" fill="#78350F"/>';
+}
+
+function artFloorLamp() {
+  return groundShadow(200, 334, 74, 12)
+    + '<rect x="180" y="150" width="10" height="172" rx="5" fill="#B45309"/>'
+    + '<ellipse cx="182" cy="326" rx="52" ry="14" fill="#CBD5E1"/>'
+    + '<path d="M182 154 Q182 96 262 96" fill="none" stroke="#B45309" stroke-width="9" stroke-linecap="round"/>'
+    + '<path d="M222 96 h80 l16 66 h-112 z" fill="#FEF3C7" stroke="#FDE68A" stroke-width="4" stroke-linejoin="round"/>'
+    + '<circle cx="262" cy="140" r="12" fill="#FBBF24"/>';
+}
+
+function artStringLights() {
+  return groundShadow(200, 336, 100, 12)
+    + '<path d="M84 120 Q140 210 200 150 Q260 92 316 178" fill="none" stroke="#16A34A" stroke-width="4"/>'
+    + '<path d="M104 160 Q150 226 210 170 Q266 120 300 190" fill="none" stroke="#16A34A" stroke-width="4"/>'
+    + '<g fill="#FCD34D" stroke="#F59E0B" stroke-width="2">'
+    + '<circle cx="120" cy="146" r="9"/><circle cx="158" cy="192" r="9"/><circle cx="200" cy="152" r="9"/><circle cx="240" cy="112" r="9"/><circle cx="286" cy="172" r="9"/>'
+    + '<circle cx="140" cy="198" r="9"/><circle cx="182" cy="196" r="9"/><circle cx="222" cy="150" r="9"/><circle cx="264" cy="140" r="9"/>'
+    + '</g>';
+}
+
+function pot(cx, top, w, h, body, rim) {
+  return '<path d="M' + (cx - w / 2) + ' ' + top + ' L' + (cx + w / 2) + ' ' + top + ' L' + (cx + w / 2 - 12) + ' ' + (top + h) + ' L' + (cx - w / 2 + 12) + ' ' + (top + h) + ' Z" fill="' + body + '"/>'
+    + '<rect x="' + (cx - w / 2 - 3) + '" y="' + (top - 10) + '" width="' + (w + 6) + '" height="16" rx="5" fill="' + rim + '"/>';
+}
+
+function artPlanter() {
+  return groundShadow(200, 330, 104, 12)
+    + pot(126, 226, 70, 84, '#A8A29E', '#78716C')
+    + pot(200, 186, 82, 112, '#D6D3D1', '#A8A29E')
+    + pot(272, 250, 58, 60, '#E7E5E4', '#A8A29E')
+    + '<path d="M200 186 q-6 -34 12 -50 M200 186 q10 -30 -8 -48" fill="none" stroke="#16A34A" stroke-width="5" stroke-linecap="round"/>'
+    + '<ellipse cx="216" cy="132" rx="16" ry="9" fill="#22C55E" transform="rotate(-30 216 132)"/>'
+    + '<ellipse cx="188" cy="134" rx="16" ry="9" fill="#15803D" transform="rotate(30 188 134)"/>';
+}
+
+function artMirror() {
+  return groundShadow(200, 330, 90, 12)
+    + '<circle cx="200" cy="200" r="112" fill="#334155"/>'
+    + '<circle cx="200" cy="200" r="100" fill="#E8EEF5"/>'
+    + '<path d="M140 158 Q176 118 236 128" fill="none" stroke="#FFFFFF" stroke-width="12" stroke-linecap="round" opacity="0.8"/>'
+    + '<circle cx="200" cy="200" r="100" fill="none" stroke="#CBD5E1" stroke-width="3"/>';
+}
+
+function artBathTowel() {
+  return groundShadow(200, 330, 92, 12)
+    + '<rect x="126" y="110" width="132" height="200" rx="10" fill="#0E7490"/>'
+    + '<rect x="146" y="92" width="132" height="200" rx="10" fill="#0891B2"/>'
+    + '<rect x="146" y="92" width="132" height="200" rx="10" fill="none" stroke="#0E7490" stroke-width="3"/>'
+    + '<path d="M146 130 H278 M146 254 H278" stroke="#A5F3FC" stroke-width="6" opacity="0.8"/>'
+    + '<path d="M168 176 h88 M168 196 h88" stroke="#67E8F9" stroke-width="4" opacity="0.7"/>';
+}
+
+function artCookware() {
+  return groundShadow(200, 330, 108, 13)
+    + '<rect x="96" y="150" width="120" height="120" rx="14" fill="#94A3B8"/>'
+    + '<rect x="96" y="150" width="120" height="22" rx="8" fill="#CBD5E1"/>'
+    + '<rect x="70" y="166" width="34" height="14" rx="7" fill="#1E293B"/>'
+    + '<rect x="192" y="140" width="132" height="132" rx="16" fill="#64748B"/>'
+    + '<rect x="192" y="140" width="132" height="24" rx="9" fill="#94A3B8"/>'
+    + '<rect x="318" y="158" width="36" height="14" rx="7" fill="#1E293B"/>'
+    + '<ellipse cx="140" cy="272" rx="60" ry="10" fill="#475569"/>'
+    + '<ellipse cx="258" cy="274" rx="66" ry="10" fill="#334155"/>';
+}
+
+function artKettlebell() {
+  return groundShadow(200, 330, 78, 13)
+    + '<path d="M170 176 Q156 110 200 110 Q244 110 230 176" fill="none" stroke="#334155" stroke-width="30" stroke-linecap="round"/>'
+    + '<circle cx="200" cy="230" r="88" fill="#1E293B"/>'
+    + '<circle cx="200" cy="230" r="72" fill="#334155"/>'
+    + '<circle cx="176" cy="206" r="20" fill="#475569" opacity="0.7"/>'
+    + '<circle cx="200" cy="230" r="34" fill="#0F172A"/>';
+}
+
+function artFoamRoller() {
+  return groundShadow(200, 330, 104, 13)
+    + '<rect x="88" y="176" width="224" height="112" rx="46" fill="#F1F5F9" stroke="#CBD5E1" stroke-width="3"/>'
+    + '<rect x="88" y="176" width="224" height="112" rx="46" fill="#14B8A6" opacity="0.25"/>'
+    + '<circle cx="146" cy="204" r="10" fill="#0D9488"/><circle cx="200" cy="196" r="10" fill="#0D9488"/><circle cx="254" cy="204" r="10" fill="#0D9488"/>'
+    + '<circle cx="154" cy="248" r="10" fill="#0D9488"/><circle cx="200" cy="256" r="10" fill="#0D9488"/><circle cx="246" cy="248" r="10" fill="#0D9488"/>';
+}
+
+function artJumpRope() {
+  return groundShadow(200, 336, 90, 12)
+    + '<path d="M112 150 Q86 240 152 296 Q200 338 248 296 Q314 240 288 150" fill="none" stroke="#F43F5E" stroke-width="8" stroke-linecap="round"/>'
+    + '<rect x="96" y="112" width="32" height="72" rx="14" fill="#1E293B"/>'
+    + '<rect x="272" y="112" width="32" height="72" rx="14" fill="#1E293B"/>'
+    + '<path d="M112 128 v40 M288 128 v40" stroke="#64748B" stroke-width="4" stroke-linecap="round"/>';
+}
+
+function artHelmet() {
+  return groundShadow(200, 332, 92, 12)
+    + '<path d="M118 236 Q118 128 200 128 Q282 128 282 236 Z" fill="#F1F5F9" stroke="#CBD5E1" stroke-width="3"/>'
+    + '<path d="M150 150 Q200 132 250 150 Q230 176 200 176 Q170 176 150 150 Z" fill="#0EA5E9" opacity="0.5"/>'
+    + '<path d="M200 176 Q150 216 140 268 Q200 288 260 268 Q250 216 200 176 Z" fill="#E2E8F0" opacity="0.75"/>'
+    + '<path d="M136 236 Q200 262 264 236" fill="none" stroke="#94A3B8" stroke-width="4"/>';
+}
+
+function glove(base, pad) {
+  return '<path d="M120 178 Q114 150 140 148 L160 146 Q168 128 186 132 L188 150 Q196 132 214 138 L212 154 Q222 140 238 148 Q250 156 246 178 L244 258 Q244 300 200 300 Q156 300 156 258 Z" fill="' + base + '"/>'
+    + '<ellipse cx="200" cy="212" rx="34" ry="30" fill="' + pad + '" opacity="0.85"/>';
+}
+
+function artGloves() {
+  return groundShadow(200, 332, 96, 12)
+    + '<g transform="translate(-56 0)">' + glove('#1E293B', '#F43F5E') + '</g>'
+    + '<g transform="translate(56 0)">' + glove('#1E293B', '#F43F5E') + '</g>';
+}
+
+function artCampingChair() {
+  return groundShadow(200, 330, 104, 13)
+    + '<path d="M96 258 L150 130 H250 L304 258" fill="none" stroke="#334155" stroke-width="10" stroke-linecap="round"/>'
+    + '<rect x="140" y="150" width="120" height="60" rx="12" fill="#166534"/>'
+    + '<rect x="132" y="200" width="136" height="40" rx="12" fill="#15803D"/>'
+    + '<path d="M96 258 H304" stroke="#334155" stroke-width="10" stroke-linecap="round"/>'
+    + '<path d="M120 258 v34 M280 258 v34" stroke="#334155" stroke-width="10" stroke-linecap="round"/>'
+    + '<circle cx="170" cy="246" r="8" fill="#0F172A"/><circle cx="230" cy="246" r="8" fill="#0F172A"/>';
+}
+
+function artHikingBackpack() {
+  return groundShadow(200, 336, 88, 13)
+    + '<path d="M172 112 Q172 92 200 92 Q228 92 228 112" fill="none" stroke="#334155" stroke-width="10" stroke-linecap="round"/>'
+    + '<path d="M140 120 Q140 106 156 106 H244 Q260 106 260 120 V300 Q200 322 140 300 Z" fill="#15803D" stroke="#166534" stroke-width="3" stroke-linejoin="round"/>'
+    + '<rect x="150" y="150" width="100" height="70" rx="12" fill="#166534"/>'
+    + '<path d="M150 150 L200 190 L250 150" fill="none" stroke="#4ADE80" stroke-width="4"/>'
+    + '<path d="M166 250 h68" stroke="#4ADE80" stroke-width="6" stroke-linecap="round"/>'
+    + '<rect x="130" y="140" width="14" height="150" rx="7" fill="#334155"/>';
+}
+
+function artSleepingBag() {
+  return groundShadow(200, 330, 108, 13)
+    + '<path d="M104 128 Q200 108 296 128 L286 300 Q200 322 114 300 Z" fill="#1E3A8A" stroke="#1E293B" stroke-width="3" stroke-linejoin="round"/>'
+    + '<path d="M104 128 Q200 108 296 128 L292 172 Q200 152 108 172 Z" fill="#334155"/>'
+    + '<path d="M200 168 V312" stroke="#1E293B" stroke-width="3"/>'
+    + '<path d="M136 200 Q200 220 264 200 M134 250 Q200 270 266 250" fill="none" stroke="#93C5FD" stroke-width="4" opacity="0.6"/>';
+}
+
+function artTableTennis() {
+  return groundShadow(200, 332, 100, 13)
+    + '<ellipse cx="174" cy="230" rx="46" ry="72" fill="#1E293B" transform="rotate(12 174 230)"/>'
+    + '<ellipse cx="174" cy="230" rx="30" ry="52" fill="#DC2626" transform="rotate(12 174 230)"/>'
+    + '<rect x="166" y="286" width="20" height="44" rx="8" fill="#78350F" transform="rotate(12 176 308)"/>'
+    + '<circle cx="262" cy="168" r="24" fill="#FBBF24" stroke="#F59E0B" stroke-width="3"/>'
+    + '<circle cx="292" cy="232" r="16" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="3"/>'
+    + '<circle cx="304" cy="272" r="12" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="3"/>';
+}
+
+function artJuice() {
+  return groundShadow(200, 330, 70, 12)
+    + '<path d="M186 74 h28 l10 22 v8 h-48 v-8 z" fill="#1E293B"/>'
+    + '<path d="M172 104 H228 L236 306 Q200 322 164 306 Z" fill="#F59E0B" stroke="#D97706" stroke-width="3"/>'
+    + '<path d="M172 104 H228 L231 190 H169 Z" fill="#F59E0B"/>'
+    + '<rect x="176" y="212" width="48" height="60" rx="8" fill="#FFFBEB"/>'
+    + '<circle cx="200" cy="242" r="15" fill="#F97316"/>'
+    + '<path d="M200 227 v30 M185 242 h30" stroke="#FFFBEB" stroke-width="4"/>';
+}
+
+function artYogurt() {
+  return groundShadow(200, 330, 80, 12)
+    + '<path d="M156 128 H244 L238 292 Q200 312 162 292 Z" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="3" stroke-linejoin="round"/>'
+    + '<path d="M156 128 H244 L242 200 H158 Z" fill="#7C3AED" opacity="0.85"/>'
+    + '<rect x="150" y="112" width="100" height="22" rx="8" fill="#1E293B"/>'
+    + '<rect x="176" y="216" width="48" height="52" rx="8" fill="#F5F3FF"/>'
+    + '<rect x="184" y="234" width="32" height="6" rx="3" fill="#7C3AED" opacity="0.6"/>'
+    + '<rect x="188" y="248" width="24" height="5" rx="2.5" fill="#7C3AED" opacity="0.45"/>';
+}
+
+function artAvocado() {
+  return groundShadow(200, 330, 82, 12)
+    + '<path d="M200 92 Q258 116 260 194 Q262 268 200 300 Q138 268 140 194 Q142 116 200 92 Z" fill="#166534"/>'
+    + '<path d="M200 116 Q244 138 246 198 Q248 258 200 284 Q152 258 154 198 Q156 138 200 116 Z" fill="#4ADE80"/>'
+    + '<circle cx="200" cy="212" r="34" fill="#92400E"/>'
+    + '<circle cx="200" cy="212" r="24" fill="#B45309"/>'
+    + '<path d="M186 200 q14 -10 28 0" fill="none" stroke="#FDE68A" stroke-width="4" stroke-linecap="round"/>';
+}
+
+function artWaterBottle() {
+  return groundShadow(200, 330, 70, 12)
+    + '<rect x="184" y="66" width="32" height="20" rx="6" fill="#1E3A8A"/>'
+    + '<rect x="178" y="84" width="44" height="22" rx="7" fill="#334155"/>'
+    + '<rect x="166" y="104" width="68" height="212" rx="20" fill="#BFDBFE"/>'
+    + '<rect x="166" y="180" width="68" height="136" rx="20" fill="#3B82F6" opacity="0.75"/>'
+    + '<rect x="176" y="118" width="12" height="180" rx="6" fill="#FFFFFF" opacity="0.5"/>'
+    + '<rect x="178" y="216" width="44" height="52" rx="8" fill="#EFF6FF"/>'
+    + '<path d="M188 236 h24 M188 250 h24" stroke="#3B82F6" stroke-width="4" opacity="0.6"/>';
+}
+
+function artPasta() {
+  return groundShadow(200, 332, 86, 12)
+    + '<path d="M150 132 H250 L244 292 Q200 312 156 292 Z" fill="#FCD34D" stroke="#F59E0B" stroke-width="3" stroke-linejoin="round"/>'
+    + '<path d="M150 132 H250 L249 176 H151 Z" fill="#B45309"/>'
+    + '<rect x="170" y="212" width="60" height="52" rx="8" fill="#FFFBEB"/>'
+    + '<path d="M182 226 h36 M182 240 h36 M182 254 h30" stroke="#B45309" stroke-width="4" opacity="0.6"/>'
+    + '<path d="M176 100 h48 v22 h-48 z" fill="#F59E0B"/>';
+}
+
+function artHoney() {
+  return groundShadow(200, 330, 72, 12)
+    + '<rect x="168" y="96" width="64" height="18" rx="6" fill="#78350F"/>'
+    + '<path d="M160 120 Q160 114 168 114 h64 Q240 114 240 120 v176 a14 14 0 0 1 -14 14 h-52 a14 14 0 0 1 -14 -14 z" fill="#F59E0B" stroke="#D97706" stroke-width="3"/>'
+    + '<path d="M160 196 H240 V260 a14 14 0 0 1 -14 14 h-52 a14 14 0 0 1 -14 -14 z" fill="#B45309" opacity="0.6"/>'
+    + '<rect x="178" y="164" width="44" height="60" rx="8" fill="#FEF3C7"/>'
+    + '<path d="M200 176 l12 20 -12 20 -12 -20 z" fill="#D97706"/>';
+}
+
+function artChocolate() {
+  return groundShadow(200, 330, 84, 12)
+    + '<rect x="140" y="118" width="120" height="200" rx="10" fill="#3B2314"/>'
+    + '<rect x="152" y="130" width="96" height="176" rx="6" fill="#5B3A21"/>'
+    + '<g fill="#7C4A24">'
+    + '<rect x="158" y="138" width="38" height="38" rx="4"/><rect x="204" y="138" width="38" height="38" rx="4"/>'
+    + '<rect x="158" y="184" width="38" height="38" rx="4"/><rect x="204" y="184" width="38" height="38" rx="4"/>'
+    + '<rect x="158" y="230" width="38" height="38" rx="4"/><rect x="204" y="230" width="38" height="38" rx="4"/>'
+    + '</g>'
+    + '<rect x="140" y="118" width="120" height="30" rx="10" fill="#F59E0B"/>';
+}
+
+function artNuts() {
+  return groundShadow(200, 332, 86, 12)
+    + '<path d="M148 150 H252 L244 296 Q200 314 156 296 Z" fill="#B45309" stroke="#92400E" stroke-width="3" stroke-linejoin="round"/>'
+    + '<path d="M148 150 Q200 168 252 150 L250 178 Q200 196 150 178 Z" fill="#92400E"/>'
+    + '<g fill="#FCD34D" stroke="#D97706" stroke-width="2">'
+    + '<ellipse cx="182" cy="216" rx="15" ry="11" transform="rotate(-20 182 216)"/>'
+    + '<ellipse cx="216" cy="230" rx="15" ry="11" transform="rotate(15 216 230)"/>'
+    + '<ellipse cx="190" cy="258" rx="15" ry="11" transform="rotate(-8 190 258)"/>'
+    + '<ellipse cx="224" cy="272" rx="13" ry="10" transform="rotate(24 224 272)"/>'
+    + '</g>';
+}
+
+function artBread() {
+  return groundShadow(200, 328, 96, 12)
+    + '<path d="M120 246 Q100 160 200 152 Q300 160 280 246 Q200 268 120 246 Z" fill="#C2872E" stroke="#92400E" stroke-width="3" stroke-linejoin="round"/>'
+    + '<path d="M136 236 Q200 254 264 236 Q288 172 200 164 Q112 172 136 236 Z" fill="#E7C48A"/>'
+    + '<path d="M156 184 q22 -14 44 -2 M196 178 q22 -12 44 2" fill="none" stroke="#92400E" stroke-width="5" stroke-linecap="round" opacity="0.7"/>'
+    + '<path d="M150 224 q50 14 100 0" fill="none" stroke="#B45309" stroke-width="4" opacity="0.6"/>';
+}
+
+function artRiceBag() {
+  return groundShadow(200, 334, 84, 12)
+    + '<path d="M158 118 H242 L254 300 Q200 320 146 300 Z" fill="#D9C5A0" stroke="#B5A284" stroke-width="3" stroke-linejoin="round"/>'
+    + '<path d="M158 118 H242 L246 160 H154 Z" fill="#8A5A2B"/>'
+    + '<path d="M166 112 H234 l6 12 H160 Z" fill="#6E3F22"/>'
+    + '<rect x="170" y="188" width="60" height="70" rx="8" fill="#F5F3FF"/>'
+    + '<ellipse cx="200" cy="222" rx="18" ry="12" fill="#E7C78F"/>'
+    + '<path d="M184 242 h32" stroke="#7C3AED" stroke-width="4" opacity="0.6"/>';
+}
+
+function artChronograph() {
+  return groundShadow(200, 342, 92, 13)
+    + '<rect x="176" y="58" width="48" height="74" rx="12" fill="#94A3B8"/>'
+    + '<path d="M180 74 h40 M180 92 h40 M180 110 h40" stroke="#64748B" stroke-width="3"/>'
+    + '<rect x="176" y="268" width="48" height="74" rx="12" fill="#94A3B8"/>'
+    + '<path d="M180 284 h40 M180 302 h40 M180 320 h40" stroke="#64748B" stroke-width="3"/>'
+    + '<circle cx="200" cy="200" r="84" fill="#CBD5E1"/>'
+    + '<circle cx="200" cy="200" r="70" fill="#1E293B"/>'
+    + '<circle cx="200" cy="200" r="9" fill="#E2E8F0"/>'
+    + '<circle cx="200" cy="248" r="20" fill="none" stroke="#A78BFA" stroke-width="4"/>'
+    + '<circle cx="164" cy="200" r="14" fill="none" stroke="#A78BFA" stroke-width="4"/>'
+    + '<circle cx="236" cy="200" r="14" fill="none" stroke="#A78BFA" stroke-width="4"/>'
+    + '<path d="M200 200 V158 M200 200 L228 214" stroke="#F8FAFC" stroke-width="5" stroke-linecap="round"/>'
+    + '<rect x="264" y="188" width="14" height="22" rx="6" fill="#64748B"/>';
+}
+
+function artBaseballCap() {
+  return groundShadow(200, 326, 94, 12)
+    + '<path d="M120 236 Q120 138 200 138 Q280 138 280 236 Z" fill="#1E3A8A" stroke="#1E293B" stroke-width="3"/>'
+    + '<path d="M120 236 Q112 238 112 246 Q112 262 140 262 H200 V236 Z" fill="#334155"/>'
+    + '<path d="M200 138 V236" stroke="#1E293B" stroke-width="3"/>'
+    + '<circle cx="200" cy="146" r="6" fill="#1E293B"/>'
+    + '<path d="M140 176 Q200 160 260 176" fill="none" stroke="#93C5FD" stroke-width="4" opacity="0.6"/>';
+}
+
+function artSunHat() {
+  return groundShadow(200, 322, 108, 12)
+    + '<ellipse cx="200" cy="240" rx="132" ry="40" fill="#D9C5A0" stroke="#B5A284" stroke-width="3"/>'
+    + '<ellipse cx="200" cy="238" rx="80" ry="26" fill="#C9B99F"/>'
+    + '<path d="M144 236 Q144 148 200 148 Q256 148 256 236 Z" fill="#E7D9BF" stroke="#B5A284" stroke-width="3"/>'
+    + '<path d="M144 208 Q200 226 256 208" fill="none" stroke="#B5A284" stroke-width="10"/>'
+    + '<path d="M136 250 q22 30 20 62" fill="none" stroke="#B5A284" stroke-width="6" stroke-linecap="round"/>'
+    + '<circle cx="134" cy="316" r="8" fill="#D9C5A0"/>';
+}
+
+function artSunglasses() {
+  return groundShadow(200, 330, 104, 12)
+    + '<path d="M84 168 h232" stroke="#1E293B" stroke-width="10" stroke-linecap="round"/>'
+    + '<path d="M92 168 Q92 150 110 150" fill="none" stroke="#1E293B" stroke-width="8"/>'
+    + '<path d="M308 168 Q308 150 290 150" fill="none" stroke="#1E293B" stroke-width="8"/>'
+    + '<path d="M104 168 Q104 224 150 224 Q196 224 196 168 Z" fill="#0F172A"/>'
+    + '<path d="M204 168 Q204 224 250 224 Q296 224 296 168 Z" fill="#0F172A"/>'
+    + '<path d="M114 178 Q128 172 142 180" fill="none" stroke="#475569" stroke-width="6" stroke-linecap="round"/>'
+    + '<path d="M214 178 Q228 172 242 180" fill="none" stroke="#475569" stroke-width="6" stroke-linecap="round"/>'
+    + '<path d="M196 168 h8" stroke="#1E293B" stroke-width="10"/>';
+}
+
+function artPassportHolder() {
+  return groundShadow(200, 330, 84, 12)
+    + '<rect x="140" y="112" width="120" height="180" rx="12" fill="#78350F" stroke="#5B21B6" stroke-width="3"/>'
+    + '<path d="M140 112 h40 v180 h-40 z" fill="#5B21B6"/>'
+    + '<rect x="168" y="152" width="76" height="100" rx="8" fill="#B45309"/>'
+    + '<path d="M188 190 l12 -14 12 14 v16 h-24 z" fill="#FDE68A" opacity="0.6"/>'
+    + '<path d="M182 242 h48" stroke="#FDE68A" stroke-width="4" opacity="0.5"/>'
+    + '<path d="M162 140 v124" stroke="#F59E0B" stroke-width="4" stroke-dasharray="6 6"/>';
+}
+
+function artBracelet() {
+  return groundShadow(200, 330, 88, 12)
+    + '<path d="M200 108 a92 92 0 0 1 92 92 a92 92 0 0 1 -92 92 a92 92 0 0 1 -92 -92 a92 92 0 0 1 92 -92 z" fill="none" stroke="#B45309" stroke-width="34"/>'
+    + '<path d="M200 108 a92 92 0 0 1 92 92 a92 92 0 0 1 -92 92" fill="none" stroke="#D97706" stroke-width="34"/>'
+    + '<circle cx="200" cy="200" r="75" fill="none" stroke="#78350F" stroke-width="3"/>'
+    + '<circle cx="200" cy="200" r="109" fill="none" stroke="#78350F" stroke-width="3"/>'
+    + '<circle cx="200" cy="128" r="8" fill="#FDE68A"/>'
+    + '<path d="M108 190 Q104 200 108 210" stroke="#FDE68A" stroke-width="4" fill="none"/>';
+}
+
+/* Type-keyed fallback map. Used when a product id has no dedicated drawing,
+ * so two products of the same true type always look consistent and every new
+ * product resolves to type-matching artwork. */
+const ART_BY_KIND = {
+  sweater: artSweater,
+  trousers: artTrousers,
+  leggings: artLeggings,
+  joggers: artJoggers,
+  sneakers: artSneakers,
+  boots: artBoots,
+  overcoat: artOvercoat,
+  jacket: artJacket,
+  scarf: artScarf,
+  vest: artVest,
+  skirt: artSkirt,
+  'tank top': artTankTop,
+  'shoulder bag': artShoulderBag,
+  shampoo: artShampoo,
+  'hair mask': artHairMask,
+  'hair oil': artHairOil,
+  'body lotion': artBodyLotion,
+  'body scrub': artBodyScrub,
+  perfume: artPerfume,
+  mascara: artMascara,
+  foundation: artFoundation,
+  'nail polish': artNailPolish,
+  toothbrush: artToothbrush,
+  'lip balm': artLipBalm,
+  knife: artKnife,
+  blender: artBlender,
+  'frying pan': artFryingPan,
+  kettle: artKettle,
+  'accent chair': artAccentChair,
+  nightstand: artNightstand,
+  'floor lamp': artFloorLamp,
+  'string lights': artStringLights,
+  planter: artPlanter,
+  mirror: artMirror,
+  'bath towel': artBathTowel,
+  cookware: artCookware,
+  kettlebell: artKettlebell,
+  'foam roller': artFoamRoller,
+  'jump rope': artJumpRope,
+  helmet: artHelmet,
+  gloves: artGloves,
+  'camping chair': artCampingChair,
+  'hiking backpack': artHikingBackpack,
+  'sleeping bag': artSleepingBag,
+  'table tennis': artTableTennis,
+  juice: artJuice,
+  yogurt: artYogurt,
+  avocado: artAvocado,
+  'water bottle': artWaterBottle,
+  pasta: artPasta,
+  honey: artHoney,
+  chocolate: artChocolate,
+  nuts: artNuts,
+  bread: artBread,
+  'rice bag': artRiceBag,
+  chronograph: artChronograph,
+  'baseball cap': artBaseballCap,
+  'sun hat': artSunHat,
+  sunglasses: artSunglasses,
+  'passport holder': artPassportHolder,
+  bracelet: artBracelet,
+};
+
+/* ---------------------------------------------------------------------------
+ * Dedicated drawings for the remaining new products, keyed by product id so
+ * each of these gets its own distinct, type-matching illustration (several
+ * share a product type but diverge in silhouette and accent).
+ * --------------------------------------------------------------------------- */
+
+function artOnEarHeadphones() {
+  return groundShadow(200, 316, 96, 13)
+    + '<path d="M104 210 V186 Q104 96 200 96 Q296 96 296 186 V210" fill="none" stroke="#4C1D95" stroke-width="20" stroke-linecap="round"/>'
+    + '<path d="M104 210 V186 Q104 96 200 96 Q296 96 296 186 V210" fill="none" stroke="#7C3AED" stroke-width="11" stroke-linecap="round"/>'
+    + '<rect x="78" y="192" width="60" height="86" rx="26" fill="#5B21B6" stroke="#4C1D95" stroke-width="3"/>'
+    + '<rect x="262" y="192" width="60" height="86" rx="26" fill="#5B21B6" stroke="#4C1D95" stroke-width="3"/>'
+    + '<rect x="88" y="206" width="40" height="58" rx="18" fill="#A78BFA" opacity="0.7"/>'
+    + '<rect x="272" y="206" width="40" height="58" rx="18" fill="#A78BFA" opacity="0.7"/>';
+}
+
+function artBoneConduction() {
+  return groundShadow(200, 322, 88, 12)
+    + '<path d="M150 116 Q150 92 200 92 Q250 92 250 116 L250 150" fill="none" stroke="#0F172A" stroke-width="16" stroke-linecap="round"/>'
+    + '<path d="M150 116 Q120 200 150 268" fill="none" stroke="#0F172A" stroke-width="16" stroke-linecap="round"/>'
+    + '<path d="M250 116 Q280 200 250 268" fill="none" stroke="#0F172A" stroke-width="16" stroke-linecap="round"/>'
+    + '<rect x="128" y="244" width="44" height="56" rx="18" fill="#F59E0B" stroke="#B45309" stroke-width="3"/>'
+    + '<rect x="228" y="244" width="44" height="56" rx="18" fill="#F59E0B" stroke="#B45309" stroke-width="3"/>'
+    + '<circle cx="150" cy="272" r="8" fill="#FEF3C7"/><circle cx="250" cy="272" r="8" fill="#FEF3C7"/>';
+}
+
+function artHeadphonesNC() {
+  return groundShadow(200, 320, 100, 13)
+    + '<path d="M96 208 V182 Q96 88 200 88 Q304 88 304 182 V208" fill="none" stroke="#1E293B" stroke-width="22" stroke-linecap="round"/>'
+    + '<path d="M96 208 V182 Q96 88 200 88 Q304 88 304 182 V208" fill="none" stroke="#6366F1" stroke-width="12" stroke-linecap="round"/>'
+    + '<rect x="70" y="186" width="72" height="100" rx="32" fill="#334155" stroke="#1E293B" stroke-width="3"/>'
+    + '<rect x="258" y="186" width="72" height="100" rx="32" fill="#334155" stroke="#1E293B" stroke-width="3"/>'
+    + '<rect x="84" y="202" width="44" height="68" rx="22" fill="#818CF8" opacity="0.65"/>'
+    + '<rect x="272" y="202" width="44" height="68" rx="22" fill="#818CF8" opacity="0.65"/>'
+    + '<path d="M104 286 q-10 24 6 30" fill="none" stroke="#1E293B" stroke-width="5" stroke-linecap="round"/>';
+}
+
+function artPowerBank() {
+  return groundShadow(200, 332, 78, 12)
+    + '<rect x="132" y="80" width="136" height="240" rx="22" fill="#1E293B" stroke="#0F172A" stroke-width="3"/>'
+    + '<rect x="150" y="100" width="100" height="60" rx="10" fill="#0F172A"/>'
+    + '<path d="M178 108 L158 138 H188 L170 164 L212 128 H182 L200 108 Z" fill="#22D3EE"/>'
+    + '<rect x="150" y="188" width="24" height="10" rx="4" fill="#4ADE80"/>'
+    + '<rect x="150" y="208" width="24" height="10" rx="4" fill="#4ADE80"/>'
+    + '<rect x="150" y="228" width="24" height="10" rx="4" fill="#334155"/>'
+    + '<rect x="150" y="228" width="24" height="10" rx="4" fill="#334155"/>'
+    + '<rect x="176" y="280" width="48" height="22" rx="6" fill="#0F172A"/>';
+}
+
+function artLaptopStand() {
+  return groundShadow(200, 336, 104, 12)
+    + '<path d="M96 300 L180 150 H300 L216 300 Z" fill="#CBD5E1" stroke="#94A3B8" stroke-width="3" stroke-linejoin="round"/>'
+    + '<path d="M96 300 L216 300 L300 150 L180 150 Z" fill="#E2E8F0"/>'
+    + '<path d="M120 296 L190 168" stroke="#94A3B8" stroke-width="4" stroke-linecap="round"/>'
+    + '<path d="M150 296 L214 176" stroke="#94A3B8" stroke-width="4" stroke-linecap="round"/>'
+    + '<rect x="118" y="300" width="176" height="16" rx="8" fill="#64748B"/>'
+    + '<circle cx="140" cy="286" r="6" fill="#94A3B8"/><circle cx="176" cy="286" r="6" fill="#94A3B8"/>';
+}
+
+function artWebcam() {
+  return groundShadow(200, 322, 76, 12)
+    + '<rect x="146" y="188" width="108" height="86" rx="24" fill="#1E293B" stroke="#0F172A" stroke-width="3"/>'
+    + '<circle cx="200" cy="231" r="34" fill="#0F172A"/><circle cx="200" cy="231" r="22" fill="#334155"/>'
+    + '<circle cx="200" cy="231" r="10" fill="#60A5FA"/>'
+    + '<rect x="166" y="146" width="68" height="50" rx="12" fill="#334155"/>'
+    + '<circle cx="200" cy="171" r="38" fill="none" stroke="#F8FAFC" stroke-width="6" opacity="0.85"/>'
+    + '<path d="M108 300 H292" stroke="#94A3B8" stroke-width="8" stroke-linecap="round"/>';
+}
+
+function artMonitor() {
+  return groundShadow(200, 342, 104, 11)
+    + '<rect x="82" y="104" width="236" height="156" rx="14" fill="#1E293B" stroke="#0F172A" stroke-width="3"/>'
+    + '<rect x="96" y="118" width="208" height="128" rx="8" fill="#38BDF8"/>'
+    + '<path d="M96 216 Q150 170 200 200 Q250 230 304 176 V238 H96 Z" fill="#0EA5E9" opacity="0.6"/>'
+    + '<rect x="182" y="260" width="36" height="42" fill="#334155"/>'
+    + '<rect x="140" y="300" width="120" height="18" rx="9" fill="#475569"/>';
+}
+
+function artMirrorlessCamera() {
+  return groundShadow(200, 330, 94, 12)
+    + '<rect x="96" y="146" width="208" height="130" rx="20" fill="#1E293B" stroke="#0F172A" stroke-width="3"/>'
+    + '<circle cx="188" cy="212" r="52" fill="#0F172A"/><circle cx="188" cy="212" r="38" fill="#334155"/>'
+    + '<circle cx="188" cy="212" r="20" fill="#60A5FA"/><circle cx="180" cy="204" r="7" fill="#E2E8F0"/>'
+    + '<rect x="232" y="164" width="56" height="40" rx="8" fill="#334155"/>'
+    + '<rect x="252" y="122" width="30" height="26" rx="8" fill="#475569"/>'
+    + '<circle cx="278" cy="172" r="6" fill="#F87171"/>';
+}
+
+function artCharger() {
+  return groundShadow(200, 328, 76, 12)
+    + '<rect x="140" y="128" width="120" height="160" rx="22" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="3"/>'
+    + '<rect x="168" y="92" width="14" height="40" rx="5" fill="#94A3B8"/>'
+    + '<rect x="218" y="92" width="14" height="40" rx="5" fill="#94A3B8"/>'
+    + '<rect x="158" y="168" width="84" height="16" rx="6" fill="#334155"/>'
+    + '<rect x="158" y="200" width="84" height="16" rx="6" fill="#334155"/>'
+    + '<rect x="158" y="232" width="84" height="16" rx="6" fill="#334155"/>'
+    + '<path d="M200 256 l-14 22 h20 l-12 22" fill="none" stroke="#6366F1" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>';
+}
+
+function artMicrophone() {
+  return groundShadow(200, 336, 72, 12)
+    + '<rect x="168" y="76" width="64" height="146" rx="32" fill="#334155" stroke="#1E293B" stroke-width="3"/>'
+    + '<path d="M178 96 h44 M178 116 h44 M178 136 h44 M178 156 h44 M178 176 h44" stroke="#64748B" stroke-width="5" stroke-linecap="round"/>'
+    + '<path d="M148 168 V192 Q148 240 200 240 Q252 240 252 192 V168" fill="none" stroke="#475569" stroke-width="6" stroke-linecap="round"/>'
+    + '<rect x="188" y="240" width="24" height="56" fill="#334155"/>'
+    + '<rect x="150" y="296" width="100" height="18" rx="9" fill="#1E293B"/>';
+}
+
+function artSmartWatchPro() {
+  return groundShadow(200, 340, 66, 12)
+    + '<path d="M170 60 h60 l10 74 H160 Z" fill="#1E293B"/>'
+    + '<path d="M160 266 h80 l-10 74 h-60 Z" fill="#1E293B"/>'
+    + '<rect x="150" y="120" width="100" height="160" rx="30" fill="#0F172A" stroke="#334155" stroke-width="3"/>'
+    + '<rect x="162" y="132" width="76" height="136" rx="22" fill="#38BDF8"/>'
+    + '<path d="M180 200 h12 v-30 h10 v30 h12" fill="none" stroke="#0F172A" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>'
+    + '<rect x="250" y="176" width="10" height="30" rx="5" fill="#64748B"/>';
+}
+
+function artKaraokeSpeaker() {
+  return groundShadow(200, 338, 82, 12)
+    + '<rect x="126" y="96" width="148" height="228" rx="22" fill="#1E293B" stroke="#0F172A" stroke-width="3"/>'
+    + '<circle cx="200" cy="176" r="52" fill="#0F172A"/>'
+    + '<circle cx="200" cy="176" r="52" fill="none" stroke="#EC4899" stroke-width="6"/>'
+    + '<circle cx="200" cy="176" r="30" fill="#334155"/><circle cx="200" cy="176" r="12" fill="#F472B6"/>'
+    + '<circle cx="200" cy="256" r="24" fill="#334155"/><circle cx="200" cy="256" r="9" fill="#EC4899"/>'
+    + '<path d="M262 150 q40 -30 66 -6" fill="none" stroke="#94A3B8" stroke-width="5" stroke-linecap="round"/>';
+}
+
+function artDoorbell() {
+  return groundShadow(200, 340, 60, 12)
+    + '<rect x="150" y="70" width="100" height="270" rx="34" fill="#0F172A" stroke="#334155" stroke-width="3"/>'
+    + '<circle cx="200" cy="140" r="30" fill="#1E293B"/><circle cx="200" cy="140" r="18" fill="#334155"/><circle cx="200" cy="140" r="8" fill="#60A5FA"/>'
+    + '<circle cx="200" cy="250" r="26" fill="#334155" stroke="#60A5FA" stroke-width="5"/>'
+    + '<circle cx="200" cy="250" r="9" fill="#F8FAFC"/>'
+    + '<rect x="188" y="300" width="24" height="12" rx="4" fill="#475569"/>';
+}
+
+function artBulb() {
+  return groundShadow(200, 338, 64, 12)
+    + '<path d="M200 74 Q136 74 136 148 Q136 198 164 224 Q176 236 176 258 H224 Q224 236 236 224 Q264 198 264 148 Q264 74 200 74 Z" fill="#FEF3C7" stroke="#FCD34D" stroke-width="3"/>'
+    + '<path d="M172 210 q30 -66 56 0" fill="none" stroke="#F59E0B" stroke-width="4" stroke-linecap="round"/>'
+    + '<path d="M172 186 q30 -60 56 0" fill="none" stroke="#F59E0B" stroke-width="4" stroke-linecap="round"/>'
+    + '<rect x="176" y="256" width="48" height="16" rx="4" fill="#94A3B8"/>'
+    + '<rect x="180" y="272" width="40" height="14" rx="4" fill="#64748B"/>'
+    + '<rect x="186" y="286" width="28" height="16" rx="5" fill="#475569"/>';
+}
+
+function artTabletStand() {
+  return groundShadow(200, 336, 96, 12)
+    + '<path d="M112 296 L200 150 H288 L212 296 Z" fill="#E2E8F0" stroke="#94A3B8" stroke-width="3" stroke-linejoin="round"/>'
+    + '<rect x="128" y="150" width="132" height="16" rx="8" fill="#CBD5E1"/>'
+    + '<rect x="118" y="296" width="164" height="18" rx="9" fill="#64748B"/>'
+    + '<path d="M162 150 L120 250" stroke="#94A3B8" stroke-width="4" stroke-linecap="round"/>'
+    + '<circle cx="150" cy="282" r="6" fill="#94A3B8"/><circle cx="250" cy="282" r="6" fill="#94A3B8"/>';
+}
+
+function artRingLight() {
+  return groundShadow(200, 342, 74, 12)
+    + '<circle cx="200" cy="170" r="78" fill="none" stroke="#F8FAFC" stroke-width="26"/>'
+    + '<circle cx="200" cy="170" r="78" fill="none" stroke="#FDE68A" stroke-width="10" opacity="0.9"/>'
+    + '<circle cx="200" cy="170" r="52" fill="none" stroke="#FEF9C3" stroke-width="6"/>'
+    + '<rect x="192" y="248" width="16" height="56" fill="#475569"/>'
+    + '<path d="M156 316 Q200 336 244 316" fill="none" stroke="#334155" stroke-width="7" stroke-linecap="round"/>';
+}
+
+function artMouse() {
+  return groundShadow(200, 336, 66, 12)
+    + '<path d="M200 92 Q252 92 252 172 V252 Q252 314 200 314 Q148 314 148 252 V172 Q148 92 200 92 Z" fill="#1E293B" stroke="#0F172A" stroke-width="3"/>'
+    + '<rect x="196" y="122" width="8" height="34" rx="4" fill="#6366F1"/>'
+    + '<path d="M200 92 V156" stroke="#334155" stroke-width="3"/>'
+    + '<path d="M164 200 Q200 188 236 200" fill="none" stroke="#334155" stroke-width="4"/>';
+}
+
+function artSoundbar() {
+  return groundShadow(200, 340, 116, 12)
+    + '<rect x="72" y="186" width="256" height="82" rx="18" fill="#1E293B" stroke="#0F172A" stroke-width="3"/>'
+    + '<circle cx="112" cy="227" r="18" fill="#334155"/><circle cx="150" cy="227" r="18" fill="#334155"/>'
+    + '<circle cx="250" cy="227" r="18" fill="#334155"/><circle cx="288" cy="227" r="18" fill="#334155"/>'
+    + '<rect x="170" y="216" width="60" height="22" rx="8" fill="#0EA5E9" opacity="0.8"/>'
+    + '<rect x="150" y="286" width="100" height="40" rx="12" fill="#334155"/>'
+    + '<circle cx="200" cy="306" r="13" fill="#0F172A"/>';
+}
+
+function artGamingHeadset() {
+  return groundShadow(200, 320, 98, 13)
+    + '<path d="M100 206 V180 Q100 90 200 90 Q300 90 300 180 V206" fill="none" stroke="#7C3AED" stroke-width="20" stroke-linecap="round"/>'
+    + '<rect x="76" y="188" width="66" height="94" rx="28" fill="#1E293B" stroke="#0F172A" stroke-width="3"/>'
+    + '<rect x="258" y="188" width="66" height="94" rx="28" fill="#1E293B" stroke="#0F172A" stroke-width="3"/>'
+    + '<rect x="88" y="202" width="42" height="66" rx="20" fill="#8B5CF6" opacity="0.7"/>'
+    + '<rect x="270" y="202" width="42" height="66" rx="20" fill="#8B5CF6" opacity="0.7"/>'
+    + '<path d="M112 282 q6 40 44 44" fill="none" stroke="#0F172A" stroke-width="7" stroke-linecap="round"/>'
+    + '<ellipse cx="166" cy="322" rx="18" ry="9" fill="#334155"/>';
+}
+
+function artSecurityCamera() {
+  return groundShadow(200, 334, 82, 12)
+    + '<path d="M200 80 Q132 80 132 148 V180 Q132 244 200 244 Q268 244 268 180 V148 Q268 80 200 80 Z" fill="#E2E8F0" stroke="#94A3B8" stroke-width="3"/>'
+    + '<circle cx="200" cy="150" r="46" fill="#334155"/><circle cx="200" cy="150" r="30" fill="#0F172A"/>'
+    + '<circle cx="200" cy="150" r="14" fill="#60A5FA"/><circle cx="192" cy="142" r="5" fill="#F8FAFC"/>'
+    + '<rect x="182" y="244" width="36" height="42" fill="#94A3B8"/>'
+    + '<rect x="146" y="286" width="108" height="20" rx="10" fill="#64748B"/>';
+}
+
+function artLinenShirt() {
+  return groundShadow(200, 336, 96, 13)
+    + '<path d="M156 96 L104 122 L82 190 L116 206 L134 168 V320 Q200 332 266 320 V168 L284 206 L318 190 L296 122 L244 96 L200 116 Z" fill="#E0E7FF" stroke="#A5B4FC" stroke-width="3" stroke-linejoin="round"/>'
+    + '<path d="M156 96 L200 116 L244 96 L232 84 H168 Z" fill="#C7D2FE"/>'
+    + '<path d="M200 116 V320" stroke="#A5B4FC" stroke-width="3"/>'
+    + '<circle cx="200" cy="176" r="5" fill="#818CF8"/><circle cx="200" cy="220" r="5" fill="#818CF8"/><circle cx="200" cy="264" r="5" fill="#818CF8"/>'
+    + '<path d="M116 308 Q200 322 284 308" fill="none" stroke="#A5B4FC" stroke-width="3"/>';
+}
+
+function artWovenBelt() {
+  return groundShadow(200, 336, 104, 12)
+    + '<path d="M92 226 Q92 250 116 250 H284 Q308 250 308 226 Q308 202 284 202 H116 Q92 202 92 226 Z" fill="#78350F" stroke="#5B21B6" stroke-width="3"/>'
+    + '<path d="M110 214 h24 M110 226 h24 M110 238 h24" stroke="#F59E0B" stroke-width="5" stroke-linecap="round"/>'
+    + '<rect x="118" y="196" width="164" height="16" rx="6" fill="#92400E" opacity="0.6"/>'
+    + '<rect x="118" y="240" width="164" height="16" rx="6" fill="#92400E" opacity="0.6"/>'
+    + '<rect x="252" y="188" width="56" height="76" rx="12" fill="none" stroke="#CBD5E1" stroke-width="10"/>'
+    + '<rect x="272" y="212" width="10" height="28" rx="4" fill="#CBD5E1"/>';
+}
+
+function artGymBottle() {
+  return groundShadow(200, 340, 66, 12)
+    + '<rect x="152" y="86" width="96" height="248" rx="26" fill="#0EA5E9" stroke="#0369A1" stroke-width="3"/>'
+    + '<rect x="152" y="86" width="96" height="70" rx="22" fill="#0284C7" opacity="0.7"/>'
+    + '<rect x="166" y="60" width="68" height="34" rx="12" fill="#0369A1"/>'
+    + '<path d="M200 150 V300" stroke="#7DD3FC" stroke-width="5" stroke-linecap="round" opacity="0.7"/>'
+    + '<path d="M176 250 h48 M176 274 h48" stroke="#E0F2FE" stroke-width="4" stroke-linecap="round" opacity="0.8"/>';
+}
+
+function artHairDryer() {
+  return groundShadow(200, 336, 84, 12)
+    + '<path d="M116 138 Q116 106 156 104 H236 Q292 104 296 160 Q296 206 252 214 H196 L176 288 Q170 306 150 306 H128 Q112 306 116 288 L134 214 Q116 200 116 138 Z" fill="#1E293B" stroke="#0F172A" stroke-width="3" stroke-linejoin="round"/>'
+    + '<rect x="140" y="120" width="130" height="76" rx="24" fill="#6366F1"/>'
+    + '<circle cx="270" cy="158" r="30" fill="#0F172A"/><circle cx="270" cy="158" r="18" fill="#334155"/>'
+    + '<rect x="150" y="140" width="70" height="34" rx="12" fill="#818CF8" opacity="0.7"/>'
+    + '<circle cx="204" cy="256" r="12" fill="#475569"/><circle cx="232" cy="272" r="9" fill="#334155"/>';
+}
+
+const RICH_ART_EXTRA = {
+  p66: artOnEarHeadphones,
+  p67: artBoneConduction,
+  p68: artPowerBank,
+  p69: artLaptopStand,
+  p70: artWebcam,
+  p71: artHeadphonesNC,
+  p72: artMonitor,
+  p73: artMirrorlessCamera,
+  p74: artCharger,
+  p75: artMicrophone,
+  p76: artSmartWatchPro,
+  p77: artKaraokeSpeaker,
+  p78: artDoorbell,
+  p79: artBulb,
+  p80: artTabletStand,
+  p81: artRingLight,
+  p82: artMouse,
+  p83: artSoundbar,
+  p84: artGamingHeadset,
+  p85: artSecurityCamera,
+  p92: artLinenShirt,
+  p96: artWovenBelt,
+  p110: artHairDryer,
+  p128: artGymBottle,
+};
+
 /* Generate the artwork SVG for a product. */
 export function productArt(p) {
   return productArtView(p, 0);
@@ -899,7 +1825,7 @@ export function productArtView(p, view = 0) {
   const from = v.from || hue.from;
   const to = view % GALLERY_VIEWS.length === 1 ? hue.to : (view % GALLERY_VIEWS.length === 3 ? hue.from : hue.to);
   const gid = 'g-' + p.id + '-' + view;
-  const rich = RICH_ART[p.id];
+  const rich = RICH_ART[p.id] || RICH_ART_EXTRA[p.id] || ART_BY_KIND[p.art];
 
   // Rich illustration: a soft white halo behind the product, then the
   // drawing, composed once per product (gallery views vary the background
