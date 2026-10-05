@@ -32,28 +32,25 @@ const BANNER_TONES = {
   slate: 'bg-gradient-to-br from-slate-700 to-slate-900 text-white',
 };
 
-/* Soft tint / deep icon color pairs for the category tiles. */
-const CATEGORY_TINTS = {
-  electronics: ['bg-indigo-50', 'text-indigo-600'],
-  fashion: ['bg-rose-50', 'text-rose-600'],
-  beauty: ['bg-purple-50', 'text-purple-600'],
-  home: ['bg-teal-50', 'text-teal-600'],
-  sports: ['bg-orange-50', 'text-orange-600'],
-  groceries: ['bg-green-50', 'text-green-600'],
-  accessories: ['bg-slate-100', 'text-slate-600'],
-  more: ['bg-zinc-100', 'text-zinc-500'],
+/* Reusable tile data for the home Categories strip: one object per tile
+ * holding the icon glyph, its soft tint / deep icon color pair, and the
+ * navigation path (a router.js hash route). Tile names come from CATEGORIES
+ * in data.js; "More" opens the full categories directory. */
+const CATEGORY_TILES = {
+  electronics: { icon: 'smartphone', bg: 'bg-indigo-50', fg: 'text-indigo-600', path: '#/category/electronics' },
+  fashion: { icon: 'shirt', bg: 'bg-rose-50', fg: 'text-rose-600', path: '#/category/fashion' },
+  beauty: { icon: 'sparkles', bg: 'bg-purple-50', fg: 'text-purple-600', path: '#/category/beauty' },
+  home: { icon: 'armchair', bg: 'bg-teal-50', fg: 'text-teal-600', path: '#/category/home' },
+  sports: { icon: 'dumbbell', bg: 'bg-orange-50', fg: 'text-orange-600', path: '#/category/sports' },
+  groceries: { icon: 'basket', bg: 'bg-green-50', fg: 'text-green-600', path: '#/category/groceries' },
+  accessories: { icon: 'gem', bg: 'bg-slate-100', fg: 'text-slate-600', path: '#/category/accessories' },
+  more: { icon: 'grid', bg: 'bg-zinc-100', fg: 'text-zinc-500', path: '#/categories' },
 };
 
-const CATEGORY_ART = {
-  electronics: 'speaker',
-  fashion: 'shirt',
-  beauty: 'sparkles',
-  home: 'armchair',
-  sports: 'dumbbell',
-  groceries: 'basket',
-  accessories: 'gem',
-  more: 'ellipsis',
-};
+/* Subtle press feedback: shadow deepens and the tile lifts slightly.
+ * Whole literal class strings so the Tailwind compiler sees them; the
+ * motion-reduce variants keep it still for reduced-motion users. */
+const TILE_HOVER = 'transition duration-200 hover:scale-105 hover:shadow-card-lg motion-reduce:transition-none motion-reduce:hover:scale-100';
 
 /* ------------------------------------------------------------------ */
 /* App shortcuts                                                       */
@@ -108,20 +105,19 @@ function bannerHtml(b, i) {
 /* Category tiles                                                      */
 /* ------------------------------------------------------------------ */
 
+function tileLink(name, t) {
+  return '<a href="' + t.path + '" class="card flex flex-col items-center gap-2 p-3 ' + TILE_HOVER + '">'
+    + '<span class="flex h-11 w-11 items-center justify-center rounded-full ' + t.bg + ' ' + t.fg + '">' + icon(t.icon, 'h-6 w-6') + '</span>'
+    + '<span class="text-center text-xs font-medium leading-tight text-zinc-700">' + name + '</span>'
+    + '</a>';
+}
+
 function categoryTile(c) {
-  const [bg, fg] = CATEGORY_TINTS[c.id];
-  return '<button type="button" data-category="' + c.id + '" class="card flex flex-col items-center gap-2 p-3 transition-shadow hover:shadow-card-lg">'
-    + '<span class="flex h-11 w-11 items-center justify-center rounded-full ' + bg + ' ' + fg + '">' + icon(CATEGORY_ART[c.id], 'h-6 w-6') + '</span>'
-    + '<span class="text-center text-xs font-medium leading-tight text-zinc-700">' + c.name + '</span>'
-    + '</button>';
+  return tileLink(c.name, CATEGORY_TILES[c.id]);
 }
 
 function moreTile() {
-  const [bg, fg] = CATEGORY_TINTS.more;
-  return '<button type="button" data-nav="categories" class="card flex flex-col items-center gap-2 p-3 transition-shadow hover:shadow-card-lg">'
-    + '<span class="flex h-11 w-11 items-center justify-center rounded-full ' + bg + ' ' + fg + '">' + icon('ellipsis', 'h-6 w-6') + '</span>'
-    + '<span class="text-center text-xs font-medium leading-tight text-zinc-700">More</span>'
-    + '</button>';
+  return tileLink('More', CATEGORY_TILES.more);
 }
 
 /* ------------------------------------------------------------------ */

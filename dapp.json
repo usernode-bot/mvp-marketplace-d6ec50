@@ -20,6 +20,13 @@
       "expectSelector": "[data-app-shortcut='Game Corner']"
     },
     {
+      "id": "home.category-tiles",
+      "name": "Category tiles render as icon links with navigation paths",
+      "path": "/",
+      "expectSelector": "#category-grid a[href='#/category/electronics'] svg",
+      "expectText": "Accessories"
+    },
+    {
       "id": "home.categories-tab",
       "name": "Categories tab renders category tiles",
       "path": "/#/categories",
