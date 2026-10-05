@@ -132,6 +132,8 @@ const ART_ICONS = {
   wallet: '<path d="M3 7a2 2 0 0 1 2-2h13a1 1 0 0 1 1 1v2"/><path d="M3 7v11a2 2 0 0 0 2 2h14a1 1 0 0 0 1-1v-9a1 1 0 0 0-1-1H5a2 2 0 0 1-2-2z"/><circle cx="16.5" cy="14.5" r="1"/>',
   gem: '<path d="M6 3h12l4 6-10 12L2 9z"/><path d="M11 3 8 9l4 12 4-12-3-6"/><path d="M2 9h20"/>',
   shoe: '<path d="M2.5 17.5h19V15a4 4 0 0 0-4-4h-5.5L9 8.5 6.5 11H4a1.5 1.5 0 0 0-1.5 1.5z"/><path d="M2.5 17.5v1h19v-1"/><path d="m9 8.5 2 2.6"/>',
+  smarthome: '<circle cx="12" cy="10" r="7"/><circle cx="12" cy="8.2" r="1"/><circle cx="9.9" cy="11.6" r="1"/><circle cx="14.1" cy="11.6" r="1"/><path d="M12 17v2.5"/><path d="M8.5 21.5h7"/>',
+  mouse: '<rect x="7.5" y="3.5" width="9" height="17" rx="4.5"/><path d="M12 3.5v2.5"/><rect x="11.2" y="6" width="1.6" height="3" rx="0.8"/>',
 };
 
 /* Soft gradient (light -> deeper tint of the category hue) + deep icon stroke. */
