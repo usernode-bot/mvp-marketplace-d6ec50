@@ -17,9 +17,10 @@
  *
  * Every reusable piece of UI (buttons, cards, badges, inputs, chips, nav
  * items) is defined here once so screens stay consistent by construction.
- * One accent (`brand`, violet); rose is reserved for sale urgency, amber for
- * ratings. Spacing uses Tailwind's 4px scale; radii: lg (8px) for controls,
- * xl (12px) for cards, full for pills and circles.
+ * One accent (`brand`, violet); `sale` (warm orange/red) is reserved for
+ * sale, discount and countdown elements, amber for ratings. Spacing uses
+ * Tailwind's 4px scale; radii: lg (8px) for controls, xl (12px) for cards,
+ * 2xl (16px) for Home section panels, full for pills and circles.
  * ------------------------------------------------------------------------- */
 @layer components {
   /* Cards: white surface on the zinc-50 page, hairline shadow, 12px radius. */
@@ -31,6 +32,37 @@
     @apply text-lg font-bold tracking-tight text-zinc-900;
   }
 
+  /* Home section panels: a white card on the layered page background, 16px
+   * radius, hairline border, soft layered shadow. `.panel-flash` swaps in
+   * the Flash Sale's peach-to-white tint. */
+  .panel {
+    @apply rounded-2xl border border-line bg-white shadow-panel;
+  }
+  .panel-flash {
+    @apply rounded-2xl border border-line bg-white shadow-panel bg-gradient-to-b from-sale-50 to-white;
+  }
+
+  /* Panel header row: accent bar or icon chip aligned with the title. */
+  .section-head {
+    @apply flex items-center gap-2;
+  }
+  .accent-bar {
+    @apply inline-block h-[18px] w-1 shrink-0 rounded-full bg-brand-600;
+  }
+
+  /* Layered Home canvas: a lavender glow at the very top that scrolls away
+   * with the banner carousel, over the #F5F6FA page base on <body>. */
+  .home-canvas {
+    background-image: linear-gradient(180deg, #f3eefc 0%, rgba(243, 238, 252, 0) 360px);
+    background-repeat: no-repeat;
+  }
+
+  /* Product cards lift slightly on hover, matching the category tiles'
+   * TILE_HOVER motion; still for reduced-motion users. */
+  .product-card {
+    @apply transition duration-200 hover:-translate-y-0.5 hover:shadow-card-lg motion-reduce:transition-none motion-reduce:hover:translate-y-0;
+  }
+
   /* Round ghost button for header actions (bell, cart, back). */
   .icon-btn {
     @apply relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-zinc-900;
@@ -40,7 +72,7 @@
     @apply inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold leading-none;
   }
   .badge-sale {
-    @apply inline-flex items-center gap-1 rounded-full bg-rose-600 px-2 py-0.5 text-[11px] font-semibold leading-none text-white;
+    @apply inline-flex items-center gap-1 rounded-full bg-sale-600 px-2 py-0.5 text-[11px] font-semibold leading-none text-white;
   }
   .badge-soft {
     @apply inline-flex items-center gap-1 rounded-full bg-zinc-100 px-2 py-0.5 text-[11px] font-semibold leading-none text-zinc-600;
@@ -89,9 +121,10 @@
     @apply mt-1 text-xs text-rose-600;
   }
 
-  /* Countdown chip (Flash Sale timer). */
+  /* Countdown chip (Flash Sale timer). Darkened sale shade so the small
+   * white numerals clear WCAG AA (raw #FF4D2E under white is ~3.3:1). */
   .chip {
-    @apply inline-flex h-6 min-w-7 items-center justify-center rounded-md bg-zinc-900 px-1 text-xs font-bold tabular-nums text-white;
+    @apply inline-flex h-6 min-w-7 items-center justify-center rounded-md bg-sale-600 px-1 text-xs font-bold tabular-nums text-white;
   }
 
   /* Desktop top navigation links. */

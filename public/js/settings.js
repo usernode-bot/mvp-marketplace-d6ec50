@@ -119,7 +119,7 @@ function renderEditProfile() {
     + fieldRow('Phone', '<input name="phone" type="tel" class="field" maxlength="30" value="' + esc(p.phone || '') + '" autocomplete="tel">')
     + '<button type="submit" class="btn-primary w-full">Save changes</button>'
     + '</form>'
-    + '<p class="mt-3 px-1 text-xs text-zinc-400">Your sign-in stays with Homeroom. These details personalize your Bazario account.</p>';
+    + '<p class="mt-3 px-1 text-xs text-zinc-400">Your sign-in stays with Homeroom. These details personalize your MVP Marketplace account.</p>';
 }
 
 /* ------------------------------------------------------------------ */
@@ -149,7 +149,7 @@ function pickLanguage(anchorEl) {
 function logout() {
   confirmDialog({
     title: 'Log out?',
-    message: 'Bazario keeps your cart, wishlist, addresses and settings on this device. Logging out clears them.',
+    message: 'MVP Marketplace keeps your cart, wishlist, addresses and settings on this device. Logging out clears them.',
     confirmLabel: 'Log out',
   }).then((ok) => {
     if (!ok) return;
@@ -173,7 +173,7 @@ export function initSettings() {
       return;
     }
     if (el.hasAttribute('data-theme-info')) {
-      toast('Bazario uses a light theme');
+      toast('MVP Marketplace uses a light theme');
       return;
     }
     logout();

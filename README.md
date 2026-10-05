@@ -1,4 +1,4 @@
-# MVP Marketplace (Bazario)
+# MVP Marketplace
 
 A mobile-first marketplace app on [Homeroom](https://app.onhomeroom.com):
 modern, clean UI for browsing deals, categories and products.
