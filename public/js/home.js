@@ -56,29 +56,25 @@ const TILE_HOVER = 'transition duration-200 hover:scale-105 hover:shadow-card-lg
 /* App shortcuts                                                       */
 /* ------------------------------------------------------------------ */
 
-/* One shared icon style for every shortcut: a 40px rounded square with a
- * solid brand-purple background and a white line glyph centered inside
- * (consistent 2px stroke, balanced padding). Only the symbol varies per
- * app. MVP Marketplace is this app; the others are Homeroom apps whose
- * addresses this app does not know, so their tiles explain where to open
- * them instead of linking somewhere fake. */
+/* Text-only shortcut chips for the other Homeroom apps. MVP Marketplace is
+ * this app; the others are Homeroom apps whose addresses this app does not
+ * know, so their chips explain where to open them instead of linking
+ * somewhere fake. */
 const APP_SHORTCUTS = [
-  { name: 'MVP Marketplace', icon: 'bag', current: true },
-  { name: 'Appraise', icon: 'starOutline' },
-  { name: 'Quick Count', icon: 'tally' },
-  { name: 'Homeroom Maps', icon: 'map' },
-  { name: 'Game Corner', icon: 'gamepad' },
-  { name: 'Trading Journal', icon: 'chartLine' },
-  { name: 'RecipeBot', icon: 'chefHat' },
+  { name: 'MVP Marketplace', current: true },
+  { name: 'Appraise' },
+  { name: 'Quick Count' },
+  { name: 'Homeroom Maps' },
+  { name: 'Game Corner' },
+  { name: 'Trading Journal' },
+  { name: 'RecipeBot' },
 ];
 
 function appShortcutTile(app) {
   const nav = app.current ? ' data-nav="home"' : ' data-app-shortcut="' + app.name + '"';
   return '<button type="button"' + nav
-    + ' class="flex flex-col items-center gap-1.5 rounded-xl px-1 py-2 transition-colors hover:bg-zinc-100">'
-    + '<span class="flex h-10 w-10 items-center justify-center rounded-[10px] bg-brand-600 text-white">'
-    + icon(app.icon, 'h-5 w-5') + '</span>'
-    + '<span class="w-full text-center text-xs font-medium leading-tight text-zinc-600">' + app.name + '</span>'
+    + ' class="inline-flex items-center whitespace-nowrap rounded-full bg-zinc-100 px-3 py-1.5 text-xs font-medium text-zinc-700 transition-colors hover:bg-zinc-200">'
+    + app.name
     + '</button>';
 }
 

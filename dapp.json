@@ -21,10 +21,10 @@
     },
     {
       "id": "home.app-shortcuts",
-      "name": "App shortcuts strip renders the seven app tiles",
+      "name": "App shortcuts render as icon-free text chips",
       "path": "/",
       "expectText": "App shortcuts",
-      "expectSelector": "[data-app-shortcut='Game Corner']"
+      "expectSelector": "#app-shortcut-grid > button.rounded-full[data-app-shortcut='Game Corner']"
     },
     {
       "id": "home.category-tiles",
