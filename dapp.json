@@ -13,6 +13,20 @@
       "impact": ["public/**", "styles/tailwind-input.css", "tailwind.config.js"]
     },
     {
+      "id": "home.grid-new-cards",
+      "name": "Recommended grid renders the Smart Home Hub and Vertical Mouse cards",
+      "path": "/",
+      "expectSelector": "[data-product='p44'] .add-btn",
+      "expectText": "Mendo Smart Home Hub"
+    },
+    {
+      "id": "product.smarthome-hub",
+      "name": "Smart Home Hub product page renders with price and discount",
+      "path": "/#/product/p44",
+      "expectSelector": "#view-product .add-btn",
+      "expectText": "$119.99"
+    },
+    {
       "id": "home.flash-images",
       "name": "Flash Sale cards show detailed product illustrations",
       "path": "/",
@@ -21,10 +35,10 @@
     },
     {
       "id": "home.app-shortcuts",
-      "name": "App shortcuts strip renders the seven app tiles",
+      "name": "App shortcuts render as icon-free text chips",
       "path": "/",
       "expectText": "App shortcuts",
-      "expectSelector": "[data-app-shortcut='Game Corner']"
+      "expectSelector": "#app-shortcut-grid > button.rounded-full[data-app-shortcut='Game Corner']"
     },
     {
       "id": "home.category-tiles",
@@ -66,6 +80,12 @@
       "name": "Search with no matches shows the empty state",
       "path": "/#/search?q=zzzznothing",
       "expectText": "No results found"
+    },
+    {
+      "id": "browse.search-brand",
+      "name": "Search empty state names the MVP Marketplace brand",
+      "path": "/#/search",
+      "expectText": "Search MVP Marketplace"
     },
     {
       "id": "product.detail",

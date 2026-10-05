@@ -26,7 +26,7 @@ const SHIPPING = [
 /* Mock voucher codes. The hint under the input names one so a tester can
  * exercise the flow without guessing. */
 const VOUCHERS = {
-  BAZARIO10: { kind: 'pct', value: 10, label: '10% off your order' },
+  MVP10: { kind: 'pct', value: 10, label: '10% off your order' },
   WELCOME5: { kind: 'flat', value: 500, label: '$5.00 off your order' },
 };
 
@@ -215,7 +215,7 @@ function voucherSection() {
       + '<button type="button" class="btn-secondary" data-voucher-apply>Apply</button>'
       + '</div>'
       + '<p class="field-msg hidden" data-voucher-msg></p>'
-      + '<p class="mt-2 text-xs text-zinc-400">Try BAZARIO10 for 10% off your order.</p>';
+      + '<p class="mt-2 text-xs text-zinc-400">Try MVP10 for 10% off your order.</p>';
   }
   return '<section class="card p-4" aria-label="Voucher">' + sectionHead('ticket', 'Voucher') + body + '</section>';
 }

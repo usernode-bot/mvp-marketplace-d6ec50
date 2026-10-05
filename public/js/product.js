@@ -341,14 +341,14 @@ export function renderProduct(id) {
   p = productById(id);
 
   if (!p) {
-    document.title = 'Product not found · Bazario';
+    document.title = 'Product not found · MVP Marketplace';
     view.innerHTML = notFoundHtml();
     return;
   }
 
   st = { qty: 1, color: (p.colors && p.colors[0] && p.colors[0].name) || '', size: (p.sizes && p.sizes[0]) || '', view: 0 };
   store.addRecentlyViewed(p.id);
-  document.title = p.name + ' · Bazario';
+  document.title = p.name + ' · MVP Marketplace';
 
   view.innerHTML = '<div class="mx-auto max-w-5xl px-4 pb-32 pt-3">'
     + '<button type="button" data-back class="icon-btn -ml-2 mb-3" aria-label="Back">' + icon('chevronLeft', 'h-5 w-5') + '</button>'

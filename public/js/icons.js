@@ -62,15 +62,6 @@ const STROKE_ICONS = {
   messageCircle: '<path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/>',
   copy: '<rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>',
   sparkles: '<path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/>',
-  /* Line glyphs for the app-shortcuts strip (same 24-unit grid, 2px round
-   * strokes, so the set reads as one icon family). `star` above (fill) is
-   * reserved for ratings; shortcuts use the outline. */
-  starOutline: '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>',
-  tally: '<path d="M5 5v14M9 5v14M13 5v14M17 5v14"/><path d="M2.5 17 21.5 7"/>',
-  map: '<path d="M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3z"/><path d="M9 3v15"/><path d="M15 6v15"/>',
-  gamepad: '<line x1="6" x2="10" y1="11" y2="11"/><line x1="8" x2="8" y1="9" y2="13"/><line x1="15" x2="15.01" y1="12" y2="12"/><line x1="18" x2="18.01" y1="10" y2="10"/><path d="M17.32 5H6.68a4 4 0 0 0-3.978 3.59c-.006.052-.01.101-.017.152C2.604 9.416 2 14.456 2 16a3 3 0 0 0 3 3c1 0 1.5-.5 2-1l1.414-1.414A2 2 0 0 1 9.828 16h4.344a2 2 0 0 1 1.414.586L17 18c.5.5 1 1 2 1a3 3 0 0 0 3-3c0-1.545-.604-6.584-.685-7.258-.007-.05-.011-.1-.017-.151A4 4 0 0 0 17.32 5z"/>',
-  chartLine: '<path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="m7 12 3-3 4 2 5-5"/>',
-  chefHat: '<path d="M17 21a1 1 0 0 0 1-1v-5.35c0-.457.316-.844.727-1.1A5 5 0 1 0 6.273 13.55c.411.256.727.643.727 1.1V20a1 1 0 0 0 1 1Z"/><path d="M6 17h12"/>',
 };
 
 const FILL_ICONS = {
@@ -132,6 +123,8 @@ const ART_ICONS = {
   wallet: '<path d="M3 7a2 2 0 0 1 2-2h13a1 1 0 0 1 1 1v2"/><path d="M3 7v11a2 2 0 0 0 2 2h14a1 1 0 0 0 1-1v-9a1 1 0 0 0-1-1H5a2 2 0 0 1-2-2z"/><circle cx="16.5" cy="14.5" r="1"/>',
   gem: '<path d="M6 3h12l4 6-10 12L2 9z"/><path d="M11 3 8 9l4 12 4-12-3-6"/><path d="M2 9h20"/>',
   shoe: '<path d="M2.5 17.5h19V15a4 4 0 0 0-4-4h-5.5L9 8.5 6.5 11H4a1.5 1.5 0 0 0-1.5 1.5z"/><path d="M2.5 17.5v1h19v-1"/><path d="m9 8.5 2 2.6"/>',
+  smarthome: '<circle cx="12" cy="10" r="7"/><circle cx="12" cy="8.2" r="1"/><circle cx="9.9" cy="11.6" r="1"/><circle cx="14.1" cy="11.6" r="1"/><path d="M12 17v2.5"/><path d="M8.5 21.5h7"/>',
+  mouse: '<rect x="7.5" y="3.5" width="9" height="17" rx="4.5"/><path d="M12 3.5v2.5"/><rect x="11.2" y="6" width="1.6" height="3" rx="0.8"/>',
 };
 
 /* Soft gradient (light -> deeper tint of the category hue) + deep icon stroke. */
