@@ -68,6 +68,12 @@
       "expectText": "No results found"
     },
     {
+      "id": "browse.search-brand",
+      "name": "Search empty state names the MVP Marketplace brand",
+      "path": "/#/search",
+      "expectText": "Search MVP Marketplace"
+    },
+    {
       "id": "product.detail",
       "name": "Product page renders gallery, variants, reviews and buy bar",
       "path": "/#/product/p01",
