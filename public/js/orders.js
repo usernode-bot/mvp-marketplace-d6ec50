@@ -37,7 +37,7 @@ const STATUS_META = {
     label: 'Shipped',
     badge: 'bg-indigo-50 text-indigo-700',
     text: 'text-indigo-700',
-    hint: 'On the way with SwiftPost. Track the delivery below.',
+    hint: 'On the way. Track the delivery below.',
   },
   completed: {
     label: 'Completed',
@@ -81,8 +81,10 @@ function placedSeeds() {
     daysAgo: Math.max(0, (Date.now() - o.placedAt) / DAY),
     items: o.items.map((it) => ({ id: it.id, qty: it.qty })),
     payment: o.paymentName || 'Payment on delivery',
-    shipMethod: o.shippingName,
+    shipMethod: o.courierName || o.shippingName,
     shipEta: o.etaLabel,
+    countryName: o.countryName || '',
+    courierName: o.courierName || o.shippingName || '',
     shipping: o.shipping,
     address: {
       name: o.address.name,
@@ -124,6 +126,8 @@ function buildOrders() {
       payment: seed.payment,
       shipMethod: seed.shipMethod,
       shipEta: seed.shipEta,
+      countryName: seed.countryName || '',
+      courierName: seed.courierName || seed.shipMethod || '',
       address: seed.address,
     };
   }).sort((a, b) => b.createdAt - a.createdAt);
@@ -395,7 +399,7 @@ function renderOrderDetail(no) {
     // Payment + shipping method
     + '<div class="card mt-4 divide-y divide-zinc-100 overflow-hidden">'
     + infoRow('creditCard', 'Payment method', esc(o.payment))
-    + infoRow('truck', 'Shipping method', esc(o.shipMethod), o.shipEta)
+    + infoRow('truck', 'Courier', esc(o.courierName || o.shipMethod), (o.countryName ? 'Ship to ' + esc(o.countryName) + ' · ' : '') + o.shipEta)
     + '</div>'
 
     // Price breakdown
@@ -450,7 +454,7 @@ function trackSheetElement(o) {
   const done = statusOf(o) === 'completed';
   const checkpoints = [
     { label: 'Label created', date: o.createdAt, state: 'done' },
-    { label: 'Picked up by SwiftPost', date: o.shippedAt, state: 'done' },
+    { label: 'Picked up by ' + (o.courierName || 'the courier'), date: o.shippedAt, state: 'done' },
     { label: 'In transit', date: null, hint: 'Moving through the network', state: done ? 'done' : 'current' },
     {
       label: 'Delivered',
@@ -475,7 +479,7 @@ function trackSheetElement(o) {
     + '<p class="mt-0.5 text-xs text-zinc-500">Order ' + o.no + '</p>'
     + '<div class="mt-4 flex items-center gap-3 rounded-lg border border-zinc-100 p-3">'
     + '<span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-50 text-brand-600">' + icon('truck', 'h-4 w-4') + '</span>'
-    + '<div class="min-w-0 flex-1"><p class="text-sm font-semibold text-zinc-900">SwiftPost</p>'
+    + '<div class="min-w-0 flex-1"><p class="text-sm font-semibold text-zinc-900">' + esc(o.courierName || 'SwiftPost') + '</p>'
     + '<p class="text-xs text-zinc-500">Tracking ' + trackingNo + '</p></div>'
     + '<button type="button" data-copy-text="' + trackingNo + '" class="icon-btn shrink-0" aria-label="Copy tracking number">' + icon('copy', 'h-4 w-4') + '</button>'
     + '</div>'
@@ -496,9 +500,10 @@ function trackOrder(no) {
     });
     return;
   }
+  const courier = o.courierName || 'the courier';
   toast(statusOf(o) === 'completed'
-    ? 'Delivered by SwiftPost'
-    : 'In transit with SwiftPost. Arriving soon.');
+    ? 'Delivered by ' + courier
+    : 'In transit with ' + courier + '. Arriving soon.');
 }
 
 function contactSeller(no) {

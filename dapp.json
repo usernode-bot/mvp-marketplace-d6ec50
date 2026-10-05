@@ -124,6 +124,7 @@
       "visual": true,
       "impact": [
         "public/js/checkout.js",
+        "public/js/shipping.js",
         "public/js/app.js",
         "public/js/store.js",
         "public/js/views.js",
@@ -138,6 +139,19 @@
       "name": "Checkout with an empty cart shows the empty state",
       "path": "/#/checkout",
       "expectText": "Add items to your cart"
+    },
+    {
+      "id": "checkout.couriers",
+      "name": "Checkout offers a destination country and at least three couriers",
+      "path": "/?demo=checkout#/checkout",
+      "expectSelector": "[data-country-select]",
+      "expectText": "Destination country"
+    },
+    {
+      "id": "orders.detail-courier",
+      "name": "Order detail names the chosen courier and destination country",
+      "path": "/#/orders/BZ-48073",
+      "expectText": "Ship to United States"
     },
     {
       "id": "cart.default",
@@ -170,7 +184,7 @@
       "expectSelector": "[data-order-timeline]",
       "expectText": "Shipping address",
       "visual": true,
-      "impact": ["public/js/orders.js"]
+      "impact": ["public/js/orders.js", "public/js/data.js"]
     },
     {
       "id": "profile.default",
