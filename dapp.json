@@ -13,6 +13,13 @@
       "impact": ["public/**", "styles/tailwind-input.css", "tailwind.config.js"]
     },
     {
+      "id": "home.flash-images",
+      "name": "Flash Sale cards show detailed product illustrations",
+      "path": "/",
+      "expectSelector": "#flash-row .product-card svg.product-img",
+      "expectText": "Flash Sale"
+    },
+    {
       "id": "home.app-shortcuts",
       "name": "App shortcuts strip renders the seven app tiles",
       "path": "/",
