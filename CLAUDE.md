@@ -115,6 +115,15 @@ soon" on those entry points rather than hiding them.
   add per-page dark variants outside Midnight's scoped override block.
 - Product artwork is generated SVG (`public/js/icons.js`), never external
   image URLs and never image bytes in the database.
+- The **profile photo** is the one deliberate exception to "generated SVG
+  only": a user-uploaded avatar. It goes to platform file storage through
+  the bridge (`usernode.uploadFile`, see `public/js/profile-photo.js`);
+  this app's `user_profiles` table keeps only the returned `avatar_url` +
+  `avatar_file_id` against the platform user id (`req.user.id`). Never
+  store image bytes in Postgres and never build disk storage. The table is
+  public (a public avatar URL, no sensitive fields); staging starts empty,
+  and the letter placeholder is the real empty state. `GET /api/profile`
+  serves a staging-only demo avatar behind `?demo=1` for the check.
 - Shipping/expedition options live in `public/js/shipping.js`: a typed
   `COUNTRIES` config where every country offers at least three couriers
   (`{ id, name, service, eta, etaDays, price }`) and names a

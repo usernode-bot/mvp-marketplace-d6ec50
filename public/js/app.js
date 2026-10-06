@@ -19,6 +19,7 @@ import { initTheme, setTheme } from './theme.js';
 import { clearResults, initHome, panelRows, runBannerAction, submitSearch } from './home.js';
 import { initOrders } from './orders.js';
 import { renderProfileView, seedDemoAccount } from './profile.js';
+import { initProfilePhoto, loadProfilePhoto } from './profile-photo.js';
 import { initAddresses } from './addresses.js';
 import { initSettings } from './settings.js';
 import { initPayment } from './payment.js';
@@ -254,6 +255,7 @@ function boot() {
   initAddresses();
   initSettings();
   initPayment();
+  initProfilePhoto();
 
   window.addEventListener('hashchange', renderRoute);
 
@@ -279,6 +281,9 @@ function boot() {
 
   initHome();
   renderRoute();
+  // Hydrate the profile photo in the background; the letter fallback shows
+  // until it lands, and the profile view re-renders when it does.
+  loadProfilePhoto();
 
   // Shareable deep links: /?q=... opens search results, /?cat=... opens a
   // category page. They become plain hash routes so the address bar carries

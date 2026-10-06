@@ -12,12 +12,13 @@
 import { icon } from './icons.js';
 import { VOUCHERS, productById, voucherDescription } from './data.js';
 import { store } from './store.js';
-import { emptyState, esc, productCard } from './ui.js';
+import { avatarHtml, emptyState, esc, productCard } from './ui.js';
 import { swatchButtons } from './theme.js';
 import { countOrders } from './orders.js';
 import { renderAddressesView } from './addresses.js';
 import { renderSettingsView } from './settings.js';
 import { renderPaymentView } from './payment.js';
+import { getAvatarState, renderCropView } from './profile-photo.js';
 
 /* ------------------------------------------------------------------ */
 /* Demo seeding for staging previews and proposal checks (?demo=1)      */
@@ -106,7 +107,6 @@ function menuRow(iconName, label, attr) {
 function renderProfileHome() {
   const view = document.getElementById('view-profile');
   const name = displayName();
-  const initial = name ? name[0].toUpperCase() : 'G';
   const email = store.profile && store.profile.email;
 
   const statTile = (label, count, attr, iconName) =>
@@ -119,7 +119,15 @@ function renderProfileHome() {
   view.innerHTML =
     '<h1 class="section-title">Profile</h1>'
     + '<div class="card mt-4 flex items-center gap-4 p-4">'
-    + '<span class="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-brand-100 text-lg font-bold text-brand-700">' + initial + '</span>'
+    + '<button type="button" data-avatar-edit class="relative shrink-0 rounded-full" aria-label="Change profile photo">'
+    + avatarHtml({
+      url: getAvatarState().url,
+      name,
+      badge: true,
+      loading: getAvatarState().loading,
+    })
+    + '</button>'
+    + '<input type="file" id="avatar-file-input" class="hidden" accept="image/jpeg,image/png,image/webp">'
     + '<div class="min-w-0 flex-1">'
     + '<p class="truncate text-base font-semibold text-zinc-900">' + (name ? '@' + esc(name) : 'Guest shopper') + '</p>'
     + '<p class="mt-0.5 truncate text-xs text-zinc-500">' + (email ? esc(email) : (name ? 'Signed in via Homeroom' : 'Sign in through Homeroom to sync your account')) + '</p>'
@@ -265,6 +273,7 @@ export function renderProfileView() {
 
   if (sub === 'wishlist') return renderWishlist();
   if (sub === 'addresses') return renderAddressesView();
+  if (sub === 'photo') return renderCropView();
   if (sub === 'settings' || sub === 'edit') return renderSettingsView();
   if (sub === 'coupons') return renderCoupons();
   if (sub === 'payment') return renderPaymentView();

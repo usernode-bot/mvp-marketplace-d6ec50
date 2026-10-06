@@ -192,7 +192,29 @@
       "path": "/#/profile",
       "expectText": "Edit Profile",
       "visual": true,
-      "impact": ["public/js/profile.js", "public/js/app.js"]
+      "impact": [
+        "public/js/profile.js",
+        "public/js/profile-photo.js",
+        "public/js/settings.js",
+        "public/js/ui.js",
+        "public/js/api.js",
+        "public/js/icons.js",
+        "public/js/app.js",
+        "server.js",
+        "styles/tailwind-input.css"
+      ]
+    },
+    {
+      "id": "profile.avatar-control",
+      "name": "Profile avatar is tappable and carries the camera badge",
+      "path": "/#/profile",
+      "expectSelector": "[data-avatar-edit] [data-avatar] [data-avatar-fallback]"
+    },
+    {
+      "id": "profile.avatar-photo-demo",
+      "name": "Profile shows a stored photo as a circular avatar (staging demo)",
+      "path": "/?demo=1#/profile",
+      "expectSelector": "[data-avatar] [data-avatar-img]"
     },
     {
       "id": "profile.wishlist-demo",
