@@ -156,12 +156,28 @@ export function productCard(p, opts = {}) {
       + '<div class="mt-1 text-[11px] font-medium text-zinc-500">' + fmtCount(p.sold) + ' sold</div></div>'
     : '<span class="text-xs text-zinc-500">' + fmtCount(p.sold) + ' sold</span>';
 
+  // Card art. A committed product photo (p.image) layers over the generated
+  // illustration, which paints instantly behind it as the fallback: if the
+  // photo is missing or fails to load (onerror removes it) the illustration
+  // shows through instead of a broken-image icon. A product with no photo
+  // renders the illustration alone, exactly as before. p.imageFit 'contain'
+  // letterboxes a photo whose shape cropping would ruin. The photo sits
+  // inside the existing hover-scale wrapper, so hover zoom and the sold-out
+  // dim still apply to it; the badge and heart button stay later siblings.
+  const art = '<div class="relative h-full w-full transition-transform duration-300 group-hover:scale-[1.03]' + (p.oos ? ' opacity-60' : '') + '">'
+    + productArt(p)
+    + (p.image
+      ? '<img src="' + esc(p.image) + '" alt="' + esc(p.name) + '" loading="lazy" decoding="async" data-product-image'
+        + ' class="product-img absolute inset-0 h-full w-full ' + (p.imageFit === 'contain' ? 'object-contain' : 'object-cover') + '" onerror="this.remove()">'
+      : '')
+    + '</div>';
+
   return '<article class="card product-card group flex cursor-pointer flex-col overflow-hidden" data-product="' + p.id + '">'
     + '<div class="relative aspect-square overflow-hidden rounded-t-xl">'
     // Sold-out items keep their illustration but render muted (~60%) so the
     // status reads at a glance; only the card art dims — cart, order and
     // product-page art stays full color.
-    + '<div class="h-full w-full transition-transform duration-300 group-hover:scale-[1.03]' + (p.oos ? ' opacity-60' : '') + '">' + productArt(p) + '</div>'
+    + art
     + (disc ? '<span class="badge-sale absolute left-2 top-2">-' + disc + '%</span>' : '')
     + (p.oos ? '<span class="badge absolute bottom-2 left-2 bg-zinc-900/80 text-white">Sold out</span>' : '')
     + '<button type="button" data-fav="' + p.id + '" aria-label="Toggle favorite" aria-pressed="' + fav

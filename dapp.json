@@ -32,6 +32,26 @@
       "expectText": "Nova Laptop 14\""
     },
     {
+      "id": "home.recommended-photo",
+      "name": "A Recommended card shows a real product photo",
+      "path": "/",
+      "expectSelector": "[data-product='r001'] img[data-product-image]",
+      "expectText": "Nova Laptop 14\""
+    },
+    {
+      "id": "home.flash-photo",
+      "name": "Flash Sale cards show real product photos",
+      "path": "/",
+      "expectSelector": "#flash-row .product-card img[data-product-image]",
+      "expectText": "Flash Sale"
+    },
+    {
+      "id": "home.browse-photo",
+      "name": "Category browse cards show real product photos",
+      "path": "/#/category/electronics",
+      "expectSelector": "#view-browse .product-card img[data-product-image]"
+    },
+    {
       "id": "home.grid-rich-art",
       "name": "Previously placeholder products still render rich illustrations",
       "path": "/#/category/electronics",

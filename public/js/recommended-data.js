@@ -2,7 +2,8 @@
  *
  * A single centralized array of every product shown in the home page
  * "Recommended for you" grid. Each entry is plain data ({ id, name, cat, sub,
- * brand, art, price, orig, rating, reviews, sold, oos, age, colors, kw, desc })
+ * brand, art, image?, price, orig, rating, reviews, sold, oos, age, colors,
+ * kw, desc })
  * using the app's product shape, so it matches the older rows in data.js;
  * prices are integer cents. Adding or editing a recommendation is a data edit
  * here, never a rendering change.
@@ -16,6 +17,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r001", name: "Nova Laptop 14\"",
     cat: "electronics", sub: "computing", brand: "Aurex", art: "notebook",
+    image: "./images/products/notebook-1.jpg",
     price: 49900, orig: 55400,
     rating: 4.7, reviews: 180, sold: 900, oos: false, age: 1,
     colors: [{ name: "Silver Grey", hex: "#CBD5E1" }, { name: "Midnight Black", hex: "#1F2937" }, { name: "Navy", hex: "#1E3A8A" }],
@@ -25,6 +27,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r002", name: "Pulse Laptop 14\"",
     cat: "electronics", sub: "computing", brand: "Novo", art: "notebook",
+    image: "./images/products/notebook-2.jpg",
     price: 49900, orig: 58700,
     rating: 4.5, reviews: 240, sold: 1400, oos: false, age: 8,
     colors: [{ name: "Silver Grey", hex: "#CBD5E1" }, { name: "Midnight Black", hex: "#1F2937" }, { name: "Navy", hex: "#1E3A8A" }],
@@ -34,6 +37,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r003", name: "Vertex Laptop 14\"",
     cat: "electronics", sub: "computing", brand: "Klarita", art: "notebook",
+    image: "./images/products/notebook-3.jpg",
     price: 49900, orig: 62400,
     rating: 4.8, reviews: 320, sold: 2100, oos: false, age: 15,
     colors: [{ name: "Silver Grey", hex: "#CBD5E1" }, { name: "Midnight Black", hex: "#1F2937" }, { name: "Navy", hex: "#1E3A8A" }],
@@ -43,6 +47,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r004", name: "Orbit Laptop 14\"",
     cat: "electronics", sub: "computing", brand: "Vantia", art: "notebook",
+    image: "./images/products/notebook-4.jpg",
     price: 49900, orig: null,
     rating: 4.4, reviews: 450, sold: 3200, oos: false, age: 22,
     colors: [{ name: "Silver Grey", hex: "#CBD5E1" }, { name: "Midnight Black", hex: "#1F2937" }, { name: "Navy", hex: "#1E3A8A" }],
@@ -52,6 +57,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r005", name: "Zenith Laptop 14\"",
     cat: "electronics", sub: "computing", brand: "Pikol", art: "notebook",
+    image: "./images/products/notebook-5.jpg",
     price: 49900, orig: 71300,
     rating: 4.6, reviews: 560, sold: 4500, oos: false, age: 29,
     colors: [{ name: "Silver Grey", hex: "#CBD5E1" }, { name: "Midnight Black", hex: "#1F2937" }, { name: "Navy", hex: "#1E3A8A" }],
@@ -61,6 +67,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r006", name: "Aero Laptop 14\"",
     cat: "electronics", sub: "computing", brand: "Mendo", art: "notebook",
+    image: "./images/products/notebook-6.jpg",
     price: 49900, orig: 76800,
     rating: 4.3, reviews: 720, sold: 5600, oos: false, age: 36,
     colors: [{ name: "Silver Grey", hex: "#CBD5E1" }, { name: "Midnight Black", hex: "#1F2937" }, { name: "Navy", hex: "#1E3A8A" }],
@@ -70,6 +77,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r007", name: "Flux Tablet 11\"",
     cat: "electronics", sub: "computing", brand: "Strida", art: "tablet",
+    image: "./images/products/tablet-1.jpg",
     price: 21900, orig: 36500,
     rating: 4.9, reviews: 880, sold: 6800, oos: true, age: 43,
     colors: [{ name: "Silver Grey", hex: "#CBD5E1" }, { name: "Midnight Black", hex: "#1F2937" }, { name: "Royal Violet", hex: "#7C3AED" }],
@@ -79,6 +87,8 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r008", name: "Helix Tablet 11\"",
     cat: "electronics", sub: "computing", brand: "Ombra", art: "tablet",
+    image: "./images/products/tablet-2.jpg",
+    imageFit: 'contain',
     price: 21900, orig: 24900,
     rating: 4.2, reviews: 1100, sold: 8200, oos: false, age: 50,
     colors: [{ name: "Silver Grey", hex: "#CBD5E1" }, { name: "Midnight Black", hex: "#1F2937" }, { name: "Royal Violet", hex: "#7C3AED" }],
@@ -88,6 +98,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r009", name: "Prism Tablet 11\"",
     cat: "electronics", sub: "computing", brand: "Luma", art: "tablet",
+    image: "./images/products/tablet-3.jpg",
     price: 21900, orig: null,
     rating: 4.5, reviews: 1400, sold: 9700, oos: false, age: 57,
     colors: [{ name: "Silver Grey", hex: "#CBD5E1" }, { name: "Midnight Black", hex: "#1F2937" }, { name: "Royal Violet", hex: "#7C3AED" }],
@@ -97,6 +108,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r010", name: "Titan Tablet 11\"",
     cat: "electronics", sub: "computing", brand: "Aurex", art: "tablet",
+    image: "./images/products/tablet-4.jpg",
     price: 21900, orig: 28100,
     rating: 4, reviews: 1750, sold: 11000, oos: false, age: 64,
     colors: [{ name: "Silver Grey", hex: "#CBD5E1" }, { name: "Midnight Black", hex: "#1F2937" }, { name: "Royal Violet", hex: "#7C3AED" }],
@@ -106,6 +118,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r011", name: "Ember Tablet 11\"",
     cat: "electronics", sub: "computing", brand: "Novo", art: "tablet",
+    image: "./images/products/tablet-5.jpg",
     price: 21900, orig: 30400,
     rating: 4.6, reviews: 2100, sold: 12400, oos: false, age: 71,
     colors: [{ name: "Silver Grey", hex: "#CBD5E1" }, { name: "Midnight Black", hex: "#1F2937" }, { name: "Royal Violet", hex: "#7C3AED" }],
@@ -115,6 +128,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r012", name: "Cobalt Mechanical Keyboard",
     cat: "electronics", sub: "computing", brand: "Klarita", art: "keyboard",
+    image: "./images/products/keyboard-1.jpg",
     price: 7900, orig: 11600,
     rating: 3.9, reviews: 2600, sold: 760, oos: false, age: 78,
     colors: [{ name: "Midnight Black", hex: "#1F2937" }, { name: "Cloud White", hex: "#E5E7EB" }, { name: "Royal Violet", hex: "#7C3AED" }],
@@ -124,6 +138,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r013", name: "Lumen Mechanical Keyboard",
     cat: "electronics", sub: "computing", brand: "Vantia", art: "keyboard",
+    image: "./images/products/keyboard-2.jpg",
     price: 7900, orig: 12700,
     rating: 4.7, reviews: 3200, sold: 5200, oos: false, age: 85,
     colors: [{ name: "Midnight Black", hex: "#1F2937" }, { name: "Cloud White", hex: "#E5E7EB" }, { name: "Royal Violet", hex: "#7C3AED" }],
@@ -133,6 +148,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r014", name: "Quartz Mechanical Keyboard",
     cat: "electronics", sub: "computing", brand: "Pikol", art: "keyboard",
+    image: "./images/products/keyboard-3.jpg",
     price: 7900, orig: null,
     rating: 4.4, reviews: 900, sold: 3600, oos: false, age: 2,
     colors: [{ name: "Midnight Black", hex: "#1F2937" }, { name: "Cloud White", hex: "#E5E7EB" }, { name: "Royal Violet", hex: "#7C3AED" }],
@@ -142,6 +158,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r015", name: "Nimbus Mechanical Keyboard",
     cat: "electronics", sub: "computing", brand: "Mendo", art: "keyboard",
+    image: "./images/products/keyboard-4.jpg",
     price: 7900, orig: 9300,
     rating: 4.1, reviews: 640, sold: 2400, oos: true, age: 9,
     colors: [{ name: "Midnight Black", hex: "#1F2937" }, { name: "Cloud White", hex: "#E5E7EB" }, { name: "Royal Violet", hex: "#7C3AED" }],
@@ -151,6 +168,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r016", name: "Vanta Mechanical Keyboard",
     cat: "electronics", sub: "computing", brand: "Strida", art: "keyboard",
+    image: "./images/products/keyboard-5.jpg",
     price: 7900, orig: 9900,
     rating: 3.8, reviews: 1200, sold: 1500, oos: false, age: 16,
     colors: [{ name: "Midnight Black", hex: "#1F2937" }, { name: "Cloud White", hex: "#E5E7EB" }, { name: "Royal Violet", hex: "#7C3AED" }],
@@ -160,6 +178,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r017", name: "Onyx Mechanical Keyboard",
     cat: "electronics", sub: "computing", brand: "Ombra", art: "keyboard",
+    image: "./images/products/keyboard-6.jpg",
     price: 7900, orig: 10500,
     rating: 4.8, reviews: 180, sold: 420, oos: false, age: 23,
     colors: [{ name: "Midnight Black", hex: "#1F2937" }, { name: "Cloud White", hex: "#E5E7EB" }, { name: "Royal Violet", hex: "#7C3AED" }],
@@ -169,6 +188,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r018", name: "Ridge Gaming Mouse",
     cat: "electronics", sub: "computing", brand: "Luma", art: "mouse",
+    image: "./images/products/mouse-1.jpg",
     price: 3900, orig: 5570,
     rating: 4.3, reviews: 240, sold: 900, oos: false, age: 30,
     colors: [{ name: "Midnight Black", hex: "#1F2937" }, { name: "Cloud White", hex: "#E5E7EB" }],
@@ -178,6 +198,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r019", name: "Summit Gaming Mouse",
     cat: "electronics", sub: "computing", brand: "Aurex", art: "mouse",
+    image: "./images/products/mouse-2.jpg",
     price: 3900, orig: null,
     rating: 4.7, reviews: 320, sold: 1400, oos: false, age: 37,
     colors: [{ name: "Midnight Black", hex: "#1F2937" }, { name: "Cloud White", hex: "#E5E7EB" }],
@@ -187,6 +208,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r020", name: "Echo Gaming Mouse",
     cat: "electronics", sub: "computing", brand: "Novo", art: "mouse",
+    image: "./images/products/mouse-3.jpg",
     price: 3900, orig: 6500,
     rating: 4.5, reviews: 450, sold: 2100, oos: false, age: 44,
     colors: [{ name: "Midnight Black", hex: "#1F2937" }, { name: "Cloud White", hex: "#E5E7EB" }],
@@ -196,6 +218,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r021", name: "Sable Gaming Mouse",
     cat: "electronics", sub: "computing", brand: "Klarita", art: "mouse",
+    image: "./images/products/mouse-4.jpg",
     price: 3900, orig: 4430,
     rating: 4.8, reviews: 560, sold: 3200, oos: false, age: 51,
     colors: [{ name: "Midnight Black", hex: "#1F2937" }, { name: "Cloud White", hex: "#E5E7EB" }],
@@ -205,6 +228,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r022", name: "Kite Gaming Mouse",
     cat: "electronics", sub: "computing", brand: "Vantia", art: "mouse",
+    image: "./images/products/mouse-5.jpg",
     price: 3900, orig: 4760,
     rating: 4.4, reviews: 720, sold: 4500, oos: false, age: 58,
     colors: [{ name: "Midnight Black", hex: "#1F2937" }, { name: "Cloud White", hex: "#E5E7EB" }],
@@ -214,6 +238,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r023", name: "Delta 27\" Monitor",
     cat: "electronics", sub: "computing", brand: "Pikol", art: "monitor",
+    image: "./images/products/monitor-1.jpg",
     price: 23900, orig: 30600,
     rating: 4.6, reviews: 880, sold: 5600, oos: true, age: 65,
     colors: [{ name: "Midnight Black", hex: "#1F2937" }, { name: "Silver Grey", hex: "#CBD5E1" }],
@@ -223,6 +248,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r024", name: "Comet 27\" Monitor",
     cat: "electronics", sub: "computing", brand: "Mendo", art: "monitor",
+    image: "./images/products/monitor-2.jpg",
     price: 23900, orig: null,
     rating: 4.3, reviews: 1100, sold: 6800, oos: false, age: 72,
     colors: [{ name: "Midnight Black", hex: "#1F2937" }, { name: "Silver Grey", hex: "#CBD5E1" }],
@@ -232,6 +258,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r025", name: "Aster 27\" Monitor",
     cat: "electronics", sub: "computing", brand: "Strida", art: "monitor",
+    image: "./images/products/monitor-3.jpg",
     price: 23900, orig: 35100,
     rating: 4.9, reviews: 1400, sold: 8200, oos: false, age: 79,
     colors: [{ name: "Midnight Black", hex: "#1F2937" }, { name: "Silver Grey", hex: "#CBD5E1" }],
@@ -241,6 +268,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r026", name: "Marlow 27\" Monitor",
     cat: "electronics", sub: "computing", brand: "Ombra", art: "monitor",
+    image: "./images/products/monitor-4.jpg",
     price: 23900, orig: 38500,
     rating: 4.2, reviews: 1750, sold: 9700, oos: false, age: 86,
     colors: [{ name: "Midnight Black", hex: "#1F2937" }, { name: "Silver Grey", hex: "#CBD5E1" }],
@@ -250,6 +278,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r027", name: "Kestrel 27\" Monitor",
     cat: "electronics", sub: "computing", brand: "Luma", art: "monitor",
+    image: "./images/products/monitor-5.jpg",
     price: 23900, orig: 26600,
     rating: 4.5, reviews: 2100, sold: 11000, oos: false, age: 3,
     colors: [{ name: "Midnight Black", hex: "#1F2937" }, { name: "Silver Grey", hex: "#CBD5E1" }],
@@ -259,6 +288,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r028", name: "Peregrine Webcam 1080p",
     cat: "electronics", sub: "computing", brand: "Aurex", art: "webcam",
+    image: "./images/products/webcam-1.jpg",
     price: 4900, orig: 5770,
     rating: 4, reviews: 2600, sold: 12400, oos: false, age: 10,
     colors: [{ name: "Midnight Black", hex: "#1F2937" }],
@@ -268,6 +298,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r029", name: "Alto Webcam 1080p",
     cat: "electronics", sub: "computing", brand: "Novo", art: "webcam",
+    image: "./images/products/webcam-2.jpg",
     price: 4900, orig: null,
     rating: 4.6, reviews: 3200, sold: 760, oos: false, age: 17,
     colors: [{ name: "Midnight Black", hex: "#1F2937" }],
@@ -277,6 +308,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r030", name: "Brio Webcam 1080p",
     cat: "electronics", sub: "computing", brand: "Klarita", art: "webcam",
+    image: "./images/products/webcam-3.jpg",
     price: 4900, orig: 6530,
     rating: 3.9, reviews: 900, sold: 5200, oos: false, age: 24,
     colors: [{ name: "Midnight Black", hex: "#1F2937" }],
@@ -286,6 +318,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r031", name: "Cirrus Webcam 1080p",
     cat: "electronics", sub: "computing", brand: "Vantia", art: "webcam",
+    image: "./images/products/webcam-4.jpg",
     price: 4900, orig: 7000,
     rating: 4.7, reviews: 640, sold: 3600, oos: true, age: 31,
     colors: [{ name: "Midnight Black", hex: "#1F2937" }],
@@ -295,6 +328,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r032", name: "Deniz Webcam 1080p",
     cat: "electronics", sub: "computing", brand: "Pikol", art: "webcam",
+    image: "./images/products/webcam-5.jpg",
     price: 4900, orig: 7540,
     rating: 4.4, reviews: 1200, sold: 2400, oos: false, age: 38,
     colors: [{ name: "Midnight Black", hex: "#1F2937" }],
@@ -304,6 +338,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r033", name: "Elan Power Bank 20000mAh",
     cat: "electronics", sub: "phones", brand: "Mendo", art: "powerbank",
+    image: "./images/products/powerbank-1.jpg",
     price: 4500, orig: 7500,
     rating: 4.1, reviews: 180, sold: 1500, oos: false, age: 45,
     colors: [{ name: "Midnight Black", hex: "#1F2937" }, { name: "Ocean Blue", hex: "#3B82F6" }],
@@ -313,6 +348,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r034", name: "Fjord Power Bank 20000mAh",
     cat: "electronics", sub: "phones", brand: "Strida", art: "powerbank",
+    image: "./images/products/powerbank-2.jpg",
     price: 4500, orig: null,
     rating: 3.8, reviews: 240, sold: 420, oos: false, age: 52,
     colors: [{ name: "Midnight Black", hex: "#1F2937" }, { name: "Ocean Blue", hex: "#3B82F6" }],
@@ -322,6 +358,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r035", name: "Grove Power Bank 20000mAh",
     cat: "electronics", sub: "phones", brand: "Ombra", art: "powerbank",
+    image: "./images/products/powerbank-3.jpg",
     price: 4500, orig: 5490,
     rating: 4.8, reviews: 320, sold: 900, oos: false, age: 59,
     colors: [{ name: "Midnight Black", hex: "#1F2937" }, { name: "Ocean Blue", hex: "#3B82F6" }],
@@ -331,6 +368,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r036", name: "Halo Power Bank 20000mAh",
     cat: "electronics", sub: "phones", brand: "Luma", art: "powerbank",
+    image: "./images/products/powerbank-4.jpg",
     price: 4500, orig: 5770,
     rating: 4.3, reviews: 450, sold: 1400, oos: false, age: 66,
     colors: [{ name: "Midnight Black", hex: "#1F2937" }, { name: "Ocean Blue", hex: "#3B82F6" }],
@@ -340,6 +378,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r037", name: "Ionic Power Bank 20000mAh",
     cat: "electronics", sub: "phones", brand: "Aurex", art: "powerbank",
+    image: "./images/products/powerbank-5.jpg",
     price: 4500, orig: 6250,
     rating: 4.7, reviews: 560, sold: 2100, oos: false, age: 73,
     colors: [{ name: "Midnight Black", hex: "#1F2937" }, { name: "Ocean Blue", hex: "#3B82F6" }],
@@ -349,6 +388,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r038", name: "Juno Power Bank 20000mAh",
     cat: "electronics", sub: "phones", brand: "Novo", art: "powerbank",
+    image: "./images/products/powerbank-6.jpg",
     price: 4500, orig: 6620,
     rating: 4.5, reviews: 720, sold: 3200, oos: false, age: 80,
     colors: [{ name: "Midnight Black", hex: "#1F2937" }, { name: "Ocean Blue", hex: "#3B82F6" }],
@@ -358,6 +398,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r039", name: "Lyra Smartwatch",
     cat: "electronics", sub: "wearables", brand: "Klarita", art: "watch",
+    image: "./images/products/smartwatch-1.jpg",
     price: 9900, orig: null,
     rating: 4.8, reviews: 880, sold: 4500, oos: true, age: 87,
     colors: [{ name: "Midnight Black", hex: "#1F2937" }, { name: "Blush Pink", hex: "#F9A8D4" }, { name: "Ocean Blue", hex: "#3B82F6" }],
@@ -367,6 +408,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r040", name: "Mira Smartwatch",
     cat: "electronics", sub: "wearables", brand: "Vantia", art: "watch",
+    image: "./images/products/smartwatch-2.jpg",
     price: 9900, orig: 11000,
     rating: 4.4, reviews: 1100, sold: 5600, oos: false, age: 4,
     colors: [{ name: "Midnight Black", hex: "#1F2937" }, { name: "Blush Pink", hex: "#F9A8D4" }, { name: "Ocean Blue", hex: "#3B82F6" }],
@@ -376,6 +418,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r041", name: "Nadir Smartwatch",
     cat: "electronics", sub: "wearables", brand: "Pikol", art: "watch",
+    image: "./images/products/smartwatch-3.jpg",
     price: 9900, orig: 11600,
     rating: 4.6, reviews: 1400, sold: 6800, oos: false, age: 11,
     colors: [{ name: "Midnight Black", hex: "#1F2937" }, { name: "Blush Pink", hex: "#F9A8D4" }, { name: "Ocean Blue", hex: "#3B82F6" }],
@@ -385,6 +428,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r042", name: "Ovation Smartwatch",
     cat: "electronics", sub: "wearables", brand: "Mendo", art: "watch",
+    image: "./images/products/smartwatch-4.jpg",
     price: 9900, orig: 12400,
     rating: 4.3, reviews: 1750, sold: 8200, oos: false, age: 18,
     colors: [{ name: "Midnight Black", hex: "#1F2937" }, { name: "Blush Pink", hex: "#F9A8D4" }, { name: "Ocean Blue", hex: "#3B82F6" }],
@@ -394,6 +438,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r043", name: "Pique Smartwatch",
     cat: "electronics", sub: "wearables", brand: "Strida", art: "watch",
+    image: "./images/products/smartwatch-5.jpg",
     price: 9900, orig: 13200,
     rating: 4.9, reviews: 2100, sold: 9700, oos: false, age: 25,
     colors: [{ name: "Midnight Black", hex: "#1F2937" }, { name: "Blush Pink", hex: "#F9A8D4" }, { name: "Ocean Blue", hex: "#3B82F6" }],
@@ -403,6 +448,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r044", name: "Quill Drone 4K GPS",
     cat: "electronics", sub: "cameras", brand: "Ombra", art: "drone",
+    image: "./images/products/drone-1.jpg",
     price: 17900, orig: null,
     rating: 4.2, reviews: 2600, sold: 11000, oos: false, age: 32,
     colors: [{ name: "Midnight Black", hex: "#1F2937" }, { name: "Silver Grey", hex: "#CBD5E1" }],
@@ -412,6 +458,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r045", name: "Rune Drone 4K GPS",
     cat: "electronics", sub: "cameras", brand: "Luma", art: "drone",
+    image: "./images/products/drone-2.jpg",
     price: 17900, orig: 27500,
     rating: 4.5, reviews: 3200, sold: 12400, oos: false, age: 39,
     colors: [{ name: "Midnight Black", hex: "#1F2937" }, { name: "Silver Grey", hex: "#CBD5E1" }],
@@ -421,6 +468,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r046", name: "Terra Drone 4K GPS",
     cat: "electronics", sub: "cameras", brand: "Aurex", art: "drone",
+    image: "./images/products/drone-3.jpg",
     price: 17900, orig: 29800,
     rating: 4, reviews: 900, sold: 760, oos: false, age: 46,
     colors: [{ name: "Midnight Black", hex: "#1F2937" }, { name: "Silver Grey", hex: "#CBD5E1" }],
@@ -430,6 +478,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r047", name: "Umbra Drone 4K GPS",
     cat: "electronics", sub: "cameras", brand: "Novo", art: "drone",
+    image: "./images/products/drone-4.jpg",
     price: 17900, orig: 20300,
     rating: 4.6, reviews: 640, sold: 5200, oos: true, age: 53,
     colors: [{ name: "Midnight Black", hex: "#1F2937" }, { name: "Silver Grey", hex: "#CBD5E1" }],
@@ -439,6 +488,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r048", name: "Vega Drone 4K GPS",
     cat: "electronics", sub: "cameras", brand: "Klarita", art: "drone",
+    image: "./images/products/drone-5.jpg",
     price: 17900, orig: 21800,
     rating: 3.9, reviews: 1200, sold: 3600, oos: false, age: 60,
     colors: [{ name: "Midnight Black", hex: "#1F2937" }, { name: "Silver Grey", hex: "#CBD5E1" }],
@@ -448,6 +498,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r049", name: "Wisp Smart Speaker",
     cat: "electronics", sub: "audio", brand: "Vantia", art: "speaker",
+    image: "./images/products/speaker-1.jpg",
     price: 5900, orig: null,
     rating: 4.7, reviews: 180, sold: 2400, oos: false, age: 67,
     colors: [{ name: "Midnight Black", hex: "#1F2937" }, { name: "Cloud White", hex: "#E5E7EB" }, { name: "Deep Teal", hex: "#0D9488" }],
@@ -457,6 +508,8 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r050", name: "Xeno Smart Speaker",
     cat: "electronics", sub: "audio", brand: "Pikol", art: "speaker",
+    image: "./images/products/speaker-2.jpg",
+    imageFit: 'contain',
     price: 5900, orig: 8200,
     rating: 4.4, reviews: 240, sold: 1500, oos: false, age: 74,
     colors: [{ name: "Midnight Black", hex: "#1F2937" }, { name: "Cloud White", hex: "#E5E7EB" }, { name: "Deep Teal", hex: "#0D9488" }],
@@ -466,6 +519,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r051", name: "Yarrow Smart Speaker",
     cat: "electronics", sub: "audio", brand: "Mendo", art: "speaker",
+    image: "./images/products/speaker-3.jpg",
     price: 5900, orig: 8700,
     rating: 4.1, reviews: 320, sold: 420, oos: false, age: 81,
     colors: [{ name: "Midnight Black", hex: "#1F2937" }, { name: "Cloud White", hex: "#E5E7EB" }, { name: "Deep Teal", hex: "#0D9488" }],
@@ -475,6 +529,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r052", name: "Zephyr Smart Speaker",
     cat: "electronics", sub: "audio", brand: "Strida", art: "speaker",
+    image: "./images/products/speaker-4.jpg",
     price: 5900, orig: 9500,
     rating: 3.8, reviews: 450, sold: 900, oos: false, age: 88,
     colors: [{ name: "Midnight Black", hex: "#1F2937" }, { name: "Cloud White", hex: "#E5E7EB" }, { name: "Deep Teal", hex: "#0D9488" }],
@@ -484,6 +539,8 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r053", name: "Basalt Smart Speaker",
     cat: "electronics", sub: "audio", brand: "Ombra", art: "speaker",
+    image: "./images/products/speaker-5.jpg",
+    imageFit: 'contain',
     price: 5900, orig: 6600,
     rating: 4.8, reviews: 560, sold: 1400, oos: false, age: 5,
     colors: [{ name: "Midnight Black", hex: "#1F2937" }, { name: "Cloud White", hex: "#E5E7EB" }, { name: "Deep Teal", hex: "#0D9488" }],
@@ -493,6 +550,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r054", name: "Cinder Smart Speaker",
     cat: "electronics", sub: "audio", brand: "Luma", art: "speaker",
+    image: "./images/products/speaker-6.jpg",
     price: 5900, orig: null,
     rating: 4.3, reviews: 720, sold: 2100, oos: false, age: 12,
     colors: [{ name: "Midnight Black", hex: "#1F2937" }, { name: "Cloud White", hex: "#E5E7EB" }, { name: "Deep Teal", hex: "#0D9488" }],
@@ -502,6 +560,8 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r055", name: "Echo Mini Smart Speaker",
     cat: "electronics", sub: "audio", brand: "Aurex", art: "speaker",
+    image: "./images/products/speaker-7.jpg",
+    imageFit: 'contain',
     price: 5900, orig: 7400,
     rating: 4.7, reviews: 880, sold: 3200, oos: true, age: 19,
     colors: [{ name: "Midnight Black", hex: "#1F2937" }, { name: "Cloud White", hex: "#E5E7EB" }, { name: "Deep Teal", hex: "#0D9488" }],
@@ -511,6 +571,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r056", name: "Shield Phone Case",
     cat: "accessories", sub: "small-goods", brand: "Novo", art: "case",
+    image: "./images/products/case-1.jpg",
     price: 1299, orig: 1730,
     rating: 4.5, reviews: 1100, sold: 4500, oos: false, age: 26,
     colors: [{ name: "Midnight Black", hex: "#1F2937" }, { name: "Cloud White", hex: "#E5E7EB" }, { name: "Blush Pink", hex: "#F9A8D4" }],
@@ -520,6 +581,8 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r057", name: "Aero Phone Case",
     cat: "accessories", sub: "small-goods", brand: "Klarita", art: "case",
+    image: "./images/products/case-2.jpg",
+    imageFit: 'contain',
     price: 1299, orig: 1860,
     rating: 4.8, reviews: 1400, sold: 5600, oos: false, age: 33,
     colors: [{ name: "Midnight Black", hex: "#1F2937" }, { name: "Cloud White", hex: "#E5E7EB" }, { name: "Blush Pink", hex: "#F9A8D4" }],
@@ -529,6 +592,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r058", name: "Flex Phone Case",
     cat: "accessories", sub: "small-goods", brand: "Vantia", art: "case",
+    image: "./images/products/case-3.jpg",
     price: 1299, orig: 2000,
     rating: 4.4, reviews: 1750, sold: 6800, oos: false, age: 40,
     colors: [{ name: "Midnight Black", hex: "#1F2937" }, { name: "Cloud White", hex: "#E5E7EB" }, { name: "Blush Pink", hex: "#F9A8D4" }],
@@ -538,6 +602,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r059", name: "Guard Phone Case",
     cat: "accessories", sub: "small-goods", brand: "Pikol", art: "case",
+    image: "./images/products/case-4.jpg",
     price: 1299, orig: null,
     rating: 4.6, reviews: 2100, sold: 8200, oos: false, age: 47,
     colors: [{ name: "Midnight Black", hex: "#1F2937" }, { name: "Cloud White", hex: "#E5E7EB" }, { name: "Blush Pink", hex: "#F9A8D4" }],
@@ -547,6 +612,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r060", name: "Terra Phone Case",
     cat: "accessories", sub: "small-goods", brand: "Mendo", art: "case",
+    image: "./images/products/case-5.jpg",
     price: 1299, orig: 1480,
     rating: 4.3, reviews: 2600, sold: 9700, oos: false, age: 54,
     colors: [{ name: "Midnight Black", hex: "#1F2937" }, { name: "Cloud White", hex: "#E5E7EB" }, { name: "Blush Pink", hex: "#F9A8D4" }],
@@ -556,6 +622,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r061", name: "Pad Wireless Charger",
     cat: "accessories", sub: "travel", brand: "Strida", art: "charger",
+    image: "./images/products/charger-1.jpg",
     price: 2900, orig: 3540,
     rating: 4.9, reviews: 3200, sold: 11000, oos: false, age: 61,
     colors: [{ name: "Midnight Black", hex: "#1F2937" }, { name: "Cloud White", hex: "#E5E7EB" }],
@@ -565,6 +632,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r062", name: "Disc Wireless Charger",
     cat: "accessories", sub: "travel", brand: "Ombra", art: "charger",
+    image: "./images/products/charger-2.jpg",
     price: 2900, orig: 3720,
     rating: 4.2, reviews: 900, sold: 12400, oos: false, age: 68,
     colors: [{ name: "Midnight Black", hex: "#1F2937" }, { name: "Cloud White", hex: "#E5E7EB" }],
@@ -574,6 +642,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r063", name: "Dock Wireless Charger",
     cat: "accessories", sub: "travel", brand: "Luma", art: "charger",
+    image: "./images/products/charger-3.jpg",
     price: 2900, orig: 4030,
     rating: 4.5, reviews: 640, sold: 760, oos: true, age: 75,
     colors: [{ name: "Midnight Black", hex: "#1F2937" }, { name: "Cloud White", hex: "#E5E7EB" }],
@@ -583,6 +652,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r064", name: "Halo Wireless Charger",
     cat: "accessories", sub: "travel", brand: "Aurex", art: "charger",
+    image: "./images/products/charger-4.jpg",
     price: 2900, orig: null,
     rating: 4, reviews: 1200, sold: 5200, oos: false, age: 82,
     colors: [{ name: "Midnight Black", hex: "#1F2937" }, { name: "Cloud White", hex: "#E5E7EB" }],
@@ -592,6 +662,8 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r065", name: "Snap Wireless Charger",
     cat: "accessories", sub: "travel", brand: "Novo", art: "charger",
+    image: "./images/products/charger-5.jpg",
+    imageFit: 'contain',
     price: 2900, orig: 4680,
     rating: 4.6, reviews: 180, sold: 3600, oos: false, age: 89,
     colors: [{ name: "Midnight Black", hex: "#1F2937" }, { name: "Cloud White", hex: "#E5E7EB" }],
@@ -601,6 +673,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r066", name: "Flow USB-C Cable, 2m",
     cat: "accessories", sub: "travel", brand: "Klarita", art: "cable",
+    image: "./images/products/cable-1.jpg",
     price: 1499, orig: 1670,
     rating: 3.9, reviews: 240, sold: 2400, oos: false, age: 6,
     colors: [{ name: "Midnight Black", hex: "#1F2937" }, { name: "Cloud White", hex: "#E5E7EB" }, { name: "Coral Red", hex: "#F43F5E" }],
@@ -610,6 +683,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r067", name: "Link USB-C Cable, 2m",
     cat: "accessories", sub: "travel", brand: "Vantia", art: "cable",
+    image: "./images/products/cable-2.jpg",
     price: 1499, orig: 1760,
     rating: 4.7, reviews: 320, sold: 1500, oos: false, age: 13,
     colors: [{ name: "Midnight Black", hex: "#1F2937" }, { name: "Cloud White", hex: "#E5E7EB" }, { name: "Coral Red", hex: "#F43F5E" }],
@@ -619,6 +693,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r068", name: "Core USB-C Cable, 2m",
     cat: "accessories", sub: "travel", brand: "Pikol", art: "cable",
+    image: "./images/products/cable-3.jpg",
     price: 1499, orig: 1870,
     rating: 4.4, reviews: 450, sold: 420, oos: false, age: 20,
     colors: [{ name: "Midnight Black", hex: "#1F2937" }, { name: "Cloud White", hex: "#E5E7EB" }, { name: "Coral Red", hex: "#F43F5E" }],
@@ -628,6 +703,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r069", name: "Speed USB-C Cable, 2m",
     cat: "accessories", sub: "travel", brand: "Mendo", art: "cable",
+    image: "./images/products/cable-4.jpg",
     price: 1499, orig: null,
     rating: 4.1, reviews: 560, sold: 900, oos: false, age: 27,
     colors: [{ name: "Midnight Black", hex: "#1F2937" }, { name: "Cloud White", hex: "#E5E7EB" }, { name: "Coral Red", hex: "#F43F5E" }],
@@ -637,6 +713,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r070", name: "Weave USB-C Cable, 2m",
     cat: "accessories", sub: "travel", brand: "Strida", art: "cable",
+    image: "./images/products/cable-5.jpg",
     price: 1499, orig: 2140,
     rating: 3.8, reviews: 720, sold: 1400, oos: false, age: 34,
     colors: [{ name: "Midnight Black", hex: "#1F2937" }, { name: "Cloud White", hex: "#E5E7EB" }, { name: "Coral Red", hex: "#F43F5E" }],
@@ -646,6 +723,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r071", name: "Dock USB-C Hub 7-in-1",
     cat: "accessories", sub: "travel", brand: "Ombra", art: "usbhub",
+    image: "./images/products/usbhub-1.jpg",
     price: 3900, orig: 6000,
     rating: 4.8, reviews: 880, sold: 2100, oos: true, age: 41,
     colors: [{ name: "Silver Grey", hex: "#CBD5E1" }, { name: "Midnight Black", hex: "#1F2937" }],
@@ -655,6 +733,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r072", name: "Port USB-C Hub 7-in-1",
     cat: "accessories", sub: "travel", brand: "Luma", art: "usbhub",
+    image: "./images/products/usbhub-2.jpg",
     price: 3900, orig: 6500,
     rating: 4.3, reviews: 1100, sold: 3200, oos: false, age: 48,
     colors: [{ name: "Silver Grey", hex: "#CBD5E1" }, { name: "Midnight Black", hex: "#1F2937" }],
@@ -664,6 +743,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r073", name: "Link USB-C Hub 7-in-1",
     cat: "accessories", sub: "travel", brand: "Aurex", art: "usbhub",
+    image: "./images/products/usbhub-3.jpg",
     price: 3900, orig: 4430,
     rating: 4.7, reviews: 1400, sold: 4500, oos: false, age: 55,
     colors: [{ name: "Silver Grey", hex: "#CBD5E1" }, { name: "Midnight Black", hex: "#1F2937" }],
@@ -673,6 +753,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r074", name: "Expand USB-C Hub 7-in-1",
     cat: "accessories", sub: "travel", brand: "Novo", art: "usbhub",
+    image: "./images/products/usbhub-4.jpg",
     price: 3900, orig: null,
     rating: 4.5, reviews: 1750, sold: 5600, oos: false, age: 62,
     colors: [{ name: "Silver Grey", hex: "#CBD5E1" }, { name: "Midnight Black", hex: "#1F2937" }],
@@ -682,6 +763,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r075", name: "Trio USB-C Hub 7-in-1",
     cat: "accessories", sub: "travel", brand: "Klarita", art: "usbhub",
+    image: "./images/products/usbhub-5.jpg",
     price: 3900, orig: 5000,
     rating: 4.8, reviews: 2100, sold: 6800, oos: false, age: 69,
     colors: [{ name: "Silver Grey", hex: "#CBD5E1" }, { name: "Midnight Black", hex: "#1F2937" }],
@@ -691,6 +773,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r076", name: "Commuter Laptop Bag 15\"",
     cat: "accessories", sub: "small-goods", brand: "Vantia", art: "bag",
+    image: "./images/products/bag-1.jpg",
     price: 2900, orig: 4030,
     rating: 4.4, reviews: 2600, sold: 8200, oos: false, age: 76,
     colors: [{ name: "Navy", hex: "#1E3A8A" }, { name: "Midnight Black", hex: "#1F2937" }, { name: "Walnut Brown", hex: "#92400E" }],
@@ -700,6 +783,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r077", name: "Metro Laptop Bag 15\"",
     cat: "accessories", sub: "small-goods", brand: "Pikol", art: "bag",
+    image: "./images/products/bag-2.jpg",
     price: 2900, orig: 4270,
     rating: 4.6, reviews: 3200, sold: 9700, oos: false, age: 83,
     colors: [{ name: "Navy", hex: "#1E3A8A" }, { name: "Midnight Black", hex: "#1F2937" }, { name: "Walnut Brown", hex: "#92400E" }],
@@ -709,6 +793,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r078", name: "Transit Laptop Bag 15\"",
     cat: "accessories", sub: "small-goods", brand: "Mendo", art: "bag",
+    image: "./images/products/bag-3.jpg",
     price: 2900, orig: 4680,
     rating: 4.3, reviews: 900, sold: 11000, oos: false, age: 90,
     colors: [{ name: "Navy", hex: "#1E3A8A" }, { name: "Midnight Black", hex: "#1F2937" }, { name: "Walnut Brown", hex: "#92400E" }],
@@ -718,6 +803,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r079", name: "Voyage Laptop Bag 15\"",
     cat: "accessories", sub: "small-goods", brand: "Strida", art: "bag",
+    image: "./images/products/bag-4.jpg",
     price: 2900, orig: null,
     rating: 4.9, reviews: 640, sold: 12400, oos: true, age: 7,
     colors: [{ name: "Navy", hex: "#1E3A8A" }, { name: "Midnight Black", hex: "#1F2937" }, { name: "Walnut Brown", hex: "#92400E" }],
@@ -727,6 +813,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r080", name: "Urban Laptop Bag 15\"",
     cat: "accessories", sub: "small-goods", brand: "Ombra", art: "bag",
+    image: "./images/products/bag-5.jpg",
     price: 2900, orig: 3410,
     rating: 4.2, reviews: 1200, sold: 760, oos: false, age: 14,
     colors: [{ name: "Navy", hex: "#1E3A8A" }, { name: "Midnight Black", hex: "#1F2937" }, { name: "Walnut Brown", hex: "#92400E" }],
@@ -736,6 +823,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r081", name: "Bifold Leather Wallet",
     cat: "accessories", sub: "small-goods", brand: "Luma", art: "wallet",
+    image: "./images/products/wallet-1.jpg",
     price: 3499, orig: 4370,
     rating: 4.5, reviews: 180, sold: 5200, oos: false, age: 21,
     colors: [{ name: "Walnut Brown", hex: "#92400E" }, { name: "Midnight Black", hex: "#1F2937" }, { name: "Navy", hex: "#1E3A8A" }],
@@ -745,6 +833,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r082", name: "Slim Leather Wallet",
     cat: "accessories", sub: "small-goods", brand: "Aurex", art: "wallet",
+    image: "./images/products/wallet-2.jpg",
     price: 3499, orig: 4670,
     rating: 4, reviews: 240, sold: 3600, oos: false, age: 28,
     colors: [{ name: "Walnut Brown", hex: "#92400E" }, { name: "Midnight Black", hex: "#1F2937" }, { name: "Navy", hex: "#1E3A8A" }],
@@ -754,6 +843,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r083", name: "Card Leather Wallet",
     cat: "accessories", sub: "small-goods", brand: "Novo", art: "wallet",
+    image: "./images/products/wallet-3.jpg",
     price: 3499, orig: 5000,
     rating: 4.6, reviews: 320, sold: 2400, oos: false, age: 35,
     colors: [{ name: "Walnut Brown", hex: "#92400E" }, { name: "Midnight Black", hex: "#1F2937" }, { name: "Navy", hex: "#1E3A8A" }],
@@ -763,6 +853,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r084", name: "Zip Leather Wallet",
     cat: "accessories", sub: "small-goods", brand: "Klarita", art: "wallet",
+    image: "./images/products/wallet-4.jpg",
     price: 3499, orig: null,
     rating: 3.9, reviews: 450, sold: 1500, oos: false, age: 42,
     colors: [{ name: "Walnut Brown", hex: "#92400E" }, { name: "Midnight Black", hex: "#1F2937" }, { name: "Navy", hex: "#1E3A8A" }],
@@ -772,6 +863,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r085", name: "Compact Leather Wallet",
     cat: "accessories", sub: "small-goods", brand: "Vantia", art: "wallet",
+    image: "./images/products/wallet-5.jpg",
     price: 3499, orig: 5830,
     rating: 4.7, reviews: 560, sold: 420, oos: false, age: 49,
     colors: [{ name: "Walnut Brown", hex: "#92400E" }, { name: "Midnight Black", hex: "#1F2937" }, { name: "Navy", hex: "#1E3A8A" }],
@@ -781,6 +873,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r086", name: "Glow Smart LED Lamp",
     cat: "home", sub: "lighting", brand: "Pikol", art: "lamp",
+    image: "./images/products/lamp-1.jpg",
     price: 4200, orig: 4770,
     rating: 4.4, reviews: 720, sold: 900, oos: false, age: 56,
     colors: [{ name: "Cloud White", hex: "#E5E7EB" }, { name: "Midnight Black", hex: "#1F2937" }],
@@ -790,6 +883,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r087", name: "Aura Smart LED Lamp",
     cat: "home", sub: "lighting", brand: "Mendo", art: "lamp",
+    image: "./images/products/lamp-2.jpg",
     price: 4200, orig: 5120,
     rating: 4.1, reviews: 880, sold: 1400, oos: true, age: 63,
     colors: [{ name: "Cloud White", hex: "#E5E7EB" }, { name: "Midnight Black", hex: "#1F2937" }],
@@ -799,6 +893,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r088", name: "Beam Smart LED Lamp",
     cat: "home", sub: "lighting", brand: "Strida", art: "lamp",
+    image: "./images/products/lamp-3.jpg",
     price: 4200, orig: 5390,
     rating: 3.8, reviews: 1100, sold: 2100, oos: false, age: 70,
     colors: [{ name: "Cloud White", hex: "#E5E7EB" }, { name: "Midnight Black", hex: "#1F2937" }],
@@ -808,6 +903,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r089", name: "Halo Smart LED Lamp",
     cat: "home", sub: "lighting", brand: "Ombra", art: "lamp",
+    image: "./images/products/lamp-4.jpg",
     price: 4200, orig: null,
     rating: 4.8, reviews: 1400, sold: 3200, oos: false, age: 77,
     colors: [{ name: "Cloud White", hex: "#E5E7EB" }, { name: "Midnight Black", hex: "#1F2937" }],
@@ -817,6 +913,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r090", name: "Lumen Smart LED Lamp",
     cat: "home", sub: "lighting", brand: "Luma", art: "lamp",
+    image: "./images/products/lamp-5.jpg",
     price: 4200, orig: 6180,
     rating: 4.3, reviews: 1750, sold: 4500, oos: false, age: 84,
     colors: [{ name: "Cloud White", hex: "#E5E7EB" }, { name: "Midnight Black", hex: "#1F2937" }],
@@ -826,6 +923,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r091", name: "Ember Smart LED Lamp",
     cat: "home", sub: "lighting", brand: "Aurex", art: "lamp",
+    image: "./images/products/lamp-6.jpg",
     price: 4200, orig: 6770,
     rating: 4.7, reviews: 2100, sold: 5600, oos: false, age: 1,
     colors: [{ name: "Cloud White", hex: "#E5E7EB" }, { name: "Midnight Black", hex: "#1F2937" }],
@@ -835,6 +933,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r092", name: "Crisp Air Fryer 5L",
     cat: "home", sub: "decor", brand: "Novo", art: "airfryer",
+    image: "./images/products/airfryer-1.jpg",
     price: 8900, orig: 9900,
     rating: 4.5, reviews: 2600, sold: 6800, oos: false, age: 8,
     colors: [{ name: "Midnight Black", hex: "#1F2937" }, { name: "Silver Grey", hex: "#CBD5E1" }],
@@ -844,6 +943,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r093", name: "AirWave Air Fryer 5L",
     cat: "home", sub: "decor", brand: "Klarita", art: "airfryer",
+    image: "./images/products/airfryer-2.jpg",
     price: 8900, orig: 10500,
     rating: 4.8, reviews: 3200, sold: 8200, oos: false, age: 15,
     colors: [{ name: "Midnight Black", hex: "#1F2937" }, { name: "Silver Grey", hex: "#CBD5E1" }],
@@ -853,6 +953,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r094", name: "FryLite Air Fryer 5L",
     cat: "home", sub: "decor", brand: "Vantia", art: "airfryer",
+    image: "./images/products/airfryer-3.jpg",
     price: 8900, orig: null,
     rating: 4.4, reviews: 900, sold: 9700, oos: false, age: 22,
     colors: [{ name: "Midnight Black", hex: "#1F2937" }, { name: "Silver Grey", hex: "#CBD5E1" }],
@@ -862,6 +963,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r095", name: "Turbo Air Fryer 5L",
     cat: "home", sub: "decor", brand: "Pikol", art: "airfryer",
+    image: "./images/products/airfryer-4.jpg",
     price: 8900, orig: 11900,
     rating: 4.6, reviews: 640, sold: 11000, oos: true, age: 29,
     colors: [{ name: "Midnight Black", hex: "#1F2937" }, { name: "Silver Grey", hex: "#CBD5E1" }],
@@ -871,6 +973,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r096", name: "Breeze Air Fryer 5L",
     cat: "home", sub: "decor", brand: "Mendo", art: "airfryer",
+    image: "./images/products/airfryer-5.jpg",
     price: 8900, orig: 12700,
     rating: 4.3, reviews: 1200, sold: 12400, oos: false, age: 36,
     colors: [{ name: "Midnight Black", hex: "#1F2937" }, { name: "Silver Grey", hex: "#CBD5E1" }],
@@ -880,6 +983,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r097", name: "Sweep Robot Vacuum",
     cat: "home", sub: "decor", brand: "Strida", art: "vacuum",
+    image: "./images/products/vacuum-1.jpg",
     price: 24900, orig: 38300,
     rating: 4.9, reviews: 180, sold: 760, oos: false, age: 43,
     colors: [{ name: "Cloud White", hex: "#E5E7EB" }, { name: "Midnight Black", hex: "#1F2937" }],
@@ -889,6 +993,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r098", name: "Swift Robot Vacuum",
     cat: "home", sub: "decor", brand: "Ombra", art: "vacuum",
+    image: "./images/products/vacuum-2.jpg",
     price: 24900, orig: 41500,
     rating: 4.2, reviews: 240, sold: 5200, oos: false, age: 50,
     colors: [{ name: "Cloud White", hex: "#E5E7EB" }, { name: "Midnight Black", hex: "#1F2937" }],
@@ -898,6 +1003,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r099", name: "Orbit Robot Vacuum",
     cat: "home", sub: "decor", brand: "Luma", art: "vacuum",
+    image: "./images/products/vacuum-3.jpg",
     price: 24900, orig: null,
     rating: 4.5, reviews: 320, sold: 3600, oos: false, age: 57,
     colors: [{ name: "Cloud White", hex: "#E5E7EB" }, { name: "Midnight Black", hex: "#1F2937" }],
@@ -907,6 +1013,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r100", name: "Nimbus Robot Vacuum",
     cat: "home", sub: "decor", brand: "Aurex", art: "vacuum",
+    image: "./images/products/vacuum-4.jpg",
     price: 24900, orig: 30400,
     rating: 4, reviews: 450, sold: 2400, oos: false, age: 64,
     colors: [{ name: "Cloud White", hex: "#E5E7EB" }, { name: "Midnight Black", hex: "#1F2937" }],
@@ -916,6 +1023,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r101", name: "Roam Robot Vacuum",
     cat: "home", sub: "decor", brand: "Novo", art: "vacuum",
+    image: "./images/products/vacuum-5.jpg",
     price: 24900, orig: 31900,
     rating: 4.6, reviews: 560, sold: 1500, oos: false, age: 71,
     colors: [{ name: "Cloud White", hex: "#E5E7EB" }, { name: "Midnight Black", hex: "#1F2937" }],
@@ -925,6 +1033,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r102", name: "Brew Coffee Maker",
     cat: "home", sub: "decor", brand: "Klarita", art: "coffeeMaker",
+    image: "./images/products/coffeeMaker-1.jpg",
     price: 15900, orig: 22100,
     rating: 3.9, reviews: 720, sold: 420, oos: false, age: 78,
     colors: [{ name: "Silver Grey", hex: "#CBD5E1" }, { name: "Midnight Black", hex: "#1F2937" }],
@@ -934,6 +1043,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r103", name: "Barista Coffee Maker",
     cat: "home", sub: "decor", brand: "Vantia", art: "coffeeMaker",
+    image: "./images/products/coffeeMaker-2.jpg",
     price: 15900, orig: 23400,
     rating: 4.7, reviews: 880, sold: 900, oos: true, age: 85,
     colors: [{ name: "Silver Grey", hex: "#CBD5E1" }, { name: "Midnight Black", hex: "#1F2937" }],
@@ -943,6 +1053,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r104", name: "Crema Coffee Maker",
     cat: "home", sub: "decor", brand: "Pikol", art: "coffeeMaker",
+    image: "./images/products/coffeeMaker-3.jpg",
     price: 15900, orig: null,
     rating: 4.4, reviews: 1100, sold: 1400, oos: false, age: 2,
     colors: [{ name: "Silver Grey", hex: "#CBD5E1" }, { name: "Midnight Black", hex: "#1F2937" }],
@@ -952,6 +1063,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r105", name: "Espresso Coffee Maker",
     cat: "home", sub: "decor", brand: "Mendo", art: "coffeeMaker",
+    image: "./images/products/coffeeMaker-4.jpg",
     price: 15900, orig: 17700,
     rating: 4.1, reviews: 1400, sold: 2100, oos: false, age: 9,
     colors: [{ name: "Silver Grey", hex: "#CBD5E1" }, { name: "Midnight Black", hex: "#1F2937" }],
@@ -961,6 +1073,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r106", name: "Roast Coffee Maker",
     cat: "home", sub: "decor", brand: "Strida", art: "coffeeMaker",
+    image: "./images/products/coffeeMaker-5.jpg",
     price: 15900, orig: 18700,
     rating: 3.8, reviews: 1750, sold: 3200, oos: false, age: 16,
     colors: [{ name: "Silver Grey", hex: "#CBD5E1" }, { name: "Midnight Black", hex: "#1F2937" }],
@@ -970,6 +1083,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r107", name: "Mist Aroma Diffuser",
     cat: "home", sub: "decor", brand: "Ombra", art: "diffuser",
+    image: "./images/products/diffuser-1.jpg",
     price: 3200, orig: 4000,
     rating: 4.8, reviews: 2100, sold: 4500, oos: false, age: 23,
     colors: [{ name: "Cloud White", hex: "#E5E7EB" }, { name: "Sand Beige", hex: "#D9C5A0" }],
@@ -979,6 +1093,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r108", name: "Calm Aroma Diffuser",
     cat: "home", sub: "decor", brand: "Luma", art: "diffuser",
+    image: "./images/products/diffuser-2.jpg",
     price: 3200, orig: 4270,
     rating: 4.3, reviews: 2600, sold: 5600, oos: false, age: 30,
     colors: [{ name: "Cloud White", hex: "#E5E7EB" }, { name: "Sand Beige", hex: "#D9C5A0" }],
@@ -988,6 +1103,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r109", name: "Zen Aroma Diffuser",
     cat: "home", sub: "decor", brand: "Aurex", art: "diffuser",
+    image: "./images/products/diffuser-3.jpg",
     price: 3200, orig: null,
     rating: 4.7, reviews: 3200, sold: 6800, oos: false, age: 37,
     colors: [{ name: "Cloud White", hex: "#E5E7EB" }, { name: "Sand Beige", hex: "#D9C5A0" }],
@@ -997,6 +1113,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r110", name: "Serene Aroma Diffuser",
     cat: "home", sub: "decor", brand: "Novo", art: "diffuser",
+    image: "./images/products/diffuser-4.jpg",
     price: 3200, orig: 4920,
     rating: 4.5, reviews: 900, sold: 8200, oos: false, age: 44,
     colors: [{ name: "Cloud White", hex: "#E5E7EB" }, { name: "Sand Beige", hex: "#D9C5A0" }],
@@ -1006,6 +1123,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r111", name: "Bloom Aroma Diffuser",
     cat: "home", sub: "decor", brand: "Klarita", art: "diffuser",
+    image: "./images/products/diffuser-5.jpg",
     price: 3200, orig: 5330,
     rating: 4.8, reviews: 640, sold: 9700, oos: true, age: 51,
     colors: [{ name: "Cloud White", hex: "#E5E7EB" }, { name: "Sand Beige", hex: "#D9C5A0" }],
@@ -1015,6 +1133,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r112", name: "Hydro Smart Water Bottle",
     cat: "sports", sub: "outdoor", brand: "Vantia", art: "bottle",
+    image: "./images/products/bottle-1.jpg",
     price: 2499, orig: 2840,
     rating: 4.4, reviews: 1200, sold: 11000, oos: false, age: 58,
     colors: [{ name: "Ocean Blue", hex: "#3B82F6" }, { name: "Deep Teal", hex: "#0D9488" }, { name: "Blush Pink", hex: "#F9A8D4" }],
@@ -1024,6 +1143,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r113", name: "Flow Smart Water Bottle",
     cat: "sports", sub: "outdoor", brand: "Pikol", art: "bottle",
+    image: "./images/products/bottle-2.jpg",
     price: 2499, orig: 3050,
     rating: 4.6, reviews: 180, sold: 12400, oos: false, age: 65,
     colors: [{ name: "Ocean Blue", hex: "#3B82F6" }, { name: "Deep Teal", hex: "#0D9488" }, { name: "Blush Pink", hex: "#F9A8D4" }],
@@ -1033,6 +1153,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r114", name: "Sip Smart Water Bottle",
     cat: "sports", sub: "outdoor", brand: "Mendo", art: "bottle",
+    image: "./images/products/bottle-3.jpg",
     price: 2499, orig: null,
     rating: 4.3, reviews: 240, sold: 760, oos: false, age: 72,
     colors: [{ name: "Ocean Blue", hex: "#3B82F6" }, { name: "Deep Teal", hex: "#0D9488" }, { name: "Blush Pink", hex: "#F9A8D4" }],
@@ -1042,6 +1163,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r115", name: "Quench Smart Water Bottle",
     cat: "sports", sub: "outdoor", brand: "Strida", art: "bottle",
+    image: "./images/products/bottle-4.jpg",
     price: 2499, orig: 3470,
     rating: 4.9, reviews: 320, sold: 5200, oos: false, age: 79,
     colors: [{ name: "Ocean Blue", hex: "#3B82F6" }, { name: "Deep Teal", hex: "#0D9488" }, { name: "Blush Pink", hex: "#F9A8D4" }],
@@ -1051,6 +1173,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r116", name: "Aqua Smart Water Bottle",
     cat: "sports", sub: "outdoor", brand: "Ombra", art: "bottle",
+    image: "./images/products/bottle-5.jpg",
     price: 2499, orig: 3680,
     rating: 4.2, reviews: 450, sold: 3600, oos: false, age: 86,
     colors: [{ name: "Ocean Blue", hex: "#3B82F6" }, { name: "Deep Teal", hex: "#0D9488" }, { name: "Blush Pink", hex: "#F9A8D4" }],
@@ -1060,6 +1183,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r117", name: "Trail Running Shoes",
     cat: "sports", sub: "outdoor", brand: "Luma", art: "shoe",
+    image: "./images/products/shoe-1.jpg",
     price: 7900, orig: 12700,
     rating: 4.5, reviews: 560, sold: 2400, oos: false, age: 3,
     colors: [{ name: "Midnight Black", hex: "#1F2937" }, { name: "Ocean Blue", hex: "#3B82F6" }, { name: "Coral Red", hex: "#F43F5E" }],
@@ -1069,6 +1193,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r118", name: "Dash Running Shoes",
     cat: "sports", sub: "outdoor", brand: "Aurex", art: "shoe",
+    image: "./images/products/shoe-2.jpg",
     price: 7900, orig: 8800,
     rating: 4, reviews: 720, sold: 1500, oos: false, age: 10,
     colors: [{ name: "Midnight Black", hex: "#1F2937" }, { name: "Ocean Blue", hex: "#3B82F6" }, { name: "Coral Red", hex: "#F43F5E" }],
@@ -1078,6 +1203,8 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r119", name: "Sprint Running Shoes",
     cat: "sports", sub: "outdoor", brand: "Novo", art: "shoe",
+    image: "./images/products/shoe-3.jpg",
+    imageFit: 'contain',
     price: 7900, orig: null,
     rating: 4.6, reviews: 880, sold: 420, oos: true, age: 17,
     colors: [{ name: "Midnight Black", hex: "#1F2937" }, { name: "Ocean Blue", hex: "#3B82F6" }, { name: "Coral Red", hex: "#F43F5E" }],
@@ -1087,6 +1214,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r120", name: "Cloud Running Shoes",
     cat: "sports", sub: "outdoor", brand: "Klarita", art: "shoe",
+    image: "./images/products/shoe-4.jpg",
     price: 7900, orig: 9900,
     rating: 3.9, reviews: 1100, sold: 900, oos: false, age: 24,
     colors: [{ name: "Midnight Black", hex: "#1F2937" }, { name: "Ocean Blue", hex: "#3B82F6" }, { name: "Coral Red", hex: "#F43F5E" }],
@@ -1096,6 +1224,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r121", name: "Motion Running Shoes",
     cat: "sports", sub: "outdoor", brand: "Vantia", art: "shoe",
+    image: "./images/products/shoe-5.jpg",
     price: 7900, orig: 10500,
     rating: 4.7, reviews: 1400, sold: 1400, oos: false, age: 31,
     colors: [{ name: "Midnight Black", hex: "#1F2937" }, { name: "Ocean Blue", hex: "#3B82F6" }, { name: "Coral Red", hex: "#F43F5E" }],
@@ -1105,6 +1234,8 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r122", name: "Strider Running Shoes",
     cat: "sports", sub: "outdoor", brand: "Pikol", art: "shoe",
+    image: "./images/products/shoe-6.jpg",
+    imageFit: 'contain',
     price: 7900, orig: 11300,
     rating: 4.4, reviews: 1750, sold: 2100, oos: false, age: 38,
     colors: [{ name: "Midnight Black", hex: "#1F2937" }, { name: "Ocean Blue", hex: "#3B82F6" }, { name: "Coral Red", hex: "#F43F5E" }],
@@ -1114,6 +1245,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r123", name: "Summit Tent, 2 Person",
     cat: "sports", sub: "outdoor", brand: "Mendo", art: "tent",
+    image: "./images/products/tent-1.jpg",
     price: 12900, orig: 19800,
     rating: 4.1, reviews: 2100, sold: 3200, oos: false, age: 45,
     colors: [{ name: "Forest Green", hex: "#16A34A" }, { name: "Ocean Blue", hex: "#3B82F6" }],
@@ -1123,6 +1255,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r124", name: "Basecamp Tent, 2 Person",
     cat: "sports", sub: "outdoor", brand: "Strida", art: "tent",
+    image: "./images/products/tent-2.jpg",
     price: 12900, orig: null,
     rating: 3.8, reviews: 2600, sold: 4500, oos: false, age: 52,
     colors: [{ name: "Forest Green", hex: "#16A34A" }, { name: "Ocean Blue", hex: "#3B82F6" }],
@@ -1132,6 +1265,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r125", name: "Ridge Tent, 2 Person",
     cat: "sports", sub: "outdoor", brand: "Ombra", art: "tent",
+    image: "./images/products/tent-3.jpg",
     price: 12900, orig: 14700,
     rating: 4.8, reviews: 3200, sold: 5600, oos: false, age: 59,
     colors: [{ name: "Forest Green", hex: "#16A34A" }, { name: "Ocean Blue", hex: "#3B82F6" }],
@@ -1141,6 +1275,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r126", name: "Trek Tent, 2 Person",
     cat: "sports", sub: "outdoor", brand: "Luma", art: "tent",
+    image: "./images/products/tent-4.jpg",
     price: 12900, orig: 15700,
     rating: 4.3, reviews: 900, sold: 6800, oos: false, age: 66,
     colors: [{ name: "Forest Green", hex: "#16A34A" }, { name: "Ocean Blue", hex: "#3B82F6" }],
@@ -1150,6 +1285,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r127", name: "Alpine Tent, 2 Person",
     cat: "sports", sub: "outdoor", brand: "Aurex", art: "tent",
+    image: "./images/products/tent-5.jpg",
     price: 12900, orig: 16500,
     rating: 4.7, reviews: 640, sold: 8200, oos: true, age: 73,
     colors: [{ name: "Forest Green", hex: "#16A34A" }, { name: "Ocean Blue", hex: "#3B82F6" }],
@@ -1159,6 +1295,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r128", name: "Pulse Fitness Watch",
     cat: "sports", sub: "fitness", brand: "Novo", art: "watch",
+    image: "./images/products/smartwatch-6.jpg",
     price: 6900, orig: 9600,
     rating: 4.5, reviews: 1200, sold: 9700, oos: false, age: 80,
     colors: [{ name: "Midnight Black", hex: "#1F2937" }, { name: "Blush Pink", hex: "#F9A8D4" }],
@@ -1168,6 +1305,8 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r129", name: "Stride Fitness Watch",
     cat: "sports", sub: "fitness", brand: "Klarita", art: "watch",
+    image: "./images/products/smartwatch-7.jpg",
+    imageFit: 'contain',
     price: 6900, orig: null,
     rating: 4.8, reviews: 180, sold: 11000, oos: false, age: 87,
     colors: [{ name: "Midnight Black", hex: "#1F2937" }, { name: "Blush Pink", hex: "#F9A8D4" }],
@@ -1177,6 +1316,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r130", name: "Vital Fitness Watch",
     cat: "sports", sub: "fitness", brand: "Vantia", art: "watch",
+    image: "./images/products/smartwatch-8.jpg",
     price: 6900, orig: 11100,
     rating: 4.4, reviews: 240, sold: 12400, oos: false, age: 4,
     colors: [{ name: "Midnight Black", hex: "#1F2937" }, { name: "Blush Pink", hex: "#F9A8D4" }],
@@ -1186,6 +1326,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r131", name: "Active Fitness Watch",
     cat: "sports", sub: "fitness", brand: "Pikol", art: "watch",
+    image: "./images/products/smartwatch-9.jpg",
     price: 6900, orig: 7700,
     rating: 4.6, reviews: 320, sold: 760, oos: false, age: 11,
     colors: [{ name: "Midnight Black", hex: "#1F2937" }, { name: "Blush Pink", hex: "#F9A8D4" }],
@@ -1195,6 +1336,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r132", name: "Tempo Fitness Watch",
     cat: "sports", sub: "fitness", brand: "Mendo", art: "watch",
+    image: "./images/products/smartwatch-10.jpg",
     price: 6900, orig: 8100,
     rating: 4.3, reviews: 450, sold: 5200, oos: false, age: 18,
     colors: [{ name: "Midnight Black", hex: "#1F2937" }, { name: "Blush Pink", hex: "#F9A8D4" }],
@@ -1204,6 +1346,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r133", name: "Storm Shell Jacket",
     cat: "fashion", sub: "outerwear", brand: "Strida", art: "jacket",
+    image: "./images/products/jacket-1.jpg",
     price: 8900, orig: 11100,
     rating: 4.9, reviews: 560, sold: 3600, oos: false, age: 25,
     colors: [{ name: "Midnight Black", hex: "#1F2937" }, { name: "Navy", hex: "#1E3A8A" }, { name: "Forest Green", hex: "#16A34A" }],
@@ -1213,6 +1356,8 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r134", name: "Tempest Shell Jacket",
     cat: "fashion", sub: "outerwear", brand: "Ombra", art: "jacket",
+    image: "./images/products/jacket-2.jpg",
+    imageFit: 'contain',
     price: 8900, orig: null,
     rating: 4.2, reviews: 720, sold: 2400, oos: false, age: 32,
     colors: [{ name: "Midnight Black", hex: "#1F2937" }, { name: "Navy", hex: "#1E3A8A" }, { name: "Forest Green", hex: "#16A34A" }],
@@ -1222,6 +1367,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r135", name: "Cascade Shell Jacket",
     cat: "fashion", sub: "outerwear", brand: "Luma", art: "jacket",
+    image: "./images/products/jacket-3.jpg",
     price: 8900, orig: 12700,
     rating: 4.5, reviews: 880, sold: 1500, oos: true, age: 39,
     colors: [{ name: "Midnight Black", hex: "#1F2937" }, { name: "Navy", hex: "#1E3A8A" }, { name: "Forest Green", hex: "#16A34A" }],
@@ -1231,6 +1377,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r136", name: "Highland Shell Jacket",
     cat: "fashion", sub: "outerwear", brand: "Aurex", art: "jacket",
+    image: "./images/products/jacket-4.jpg",
     price: 8900, orig: 13700,
     rating: 4, reviews: 1100, sold: 420, oos: false, age: 46,
     colors: [{ name: "Midnight Black", hex: "#1F2937" }, { name: "Navy", hex: "#1E3A8A" }, { name: "Forest Green", hex: "#16A34A" }],
@@ -1240,6 +1387,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r137", name: "Tundra Shell Jacket",
     cat: "fashion", sub: "outerwear", brand: "Novo", art: "jacket",
+    image: "./images/products/jacket-5.jpg",
     price: 8900, orig: 14800,
     rating: 4.6, reviews: 1400, sold: 900, oos: false, age: 53,
     colors: [{ name: "Midnight Black", hex: "#1F2937" }, { name: "Navy", hex: "#1E3A8A" }, { name: "Forest Green", hex: "#16A34A" }],
@@ -1249,6 +1397,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r138", name: "Squall Shell Jacket",
     cat: "fashion", sub: "outerwear", brand: "Klarita", art: "jacket",
+    image: "./images/products/jacket-6.jpg",
     price: 8900, orig: 10100,
     rating: 3.9, reviews: 1750, sold: 1400, oos: false, age: 60,
     colors: [{ name: "Midnight Black", hex: "#1F2937" }, { name: "Navy", hex: "#1E3A8A" }, { name: "Forest Green", hex: "#16A34A" }],
@@ -1258,6 +1407,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r139", name: "Horizon Sunglasses",
     cat: "fashion", sub: "eyewear", brand: "Vantia", art: "glasses",
+    image: "./images/products/sunglasses-1.jpg",
     price: 2499, orig: null,
     rating: 4.7, reviews: 2100, sold: 2100, oos: false, age: 67,
     colors: [{ name: "Midnight Black", hex: "#1F2937" }, { name: "Walnut Brown", hex: "#92400E" }],
@@ -1267,6 +1417,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r140", name: "Mirage Sunglasses",
     cat: "fashion", sub: "eyewear", brand: "Pikol", art: "glasses",
+    image: "./images/products/sunglasses-2.jpg",
     price: 2499, orig: 3200,
     rating: 4.4, reviews: 2600, sold: 3200, oos: false, age: 74,
     colors: [{ name: "Midnight Black", hex: "#1F2937" }, { name: "Walnut Brown", hex: "#92400E" }],
@@ -1276,6 +1427,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r141", name: "Solstice Sunglasses",
     cat: "fashion", sub: "eyewear", brand: "Mendo", art: "glasses",
+    image: "./images/products/sunglasses-3.jpg",
     price: 2499, orig: 3470,
     rating: 4.1, reviews: 3200, sold: 4500, oos: false, age: 81,
     colors: [{ name: "Midnight Black", hex: "#1F2937" }, { name: "Walnut Brown", hex: "#92400E" }],
@@ -1285,6 +1437,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r142", name: "Dune Sunglasses",
     cat: "fashion", sub: "eyewear", brand: "Strida", art: "glasses",
+    image: "./images/products/sunglasses-4.jpg",
     price: 2499, orig: 3680,
     rating: 3.8, reviews: 900, sold: 5600, oos: false, age: 88,
     colors: [{ name: "Midnight Black", hex: "#1F2937" }, { name: "Walnut Brown", hex: "#92400E" }],
@@ -1294,6 +1447,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r143", name: "Aviator Sunglasses",
     cat: "fashion", sub: "eyewear", brand: "Ombra", art: "glasses",
+    image: "./images/products/sunglasses-5.jpg",
     price: 2499, orig: 4030,
     rating: 4.8, reviews: 640, sold: 6800, oos: true, age: 5,
     colors: [{ name: "Midnight Black", hex: "#1F2937" }, { name: "Walnut Brown", hex: "#92400E" }],
@@ -1303,6 +1457,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r144", name: "Classic Cap",
     cat: "fashion", sub: "tops", brand: "Luma", art: "cap",
+    image: "./images/products/cap-1.jpg",
     price: 1799, orig: null,
     rating: 4.3, reviews: 1200, sold: 8200, oos: false, age: 12,
     colors: [{ name: "Navy", hex: "#1E3A8A" }, { name: "Midnight Black", hex: "#1F2937" }, { name: "Sand Beige", hex: "#D9C5A0" }],
@@ -1312,6 +1467,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r145", name: "Trailhead Cap",
     cat: "fashion", sub: "tops", brand: "Aurex", art: "cap",
+    image: "./images/products/cap-2.jpg",
     price: 1799, orig: 2120,
     rating: 4.7, reviews: 180, sold: 9700, oos: false, age: 19,
     colors: [{ name: "Navy", hex: "#1E3A8A" }, { name: "Midnight Black", hex: "#1F2937" }, { name: "Sand Beige", hex: "#D9C5A0" }],
@@ -1321,6 +1477,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r146", name: "Field Cap",
     cat: "fashion", sub: "tops", brand: "Novo", art: "cap",
+    image: "./images/products/cap-3.jpg",
     price: 1799, orig: 2250,
     rating: 4.5, reviews: 240, sold: 11000, oos: false, age: 26,
     colors: [{ name: "Navy", hex: "#1E3A8A" }, { name: "Midnight Black", hex: "#1F2937" }, { name: "Sand Beige", hex: "#D9C5A0" }],
@@ -1330,6 +1487,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r147", name: "Vintage Cap",
     cat: "fashion", sub: "tops", brand: "Klarita", art: "cap",
+    image: "./images/products/cap-4.jpg",
     price: 1799, orig: 2400,
     rating: 4.8, reviews: 320, sold: 12400, oos: false, age: 33,
     colors: [{ name: "Navy", hex: "#1E3A8A" }, { name: "Midnight Black", hex: "#1F2937" }, { name: "Sand Beige", hex: "#D9C5A0" }],
@@ -1339,6 +1497,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r148", name: "Daily Cap",
     cat: "fashion", sub: "tops", brand: "Vantia", art: "cap",
+    image: "./images/products/cap-5.jpg",
     price: 1799, orig: 2570,
     rating: 4.4, reviews: 450, sold: 760, oos: false, age: 40,
     colors: [{ name: "Navy", hex: "#1E3A8A" }, { name: "Midnight Black", hex: "#1F2937" }, { name: "Sand Beige", hex: "#D9C5A0" }],
@@ -1348,6 +1507,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r149", name: "Commute Backpack 20L",
     cat: "fashion", sub: "bags", brand: "Pikol", art: "backpack",
+    image: "./images/products/backpack-1.jpg",
     price: 5900, orig: null,
     rating: 4.6, reviews: 560, sold: 5200, oos: false, age: 47,
     colors: [{ name: "Midnight Black", hex: "#1F2937" }, { name: "Navy", hex: "#1E3A8A" }, { name: "Walnut Brown", hex: "#92400E" }],
@@ -1357,6 +1517,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r150", name: "Trailhead Backpack 20L",
     cat: "fashion", sub: "bags", brand: "Mendo", art: "backpack",
+    image: "./images/products/backpack-2.jpg",
     price: 5900, orig: 9800,
     rating: 4.3, reviews: 720, sold: 3600, oos: false, age: 54,
     colors: [{ name: "Midnight Black", hex: "#1F2937" }, { name: "Navy", hex: "#1E3A8A" }, { name: "Walnut Brown", hex: "#92400E" }],
@@ -1366,6 +1527,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r151", name: "Voyager Backpack 20L",
     cat: "fashion", sub: "bags", brand: "Strida", art: "backpack",
+    image: "./images/products/backpack-3.jpg",
     price: 5900, orig: 6700,
     rating: 4.9, reviews: 880, sold: 2400, oos: true, age: 61,
     colors: [{ name: "Midnight Black", hex: "#1F2937" }, { name: "Navy", hex: "#1E3A8A" }, { name: "Walnut Brown", hex: "#92400E" }],
@@ -1375,6 +1537,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r152", name: "Campus Backpack 20L",
     cat: "fashion", sub: "bags", brand: "Ombra", art: "backpack",
+    image: "./images/products/backpack-4.jpg",
     price: 5900, orig: 7200,
     rating: 4.2, reviews: 1100, sold: 1500, oos: false, age: 68,
     colors: [{ name: "Midnight Black", hex: "#1F2937" }, { name: "Navy", hex: "#1E3A8A" }, { name: "Walnut Brown", hex: "#92400E" }],
@@ -1384,6 +1547,7 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r153", name: "Rover Backpack 20L",
     cat: "fashion", sub: "bags", brand: "Luma", art: "backpack",
+    image: "./images/products/backpack-5.jpg",
     price: 5900, orig: 7600,
     rating: 4.5, reviews: 1400, sold: 420, oos: false, age: 75,
     colors: [{ name: "Midnight Black", hex: "#1F2937" }, { name: "Navy", hex: "#1E3A8A" }, { name: "Walnut Brown", hex: "#92400E" }],
@@ -1393,6 +1557,8 @@ export const RECOMMENDED_PRODUCTS = [
   {
     id: "r154", name: "Summit Backpack 20L",
     cat: "fashion", sub: "bags", brand: "Aurex", art: "backpack",
+    image: "./images/products/backpack-6.jpg",
+    imageFit: 'contain',
     price: 5900, orig: null,
     rating: 4, reviews: 1750, sold: 900, oos: false, age: 82,
     colors: [{ name: "Midnight Black", hex: "#1F2937" }, { name: "Navy", hex: "#1E3A8A" }, { name: "Walnut Brown", hex: "#92400E" }],
