@@ -123,6 +123,56 @@ function startCountdown() {
 }
 
 /* ------------------------------------------------------------------ */
+/* Flash Sale scroll arrows                                            */
+/* ------------------------------------------------------------------ */
+
+/* Cards to nudge per click. The step is capped at the row's visible width
+ * so a wide desktop row does not jump far more than a screenful. */
+const FLASH_CARDS_PER_CLICK = 3;
+const FLASH_GAP_PX = 12; // matches the row's gap-3
+
+/* Show the button that can still scroll, hide the one that cannot, and
+ * disable it for keyboard/screen-reader users. Runs on every scroll (manual
+ * swipe/trackpad/drag included) and on resize. */
+export function updateFlashNav() {
+  const row = document.getElementById('flash-row');
+  const prev = document.getElementById('flash-prev');
+  const next = document.getElementById('flash-next');
+  if (!row || !prev || !next) return;
+
+  const maxScroll = row.scrollWidth - row.clientWidth;
+  const atStart = row.scrollLeft <= 1;
+  const atEnd = row.scrollLeft >= maxScroll - 1;
+
+  prev.classList.toggle('hidden', atStart);
+  prev.disabled = atStart || maxScroll <= 1;
+  next.classList.toggle('hidden', atEnd);
+  next.disabled = atEnd || maxScroll <= 1;
+}
+
+function flashStep(row) {
+  const card = row.firstElementChild;
+  const cardW = card ? card.offsetWidth : 0;
+  const byCards = (cardW + FLASH_GAP_PX) * FLASH_CARDS_PER_CLICK;
+  return byCards > 0 ? Math.min(byCards, row.clientWidth) : row.clientWidth;
+}
+
+export function initFlashNav() {
+  const row = document.getElementById('flash-row');
+  const prev = document.getElementById('flash-prev');
+  const next = document.getElementById('flash-next');
+  if (!row || !prev || !next) return;
+
+  row.addEventListener('scroll', () => requestAnimationFrame(updateFlashNav), { passive: true });
+  window.addEventListener('resize', updateFlashNav);
+
+  prev.addEventListener('click', () => row.scrollBy({ left: -flashStep(row), behavior: 'smooth' }));
+  next.addEventListener('click', () => row.scrollBy({ left: flashStep(row), behavior: 'smooth' }));
+
+  updateFlashNav();
+}
+
+/* ------------------------------------------------------------------ */
 /* Results (Big deals banner)                                          */
 /* ------------------------------------------------------------------ */
 
@@ -365,6 +415,7 @@ export function initHome() {
     document.getElementById('recommended-grid').innerHTML =
       PRODUCTS.map((p) => productCard(p)).join('');
     initCarousel();
+    initFlashNav();
   }, 450);
 
   startCountdown();

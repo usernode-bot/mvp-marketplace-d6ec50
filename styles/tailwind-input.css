@@ -69,6 +69,19 @@
     @apply relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-zinc-900;
   }
 
+  /* Circular scroll arrows overlaid on the Flash Sale row. Semi-transparent
+   * dark surface with a thin light border so the chevron reads over light
+   * product art in every theme; hover scales up and switches to the theme
+   * accent. Placed at the row's vertical center where the compact flash
+   * cards carry no Add or heart button (that band is the illustration), so
+   * the arrows never cover them. Sized down on small screens and stilled
+   * for reduced-motion users. */
+  .flash-nav {
+    @apply absolute top-1/2 z-10 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-white/40 bg-zinc-900/45 text-white shadow-card backdrop-blur-sm transition duration-200 hover:scale-110 hover:border-brand-400 hover:bg-brand-600 focus-visible:ring-offset-0 motion-reduce:transition-none motion-reduce:hover:scale-100 sm:h-9 sm:w-9;
+  }
+  .flash-nav-prev { @apply left-1 sm:left-2; }
+  .flash-nav-next { @apply right-1 sm:right-2; }
+
   .badge {
     @apply inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold leading-none;
   }
