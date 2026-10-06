@@ -113,8 +113,14 @@ soon" on those entry points rather than hiding them.
   (`bazario:theme`, Purple Dream fallback) live in `public/js/theme.js`.
   Sale/discount/countdown elements stay red/orange in every theme. Do not
   add per-page dark variants outside Midnight's scoped override block.
-- Product artwork is generated SVG (`public/js/icons.js`), never external
-  image URLs and never image bytes in the database.
+- Product cards render a committed product photo (`image` on each catalog
+  record, a file under `public/images/products/`) layered over the generated
+  SVG (`public/js/icons.js`). The SVG stays behind the photo as an instant
+  first paint and the fallback: a record with no `image`, or a photo that
+  fails to load, shows the illustration. Photos are files in the repo (no
+  external image URLs at runtime, no image bytes in the database); set
+  `imageFit: 'contain'` on a record whose photo cropping would ruin. Keep
+  photos free of brand logos or wordmarks.
 - The **profile photo** is the one deliberate exception to "generated SVG
   only": a user-uploaded avatar. It goes to platform file storage through
   the bridge (`usernode.uploadFile`, see `public/js/profile-photo.js`);
