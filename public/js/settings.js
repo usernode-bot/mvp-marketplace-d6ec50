@@ -11,9 +11,10 @@
 
 import { icon } from './icons.js';
 import { store } from './store.js';
-import { confirmDialog, esc, toast } from './ui.js';
+import { avatarHtml, confirmDialog, esc, toast } from './ui.js';
 import { getTheme, themeName } from './theme.js';
 import { displayName } from './profile.js';
+import { getAvatarState } from './profile-photo.js';
 
 const LOCALES = [
   { code: 'en', label: 'English' },
@@ -115,6 +116,22 @@ function renderEditProfile() {
 
   view.innerHTML =
     pageHeader('Edit profile', 'profile')
+    + '<div class="card mt-4 flex items-center gap-4 p-4">'
+    + '<button type="button" data-avatar-edit class="relative shrink-0 rounded-full" aria-label="Change profile photo">'
+    + avatarHtml({
+      url: getAvatarState().url,
+      name: name || (p.name || null),
+      badge: true,
+      loading: getAvatarState().loading,
+    })
+    + '</button>'
+    + '<input type="file" id="avatar-file-input" class="hidden" accept="image/jpeg,image/png,image/webp">'
+    + '<div class="min-w-0 flex-1">'
+    + '<p class="text-sm font-semibold text-zinc-900">Profile photo</p>'
+    + '<p class="mt-0.5 text-xs text-zinc-500">Tap the photo to choose from your gallery or remove it.</p>'
+    + '</div>'
+    + '<button type="button" data-avatar-edit class="btn-outline btn-sm shrink-0">Change</button>'
+    + '</div>'
     + '<form data-profile-form class="card mt-4 space-y-4 p-4">'
     + fieldRow('Display name', '<input name="name" class="field" required maxlength="40" value="' + esc(p.name || name || '') + '">')
     + fieldRow('Email', '<input name="email" type="email" class="field" maxlength="80" value="' + esc(p.email || '') + '" autocomplete="email">')

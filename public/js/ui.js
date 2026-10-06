@@ -65,6 +65,44 @@ export function fmtEtaDate(d) {
 }
 
 /* ---------------------------------------------------------------------------
+ * Circular avatar. Renders the user's photo when one is set, and the letter
+ * placeholder otherwise (the fallback shows through if the image fails to
+ * load). `badge` adds the camera chip that marks the avatar as editable;
+ * `loading` dims it with a spinner during upload. Both the Profile card and
+ * the Edit Profile screen render through this one helper, so the avatar is
+ * defined once and its markup stays identical wherever it appears.
+ * ------------------------------------------------------------------------- */
+export function avatarHtml({
+  url = null,
+  name = null,
+  size = 'h-14 w-14',
+  textSize = 'text-lg',
+  badge = false,
+  loading = false,
+  alt = 'Profile photo',
+} = {}) {
+  const initial = name ? String(name)[0].toUpperCase() : 'G';
+  const fallback = '<span data-avatar-fallback class="flex h-full w-full items-center justify-center rounded-full bg-brand-100 font-bold text-brand-700 '
+    + textSize + '">' + esc(initial) + '</span>';
+  const img = url
+    ? '<img data-avatar-img src="' + esc(url) + '" alt="' + esc(alt)
+      + '" class="absolute inset-0 h-full w-full rounded-full object-cover" onerror="this.remove()">'
+    : '';
+  const spinner = loading
+    ? '<span class="absolute inset-0 flex items-center justify-center rounded-full bg-zinc-900/50 text-white">'
+      + icon('loader', 'h-5 w-5 animate-spin') + '</span>'
+    : '';
+  const badgeHtml = badge
+    ? '<span class="absolute -bottom-0.5 -right-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-brand-600 text-white ring-2 ring-white" aria-hidden="true">'
+      + icon('camera', 'h-3 w-3') + '</span>'
+    : '';
+
+  return '<span data-avatar class="relative inline-flex shrink-0 ' + size + ' rounded-full">'
+    + fallback + img + spinner + badgeHtml
+    + '</span>';
+}
+
+/* ---------------------------------------------------------------------------
  * Star row. Five outline stars, filled proportionally to the rating via a
  * clipped overlay. Amber is the ratings color per the design system.
  * ------------------------------------------------------------------------- */

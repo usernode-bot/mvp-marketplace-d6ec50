@@ -7,6 +7,10 @@ const app = express();
 const port = process.env.PORT || 3000;
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
+// Staging vs production. Used only to swap the DATA behind a route (the
+// demo avatar on ?demo=1); it never gates a feature or a code path.
+const IS_STAGING = process.env.USERNODE_ENV === 'staging';
+
 // The platform signs user-identity tokens with an RSA private key it never
 // shares. Containers get only the PUBLIC half, so this app can verify who a
 // user is but cannot mint an identity — and neither can any other app.
@@ -23,7 +27,11 @@ const APP_AUDIENCE = process.env.USERNODE_APP_ID
 // Paths that stay open without authentication. Add a path here (and add it
 // with `app.get`/`app.post` below) if you deliberately want it public.
 // Everything else requires a valid platform-issued JWT.
-const PUBLIC_API_PATHS = new Set(['/health']);
+// GET /api/profile is public and identity-optional: it returns only the
+// caller's own avatar URL (already public content), and nulls when there is
+// no signed-in user, so a signed-out preview or a guest can render the page
+// without a spurious 401. The write routes below stay authenticated.
+const PUBLIC_API_PATHS = new Set(['/health', '/api/profile']);
 
 app.use(express.json());
 
@@ -114,6 +122,98 @@ app.get('/health', (_req, res) => {
 // fresh load.
 app.get('/favicon.ico', (_req, res) => res.status(204).end());
 
+/* ------------------------------------------------------------------ */
+/* Profile photo (Phase 6)                                             */
+/*                                                                     */
+/* Avatars are stored platform-side; this app's DB keeps only the      */
+/* returned URL and file id. The upload itself goes through the        */
+/* bridge (usernode.uploadFile) on the client, so no storage secret    */
+/* is needed here — staging does not carry USERNODE_STORAGE_TOKEN.     */
+/* ------------------------------------------------------------------ */
+
+// A staging-only demo avatar: an obviously fake inline SVG circle with a
+// white "S". It lets a preview (and the ?demo=1 dapp.json check) show the
+// set-photo state without writing a row owned by whoever opened it.
+const DEMO_AVATAR_URL = 'data:image/svg+xml,'
+  + encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">'
+    + '<rect width="128" height="128" fill="#7c3aed"/>'
+    + '<text x="64" y="86" font-family="system-ui,sans-serif" font-size="64" font-weight="700"'
+    + ' fill="#ffffff" text-anchor="middle">S</text></svg>');
+
+// Only a platform file URL (or the demo data URI) is storable: a crafted
+// request must not be able to persist an arbitrary or executable URL that
+// the client later renders into an <img>.
+function validAvatarUrl(url) {
+  if (typeof url !== 'string') return false;
+  if (url.length > 2048) return false;
+  if (url.startsWith('data:image/')) return IS_STAGING;
+  try {
+    const u = new URL(url);
+    return u.protocol === 'https:' && u.pathname.includes('/app-files/');
+  } catch {
+    return false;
+  }
+}
+
+app.get('/api/profile', async (req, res) => {
+  if (IS_STAGING && req.query.demo === '1') {
+    return res.json({ avatarUrl: DEMO_AVATAR_URL, avatarFileId: null });
+  }
+  if (!req.user) return res.json({ avatarUrl: null, avatarFileId: null });
+  try {
+    const { rows } = await pool.query(
+      'SELECT avatar_url, avatar_file_id FROM user_profiles WHERE user_id = $1',
+      [String(req.user.id)]);
+    const row = rows[0];
+    return res.json({
+      avatarUrl: row ? row.avatar_url : null,
+      avatarFileId: row ? row.avatar_file_id : null,
+    });
+  } catch (err) {
+    console.error('[profile] load failed:', err.message);
+    return res.status(500).json({ error: 'Could not load profile photo' });
+  }
+});
+
+app.put('/api/profile/photo', async (req, res) => {
+  const url = req.body && req.body.url;
+  const fileId = req.body && req.body.fileId;
+  if (!validAvatarUrl(url)) {
+    return res.status(400).json({ error: 'Invalid photo URL' });
+  }
+  const cleanFileId = typeof fileId === 'string' && fileId.length <= 128 ? fileId : null;
+  try {
+    await pool.query(
+      `INSERT INTO user_profiles (user_id, avatar_url, avatar_file_id, updated_at)
+       VALUES ($1, $2, $3, now())
+       ON CONFLICT (user_id) DO UPDATE
+         SET avatar_url = EXCLUDED.avatar_url,
+             avatar_file_id = EXCLUDED.avatar_file_id,
+             updated_at = now()`,
+      [String(req.user.id), url, cleanFileId]);
+    return res.json({ avatarUrl: url, avatarFileId: cleanFileId });
+  } catch (err) {
+    console.error('[profile] save failed:', err.message);
+    return res.status(500).json({ error: 'Could not save profile photo' });
+  }
+});
+
+app.delete('/api/profile/photo', async (req, res) => {
+  try {
+    await pool.query(
+      `INSERT INTO user_profiles (user_id, avatar_url, avatar_file_id, updated_at)
+       VALUES ($1, NULL, NULL, now())
+       ON CONFLICT (user_id) DO UPDATE
+         SET avatar_url = NULL, avatar_file_id = NULL, updated_at = now()`,
+      [String(req.user.id)]);
+    return res.json({ avatarUrl: null, avatarFileId: null });
+  } catch (err) {
+    console.error('[profile] remove failed:', err.message);
+    return res.status(500).json({ error: 'Could not remove profile photo' });
+  }
+});
+
 app.use(express.static(path.join(__dirname, 'public')));
 
 // HTML shell: serve the app if authenticated. Unauthenticated top-level
@@ -152,8 +252,19 @@ app.get('*', (req, res) => {
 });
 
 async function start() {
-  // Phase 1 is UI-only on the client; no tables are needed yet. Phase 2
-  // (cart, orders) re-introduces migrations here.
+  // Schema is applied idempotently on every boot. `user_profiles` backs the
+  // profile photo: a public table (a user's avatar URL, nothing sensitive),
+  // so staging copies its rows; it is new, so staging starts empty and the
+  // letter fallback IS the empty state. No seed needed.
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS user_profiles (
+      user_id TEXT PRIMARY KEY,
+      avatar_url TEXT,
+      avatar_file_id TEXT,
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )
+  `);
+
   const server = app.listen(port, () => console.log(`Listening on :${port}`));
   // Let Envoy retire idle upstream connections at 60s, with a 15s margin.
   server.keepAliveTimeout = 75_000;
