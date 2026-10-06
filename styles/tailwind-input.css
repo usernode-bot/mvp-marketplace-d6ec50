@@ -463,3 +463,57 @@ body,
     transition-duration: 0ms;
   }
 }
+
+/* ---------------------------------------------------------------------------
+ * Midnight — the usernode-native UI kit's overlay chrome.
+ *
+ * This app's dark look is the Midnight theme (data-theme="midnight"); the
+ * kit's own dark values key off a `.dark` class the app never sets, because
+ * its five themes are driven by data-theme. So the kit's overlays — the
+ * anchored popover/dropdown menu (unNative.menu/popover, used by the Profile
+ * photo menu and the Settings language picker), and the bottom sheet,
+ * centered modal and alert — kept their LIGHT surfaces while they inherit the
+ * page's light text, leaving light-on-light rows that read as blank.
+ *
+ * The kit themes by overriding its --un-* tokens on :root / .dark / any
+ * wrapper ("never out-specificity-ing kit selectors"), so pinning them in the
+ * Midnight scope is the sanctioned fix. The surfaces use the app's own
+ * card/page values (#1e293b card surface, #0f172a page, #334155 hairline)
+ * so the overlays match the cards on the page.
+ * ------------------------------------------------------------------------- */
+html[data-theme='midnight'] {
+  /* Overlay surfaces: the popover floats over arbitrary content with no
+     backdrop, so it must be fully opaque; the sheet/modal/panel/zoom share
+     the same card surface. */
+  --un-popover-bg: #1e293b;
+  --un-sheet-bg: #1e293b;
+  --un-panel-bg: #1e293b;
+  --un-zoom-bg: #1e293b;
+  /* Popover/drawer row hover (--un-surface) and the grouped-list card. */
+  --un-group-bg: #1e293b;
+  --un-surface: #334155;
+  --un-navbar-bg: rgba(15, 23, 42, 0.82);
+  /* Accent: the kit's light violet (#7c3aed) is too dark as text on the dark
+     overlay cards (the mobile action-sheet menu options, alert buttons), so
+     lift it to the kit's own dark value #a78bfa, the same shade this app
+     already uses for brand text in Midnight. accent-contrast is what sits on
+     an accent fill (the Android switch thumb). */
+  --un-accent: #a78bfa;
+  --un-accent-contrast: #1a1a30;
+  --un-hairline: #334155;
+  --un-muted: #94a3b8;
+  --un-backdrop: rgba(0, 0, 0, 0.6);
+  /* Destructive row text (the "Remove Photo" item): a lighter red than the
+     kit's #ef4444 so it clears AA against the #1e293b surface. The kit's own
+     dark values reuse this for the swipe-action FILL too, but this app
+     attaches no swipe actions, so there is nothing else it affects. */
+  --un-action-danger: #fca5a5;
+  /* The popover's header divider and item hover come from --un-hairline /
+     --un-surface above; items inherit the light page text. */
+}
+/* The kit's light-mode default popover shadow all but vanishes on the dark
+   page; lift the menu off the background harder, exactly as the kit does
+   under .dark. */
+html[data-theme='midnight'] .un-popover {
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.35);
+}
