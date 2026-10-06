@@ -1,4 +1,4 @@
-/* Checkout (Phase 4): shipping address, products, shipping options, voucher,
+/* Checkout (Phase 4): shipping country + courier, address, products, voucher,
  * payment method and a live order summary, plus the mock place-order flow
  * (loading -> processing -> success) and inline validation.
  *
@@ -7,22 +7,29 @@
  * stored through store.addOrder() so the Orders tab can show it, and the
  * cart is cleared on success. The saved address persists in localStorage
  * under the same app-level `bazario:` namespace as the rest of the store.
+ *
+ * Shipping: the shopper picks a destination country, and each country offers
+ * at least three couriers (name, service, estimated delivery and price) from
+ * shipping.js. The country defaults to the one matching the saved address,
+ * with that country's default courier preselected. Both are snapshotted onto
+ * the order so the Orders tab can show them again.
  */
 
 import { icon, productArt } from './icons.js';
 import { store } from './store.js';
 import { fmtEtaDate, fmtPrice, emptyState, toast } from './ui.js';
 import { methodById } from './payment.js';
+import {
+  COUNTRIES,
+  countryById,
+  countryForAddress,
+  countryMatch,
+  courierById,
+  defaultCourierId,
+} from './shipping.js';
 
 const view = document.getElementById('view-checkout');
 const ADDRESS_KEY = 'bazario:address';
-
-/* Shipping options. etaDays drives the estimated-delivery date range shown
- * on the success screen and the Orders tab. */
-const SHIPPING = [
-  { id: 'standard', name: 'Standard', price: 299, eta: '3-5 business days', etaDays: [3, 5] },
-  { id: 'express', name: 'Express', price: 999, eta: '1-2 business days', etaDays: [1, 2] },
-];
 
 /* Mock voucher codes. The hint under the input names one so a tester can
  * exercise the flow without guessing. */
@@ -92,7 +99,8 @@ const PROCESSING_MS = 1400;
 const state = {
   address: loadAddress(), // { name, phone, address, city, postal } | null
   editingAddress: false,
-  shippingId: 'standard',
+  countryId: null, // selected destination country id
+  shippingId: null, // selected courier id within countryId
   voucher: null, // { code, kind, value, label }
   paymentId: null,
   phase: 'idle', // idle | loading | processing
@@ -123,8 +131,28 @@ function esc(s) {
   ));
 }
 
+/* Resolve the destination country, defaulting it from the saved address (or
+ * the first country) the first time checkout opens. */
+function ensureCountry() {
+  if (state.countryId && countryById(state.countryId)) return;
+  const c = countryForAddress(state.address) || COUNTRIES[0];
+  state.countryId = c.id;
+  state.shippingId = defaultCourierId(c.id);
+}
+
+function country() {
+  ensureCountry();
+  return countryById(state.countryId) || COUNTRIES[0];
+}
+
+function couriers() {
+  return country().couriers;
+}
+
+/* The selected courier, or the country's default when none is selected. */
 function ship() {
-  return SHIPPING.find((s) => s.id === state.shippingId) || SHIPPING[0];
+  const list = couriers();
+  return courierById(state.countryId, state.shippingId) || list[0];
 }
 
 function totals() {
@@ -144,6 +172,14 @@ function etaLabel(opt) {
   const day = 24 * 60 * 60 * 1000;
   const now = Date.now();
   return fmtEtaDate(new Date(now + opt.etaDays[0] * day)) + ' – ' + fmtEtaDate(new Date(now + opt.etaDays[1] * day));
+}
+
+/* "UPS Ground" — the courier name and its service, or just the name when the
+ * two already read the same. */
+function courierLabel(c) {
+  return c.service && c.service.toLowerCase() !== c.name.toLowerCase()
+    ? c.name + ' ' + c.service
+    : c.name;
 }
 
 /* ------------------------------------------------------------------ */
@@ -210,21 +246,36 @@ function productsSection(entries) {
     + '</section>';
 }
 
+/* Destination country + courier. The country select drives which couriers
+ * are offered; each courier row shows its service, estimated delivery and
+ * price. At least three are always available per country (shipping.js). */
 function shippingSection() {
-  const rows = SHIPPING.map((o) => {
-    const sel = o.id === state.shippingId;
+  const c = country();
+  const selected = ship();
+
+  const countryField = '<label class="mb-1 block text-xs font-medium text-zinc-600" for="co-country">Destination country</label>'
+    + '<select id="co-country" data-country-select class="field" aria-label="Destination country">'
+    + COUNTRIES.map((x) => '<option value="' + x.id + '"' + (x.id === c.id ? ' selected' : '') + '>' + esc(x.name) + '</option>').join('')
+    + '</select>';
+
+  const rows = c.couriers.map((o) => {
+    const sel = o.id === selected.id;
     return '<button type="button" data-ship="' + o.id + '" aria-pressed="' + sel
       + '" class="flex w-full items-center gap-3 rounded-xl border px-3 py-3 text-left transition-colors '
       + (sel ? 'border-brand-500 bg-brand-50/50' : 'border-zinc-200 hover:bg-zinc-50') + '">'
       + '<span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full '
       + (sel ? 'bg-brand-100 text-brand-700' : 'bg-zinc-100 text-zinc-500') + '">' + icon('truck', 'h-4 w-4') + '</span>'
-      + '<span class="min-w-0 flex-1"><span class="block text-sm font-semibold text-zinc-900">' + o.name + '</span>'
-      + '<span class="block text-xs text-zinc-500">' + o.eta + '</span></span>'
+      + '<span class="min-w-0 flex-1"><span class="block text-sm font-semibold text-zinc-900">' + esc(courierLabel(o)) + '</span>'
+      + '<span class="block text-xs text-zinc-500">' + esc(o.eta) + '</span></span>'
       + '<span class="text-sm font-bold tabular-nums ' + (sel ? 'text-brand-700' : 'text-zinc-900') + '">' + fmtPrice(o.price) + '</span>'
       + '</button>';
   }).join('');
-  return '<section class="card p-4" aria-label="Shipping">' + sectionHead('truck', 'Shipping')
-    + '<div class="mt-3 flex flex-col gap-2">' + rows + '</div>'
+
+  return '<section class="card p-4" aria-label="Shipping">'
+    + sectionHead('truck', 'Shipping', '<span class="badge-soft ml-auto" data-courier-count>' + c.couriers.length + '</span>')
+    + '<div class="mt-3">' + countryField + '</div>'
+    + '<p class="mb-2 mt-4 text-xs font-medium text-zinc-500">Courier</p>'
+    + '<div class="flex flex-col gap-2" data-courier-list>' + rows + '</div>'
     + '</section>';
 }
 
@@ -267,9 +318,11 @@ function paymentSection() {
 }
 
 function summarySection(t) {
+  const s = ship();
+  const c = country();
   return '<h2 class="text-sm font-semibold text-zinc-900">Order summary</h2>'
     + '<div class="mt-3 flex justify-between text-sm text-zinc-600"><span>Subtotal</span><span class="font-medium tabular-nums text-zinc-900">' + fmtPrice(t.subtotal) + '</span></div>'
-    + '<div class="mt-1.5 flex justify-between text-sm text-zinc-600"><span>Shipping</span><span class="font-medium tabular-nums text-zinc-900">' + fmtPrice(t.shipping) + '</span></div>'
+    + '<div class="mt-1.5 flex justify-between gap-3 text-sm text-zinc-600"><span>Shipping</span><span class="text-right font-medium text-zinc-900"><span class="tabular-nums">' + fmtPrice(t.shipping) + '</span><span class="block text-xs font-normal text-zinc-500">' + esc(c.name) + ' · ' + esc(courierLabel(s)) + '</span></span></div>'
     + (t.discount ? '<div class="mt-1.5 flex justify-between text-sm text-zinc-600"><span>Discount</span><span class="font-medium tabular-nums text-green-600">-' + fmtPrice(t.discount) + '</span></div>' : '')
     + '<div class="mt-3 flex justify-between border-t border-zinc-100 pt-3 text-sm font-semibold text-zinc-900"><span>Total</span><span class="tabular-nums">' + fmtPrice(t.total) + '</span></div>'
     + '<button type="button" class="btn-primary mt-4 w-full" data-place-order><span>Place order</span></button>'
@@ -297,6 +350,8 @@ export function renderCheckoutView() {
   if (!state.paymentId && store.defaultPayment && methodById(store.defaultPayment)) {
     state.paymentId = store.defaultPayment;
   }
+
+  ensureCountry();
 
   if (!entries.length) {
     view.innerHTML =
@@ -402,6 +457,15 @@ function saveAddressForm() {
   saveAddress(values);
   state.editingAddress = false;
   state.draft = null;
+  // A newly saved address can move the order to another country: follow it so
+  // the courier list matches the destination. An address that names no country
+  // leaves the shopper's own choice alone rather than snapping back to the
+  // first country.
+  const c = countryMatch(values);
+  if (c && c.id !== state.countryId) {
+    state.countryId = c.id;
+    state.shippingId = defaultCourierId(c.id);
+  }
   toast('Address saved');
   renderCheckoutView();
 }
@@ -436,6 +500,7 @@ function updatePlaceButton() {
 
 function completeOrder(entries) {
   const s = ship();
+  const c = country();
   const t = totals();
   const method = paymentOptions().find((x) => x.id === state.paymentId);
   const order = {
@@ -443,8 +508,12 @@ function completeOrder(entries) {
     placedAt: Date.now(),
     status: 'Processing',
     etaLabel: etaLabel(s),
+    countryId: c.id,
+    countryName: c.name,
     shippingId: s.id,
     shippingName: s.name,
+    shippingService: s.service || '',
+    courierName: courierLabel(s),
     paymentId: method ? method.id : null,
     paymentName: method ? method.name : '',
     address: { ...state.address },
@@ -595,7 +664,7 @@ function renderSuccess(order) {
     + '<p class="mt-1 text-sm text-zinc-500">Order <span class="font-semibold text-zinc-900">' + order.number + '</span></p>'
     + '<div class="mt-5 rounded-xl bg-zinc-50 p-4 text-left text-sm">'
     + '<div class="flex justify-between gap-3"><span class="text-zinc-600">Estimated delivery</span><span class="font-medium text-zinc-900">' + order.etaLabel + '</span></div>'
-    + '<div class="mt-2 flex justify-between gap-3"><span class="text-zinc-600">Shipping</span><span class="font-medium text-zinc-900">' + order.shippingName + '</span></div>'
+    + '<div class="mt-2 flex justify-between gap-3"><span class="text-zinc-600">Courier</span><span class="text-right font-medium text-zinc-900">' + esc(order.courierName || order.shippingName) + '<span class="block text-xs font-normal text-zinc-500">' + esc(order.countryName || '') + '</span></span></div>'
     + '<div class="mt-2 flex justify-between gap-3"><span class="text-zinc-600">Payment</span><span class="font-medium text-zinc-900">' + order.paymentName + '</span></div>'
     + '<div class="mt-2 flex justify-between gap-3 border-t border-zinc-200 pt-2"><span class="text-zinc-600">Total</span><span class="font-semibold tabular-nums text-zinc-900">' + fmtPrice(order.total) + '</span></div>'
     + '</div>'
@@ -655,6 +724,16 @@ view.addEventListener('click', (e) => {
   }
   if (target.hasAttribute('data-place-order')) {
     placeOrder();
+  }
+});
+
+view.addEventListener('change', (e) => {
+  const el = e.target;
+  if (el.hasAttribute('data-country-select')) {
+    if (state.phase !== 'idle') return;
+    state.countryId = el.value;
+    state.shippingId = defaultCourierId(el.value);
+    renderCheckoutView();
   }
 });
 

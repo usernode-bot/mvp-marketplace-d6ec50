@@ -115,3 +115,11 @@ soon" on those entry points rather than hiding them.
   add per-page dark variants outside Midnight's scoped override block.
 - Product artwork is generated SVG (`public/js/icons.js`), never external
   image URLs and never image bytes in the database.
+- Shipping/expedition options live in `public/js/shipping.js`: a typed
+  `COUNTRIES` config where every country offers at least three couriers
+  (`{ id, name, service, eta, etaDays, price }`) and names a
+  `defaultCourier`. Checkout lets the shopper pick the destination country
+  and one of its couriers; the chosen country + courier are snapshotted onto
+  the placed order so the Orders tab shows them again. Adding a courier or
+  country is a data edit there, not a new rendering branch. Prices are
+  integer cents.
