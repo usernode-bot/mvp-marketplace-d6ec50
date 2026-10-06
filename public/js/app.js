@@ -16,7 +16,7 @@ import { productById } from './data.js';
 import { store } from './store.js';
 import { toast } from './ui.js';
 import { initTheme, setTheme } from './theme.js';
-import { clearResults, initHome, panelRows, runBannerAction, submitSearch } from './home.js';
+import { clearResults, initHome, panelRows, runBannerAction, submitSearch, updateFlashNav } from './home.js';
 import { initOrders } from './orders.js';
 import { renderProfileView, seedDemoAccount } from './profile.js';
 import { initProfilePhoto, loadProfilePhoto } from './profile-photo.js';
@@ -257,7 +257,12 @@ function boot() {
   initPayment();
   initProfilePhoto();
 
-  window.addEventListener('hashchange', renderRoute);
+  window.addEventListener('hashchange', () => {
+    renderRoute();
+    // The Flash Sale row's scroll offset and visible width change when the
+    // home view is shown again, so refresh the arrow buttons' state.
+    updateFlashNav();
+  });
 
   store.subscribe(updateBadges);
   store.subscribe(() => {

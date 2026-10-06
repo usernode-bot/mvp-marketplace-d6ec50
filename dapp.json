@@ -60,6 +60,13 @@
       "expectText": "Flash Sale"
     },
     {
+      "id": "home.flash-nav",
+      "name": "Flash Sale row has an accessible right scroll arrow",
+      "path": "/",
+      "expectSelector": "#flash-next[aria-label=\"Scroll right\"]",
+      "expectText": "Flash Sale"
+    },
+    {
       "id": "home.category-tiles",
       "name": "Category tiles render as icon links with navigation paths",
       "path": "/",

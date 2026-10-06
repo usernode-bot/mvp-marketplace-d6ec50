@@ -202,7 +202,15 @@
             <div id="flash-timer" class="flex items-center gap-1" aria-live="off"></div>
           </div>
         </div>
-        <div id="flash-row" class="no-scrollbar mt-3 flex snap-x snap-mandatory gap-3 overflow-x-auto pb-1"></div>
+        <div class="relative mt-3">
+          <div id="flash-row" class="no-scrollbar flex snap-x snap-mandatory gap-3 overflow-x-auto pb-1"></div>
+          <button type="button" id="flash-prev" data-flash-prev aria-label="Scroll left" class="flash-nav flash-nav-prev hidden">
+            <span data-icon="chevronLeft" data-cls="h-5 w-5"></span>
+          </button>
+          <button type="button" id="flash-next" data-flash-next aria-label="Scroll right" class="flash-nav flash-nav-next hidden">
+            <span data-icon="chevronRight" data-cls="h-5 w-5"></span>
+          </button>
+        </div>
       </section>
 
       <!-- Recommended -->
