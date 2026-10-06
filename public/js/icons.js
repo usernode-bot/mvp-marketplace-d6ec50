@@ -136,6 +136,24 @@ const ART_ICONS = {
   tent: '<path d="m12 3.5 9.5 17h-19z"/><path d="m12 11 3 9.5h-6z"/>',
   banana: '<path d="M4.5 3.5c.4 6.7 5.3 12 12 12 1.7 0 3.2-.4 4.4-1.2-.9 4.6-5.4 7.2-9.7 7.2C5.7 21.5 2.5 16.6 2.5 10.5c0-2.5.7-5 2-7z"/><path d="M4.5 3.5 3 2"/>',
   belt: '<rect x="10" y="7" width="9.5" height="10" rx="2.5"/><path d="M10 10.5H5a2 2 0 0 0 0 4h5"/><path d="M14.5 7v10"/><path d="M19.5 12h1.5"/>',
+
+  // Additional product-art glyphs for the Recommended-for-you catalog
+  // (recommended-data.js). Same 24-unit stroke grid as the set above.
+  notebook: '<rect x="4" y="5" width="16" height="10.5" rx="1.5"/><path d="M2.5 18.5h19"/><path d="M3 18.5 4 15.5h16l1 3"/>',
+  tablet: '<rect x="4.5" y="3" width="15" height="18" rx="2.5"/><circle cx="12" cy="18" r="0.8"/>',
+  monitor: '<rect x="2.5" y="4" width="19" height="12" rx="2"/><path d="M12 16v3.5"/><path d="M8.5 19.5h7"/>',
+  webcam: '<circle cx="12" cy="10" r="4.2"/><path d="M12 14.2v2.3a3 3 0 0 0 3 3h2"/><rect x="17.5" y="17.5" width="4" height="4" rx="1"/><path d="M5 18.5h4"/>',
+  powerbank: '<rect x="6" y="3" width="12" height="18" rx="2.5"/><rect x="9.5" y="6" width="5" height="3" rx="1"/><path d="M12.6 11 10 15h3l-1 4 3.4-5h-3z"/>',
+  charger: '<rect x="5" y="8" width="14" height="4" rx="2"/><path d="M12 12v3.5"/><path d="M8 20.5a4 4 0 0 1 8 0z"/>',
+  cable: '<path d="M6 4v5a3 3 0 0 0 3 3h6"/><path d="M15 12h3.5"/><rect x="18.5" y="9.5" width="3" height="5" rx="1.2"/><path d="M6 4h4"/>',
+  usbhub: '<rect x="3" y="7.5" width="13" height="7.5" rx="2"/><rect x="16" y="9.5" width="5" height="3.5" rx="1"/><path d="M6.5 15v3M9.5 15v3M12.5 15v3"/>',
+  jacket: '<path d="m9 3 3 2 3-2 3.5 1.5 1.5 5-2.5 1.2V20a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1v-9.3L5.5 9.5 7 4.5z"/><path d="M12 6v15"/>',
+  cap: '<path d="M4.5 13.5a7.5 7.5 0 0 1 15 0"/><path d="M3 15.5h18"/><path d="M12 6v7.5"/><path d="M17 15.5c3 .4 4.5 1.6 4.5 3h-5"/>',
+  backpack: '<path d="M7 8a5 5 0 0 1 10 0v11a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1z"/><path d="M9.5 8V6a2.5 2.5 0 0 1 5 0v2"/><rect x="9" y="13" width="6" height="4" rx="1"/>',
+  airfryer: '<rect x="4" y="6" width="16" height="13" rx="3"/><rect x="6.5" y="9.5" width="11" height="3" rx="1.5"/><path d="M9 16.5h6"/><path d="M12 6V3.5"/>',
+  vacuum: '<circle cx="12" cy="13" r="7.5"/><circle cx="12" cy="13" r="2"/><path d="M12 5.5V3"/><path d="M4.6 8 2.8 6.4M19.4 8l1.8-1.6"/>',
+  coffeeMaker: '<path d="M6 3h9v4H6z"/><path d="M6.5 7h8l1 12a2 2 0 0 1-2 2H7.5a2 2 0 0 1-2-2z"/><path d="M15.5 11h3a2 2 0 0 1 0 4h-3.4"/>',
+  diffuser: '<path d="M9 8h6l1.5 10a2 2 0 0 1-2 2.5h-5a2 2 0 0 1-2-2.5z"/><path d="M10.5 8V6.5a1.5 1.5 0 0 1 3 0V8"/><path d="M12 2.5c1.5 1.6 1.2 2.8 0 3-1.2-.2-1.5-1.4 0-3z"/>',
 };
 
 /* Soft gradient (light -> deeper tint of the category hue) + deep icon stroke. */

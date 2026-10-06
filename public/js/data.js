@@ -6,7 +6,13 @@
  * Phase 2 additions: subcategories, brands, sellers, product descriptions,
  * specifications, color/size variants, gallery image views, customer
  * reviews and browse helpers (search matching, shipping).
+ *
+ * The Recommended grid's own catalog lives in recommended-data.js and is
+ * mapped into PRODUCTS below, so a new recommendation is a data edit there
+ * rather than a rendering change.
  */
+
+import { RECOMMENDED_PRODUCTS } from './recommended-data.js';
 
 export const CATEGORIES = [
   { id: 'electronics', name: 'Electronics' },
@@ -561,11 +567,26 @@ export const PRODUCTS = [
     colors: col('white'), kw: 'phone case cover clear x4 pro shockproof slim',
     desc: 'A 1.2 mm shock-absorbing case with raised bezels for the camera and screen. Stays optically clear with an anti-yellowing coating.',
   },
+
+  // Recommended-for-you catalog (recommended-data.js). Same product shape as
+  // the rows above, so browse, search, product detail, cart and wishlist all
+  // read these recommendations without any rendering change.
+  ...RECOMMENDED_PRODUCTS,
 ];
 
 /* ---------------------------------------------------------------------------
  * Lookups and derived helpers.
  * ------------------------------------------------------------------------- */
+
+/* The home page's Recommended grid leads with the centralized recommendations
+ * (recommended-data.js), then continues through the older catalog, so the
+ * expanded list is the first thing a visitor sees. Browse, search and the
+ * product pages keep iterating PRODUCTS in its declared order. */
+const RECOMMENDED_IDS = new Set(RECOMMENDED_PRODUCTS.map((p) => p.id));
+export const RECOMMENDED_FOR_YOU = [
+  ...RECOMMENDED_PRODUCTS,
+  ...PRODUCTS.filter((p) => !RECOMMENDED_IDS.has(p.id)),
+];
 
 /* Vouchers (Phase 3). Types: 'percent' (value = % off), 'fixed'
  * (value = cents off), 'ship' (free shipping). min = subtotal in cents the
@@ -744,6 +765,22 @@ const SPEC_BY_ART = {
   tent: [['Capacity', '2 person'], ['Waterproofing', '3000 mm fly'], ['Weight', '4.2 kg packed'], ['Pitch time', 'About 12 min']],
   banana: [['Origin', 'Ecuador'], ['Count', 'About 9 bananas'], ['Class', 'Category I'], ['Storage', 'Ripen at room temperature']],
   belt: [['Material', 'Full-grain leather'], ['Width', '3.5 cm'], ['Buckle', 'Rotating, reversible'], ['Lengths', 'S to XL']],
+  // Recommended-for-you art kinds (recommended-data.js).
+  notebook: [['Display', '14" IPS, 1920 x 1200'], ['Memory', '16 GB RAM'], ['Storage', '512 GB SSD'], ['Battery', 'Up to 12 hours']],
+  tablet: [['Display', '11" laminated, 120 Hz'], ['Memory', '8 GB RAM'], ['Storage', '256 GB'], ['Battery', 'Up to 11 hours']],
+  monitor: [['Panel', '27" IPS, QHD'], ['Refresh rate', '165 Hz'], ['Ports', 'USB-C, 2x HDMI, DP'], ['Stand', 'Height and tilt adjustable']],
+  webcam: [['Resolution', '1080p at 60 fps'], ['Field of view', '78 degrees'], ['Microphone', 'Dual noise-cancelling'], ['Mount', 'Clip or tripod thread']],
+  powerbank: [['Capacity', '20000 mAh'], ['Output', '65 W USB-C PD'], ['Ports', '2x USB-C, 1x USB-A'], ['Display', 'Charge status screen']],
+  charger: [['Output', '15 W Qi'], ['Input', 'USB-C'], ['Safety', 'Foreign-object detection'], ['Surface', 'Non-slip silicone']],
+  cable: [['Length', '2 m'], ['Power', '100 W USB-C PD'], ['Data', 'Up to 480 Mbps'], ['Jacket', 'Braided nylon']],
+  usbhub: [['Video', '4K HDMI at 30 Hz'], ['Power', '100 W pass-through'], ['Ports', 'USB-C, 2x USB-A'], ['Readers', 'SD and microSD']],
+  jacket: [['Shell', 'Water-repellent ripstop'], ['Hood', 'Packable, adjustable'], ['Pockets', '2 zip hand, 1 chest'], ['Seams', 'Fully taped']],
+  cap: [['Material', 'Washed cotton twill'], ['Closure', 'Adjustable metal buckle'], ['Brim', 'Curved'], ['Crown', 'Unstructured, 6 panel']],
+  backpack: [['Capacity', '20 L'], ['Laptop', 'Fits up to 15"'], ['Material', 'Water-resistant recycled nylon'], ['Straps', 'Padded, breathable mesh']],
+  airfryer: [['Capacity', '5 L'], ['Presets', '8 cooking programs'], ['Power', '1500 W'], ['Basket', 'Non-stick, dishwasher safe']],
+  vacuum: [['Navigation', 'LiDAR mapping'], ['Runtime', 'Up to 180 minutes'], ['Base', 'Self-emptying'], ['App', 'Room-by-room scheduling']],
+  coffeeMaker: [['Pressure', '15 bar'], ['Grinder', 'Built-in conical burr'], ['Steam wand', 'Yes'], ['Water tank', '1.8 L']],
+  diffuser: [['Capacity', '300 ml'], ['Runtime', 'Up to 10 hours'], ['Light', 'Soft colour, optional'], ['Safety', 'Auto shut-off']],
 };
 
 export function specsFor(p) {
