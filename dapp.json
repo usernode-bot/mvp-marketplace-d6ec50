@@ -26,24 +26,45 @@
     },
     {
       "id": "home.grid-new-cards",
-      "name": "Recommended grid renders the Smart Home Hub and Vertical Mouse cards",
+      "name": "Recommended grid leads with the expanded catalog and its add buttons",
       "path": "/",
-      "expectSelector": "[data-product='p44'] .add-btn",
-      "expectText": "Mendo Smart Home Hub"
+      "expectSelector": "[data-product='r001'] .add-btn",
+      "expectText": "Nova Laptop 14\""
     },
     {
       "id": "home.grid-rich-art",
-      "name": "Recommended grid renders rich illustrations for previously placeholder products",
-      "path": "/",
+      "name": "Previously placeholder products still render rich illustrations",
+      "path": "/#/category/electronics",
       "expectSelector": "[data-product='p03'] svg.product-img[data-art='rich']",
       "expectText": "Klarita 4K Action Camera"
     },
     {
       "id": "home.sold-out-art",
-      "name": "Sold out TV card keeps its badge and renders rich art",
-      "path": "/",
+      "name": "Sold out product keeps its badge and renders rich art",
+      "path": "/#/category/electronics",
       "expectSelector": "[data-product='p04'] svg.product-img[data-art='rich']",
       "expectText": "Sold out"
+    },
+    {
+      "id": "home.recommended-load-more",
+      "name": "Recommended grid paginates with a Load more button",
+      "path": "/",
+      "expectSelector": "#recommended-more-btn",
+      "expectText": "Load more"
+    },
+    {
+      "id": "home.recommended-sold-out",
+      "name": "A sold out recommendation shows the disabled add button",
+      "path": "/",
+      "expectSelector": "[data-product='r007'] .add-btn[disabled]",
+      "expectText": "Sold out"
+    },
+    {
+      "id": "home.recommended-no-discount",
+      "name": "A full-price recommendation renders without a sale badge",
+      "path": "/",
+      "expectSelector": "[data-product='r004']:not(:has(.badge-sale)) .add-btn",
+      "expectText": "Orbit Laptop 14\""
     },
     {
       "id": "product.smarthome-hub",

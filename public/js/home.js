@@ -5,7 +5,7 @@
  */
 
 import { icon } from './icons.js';
-import { BANNERS, CATEGORIES, PRODUCTS, TRENDING, discountPct } from './data.js';
+import { BANNERS, CATEGORIES, PRODUCTS, RECOMMENDED_FOR_YOU, TRENDING, discountPct } from './data.js';
 import { store } from './store.js';
 import {
   emptyState,
@@ -390,6 +390,45 @@ function initCarousel() {
 }
 
 /* ------------------------------------------------------------------ */
+/* Recommended grid + "Load more"                                      */
+/* ------------------------------------------------------------------ */
+
+/* Products added per click. The grid renders REC_PAGE items on boot and
+ * grows by REC_PAGE each time, so a long catalog stays tidy instead of
+ * dumping hundreds of cards on first paint. */
+const REC_PAGE = 12;
+let recShown = REC_PAGE;
+
+function renderRecommended(reset = false) {
+  if (reset) recShown = REC_PAGE;
+  const grid = document.getElementById('recommended-grid');
+  const more = document.getElementById('recommended-more');
+  if (!grid) return;
+
+  const list = RECOMMENDED_FOR_YOU;
+  grid.innerHTML = list.slice(0, recShown).map((p) => productCard(p)).join('');
+
+  if (!more) return;
+  const remaining = list.length - recShown;
+  if (remaining > 0) {
+    more.innerHTML = '<button type="button" id="recommended-more-btn" class="btn-outline btn-sm">Load more'
+      + '<span class="text-zinc-400">(' + remaining + ')</span></button>';
+  } else {
+    more.innerHTML = '';
+  }
+}
+
+function bindRecommended() {
+  const more = document.getElementById('recommended-more');
+  if (!more) return;
+  more.addEventListener('click', (e) => {
+    if (!e.target.closest('#recommended-more-btn')) return;
+    recShown += REC_PAGE;
+    renderRecommended();
+  });
+}
+
+/* ------------------------------------------------------------------ */
 /* Boot                                                                */
 /* ------------------------------------------------------------------ */
 
@@ -412,14 +451,14 @@ export function initHome() {
     document.getElementById('flash-row').innerHTML =
       PRODUCTS.filter((p) => p.flash).map((p) =>
         '<div class="w-40 shrink-0 snap-start sm:w-44">' + productCard(p, { compact: true }) + '</div>').join('');
-    document.getElementById('recommended-grid').innerHTML =
-      PRODUCTS.map((p) => productCard(p)).join('');
+    renderRecommended(true);
     initCarousel();
     initFlashNav();
   }, 450);
 
   startCountdown();
   bindSearch();
+  bindRecommended();
 }
 
 /* Banner CTA targets: the deals banner opens a discounted-items results view
