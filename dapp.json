@@ -146,6 +146,45 @@
       "expectText": "$119.99"
     },
     {
+      "id": "product.detail-image",
+      "name": "Product detail gallery shows the product's real photo",
+      "path": "/#/product/r001",
+      "expectSelector": "#view-product #pdp-img img[data-gallery-img][src*='notebook-1.jpg']"
+    },
+    {
+      "id": "product.image-matches-card",
+      "name": "Detail main image matches the card photo for the same product",
+      "path": "/#/product/p09",
+      "expectSelector": "#view-product #pdp-img img[data-gallery-img][src*='tee-1.jpg']",
+      "visual": true,
+      "impact": ["public/js/product.js", "public/js/data.js", "public/js/ui.js"]
+    },
+    {
+      "id": "product.gallery-thumbnails",
+      "name": "Detail gallery renders thumbnails for a multi-photo product",
+      "path": "/#/product/p05",
+      "expectSelector": "#view-product [data-img-go][aria-label^='Show photo 2']"
+    },
+    {
+      "id": "product.specs",
+      "name": "Detail page renders the Specifications table with identity rows",
+      "path": "/#/product/r001",
+      "expectSelector": "#view-product dl",
+      "expectText": "Specifications"
+    },
+    {
+      "id": "product.specs-rows",
+      "name": "Specifications renders the category-shaped rows for another product",
+      "path": "/#/product/p26",
+      "expectText": "Power / Capacity"
+    },
+    {
+      "id": "product.no-glyph-gallery",
+      "name": "Detail gallery shows a photo rather than the generated glyph",
+      "path": "/#/product/p12",
+      "expectSelector": "#view-product #pdp-img img[data-gallery-img][src*='sunglasses-6.jpg']"
+    },
+    {
       "id": "home.flash-images",
       "name": "Flash Sale cards show detailed product illustrations",
       "path": "/",

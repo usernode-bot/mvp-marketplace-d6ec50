@@ -121,6 +121,15 @@ soon" on those entry points rather than hiding them.
   external image URLs at runtime, no image bytes in the database); set
   `imageFit: 'contain'` on a record whose photo cropping would ruin. Keep
   photos free of brand logos or wordmarks.
+- Every catalog record carries an ordered `images` array (photo basenames under
+  `public/images/products/`), built at load time in `public/js/data.js`; entry 0 is
+  the photo the listing card shows and the whole array is the product detail
+  gallery photo order. Describe per-colour photos with `variantImages`
+  (keyed by colour name) and per-product spec rows with `specs`
+  (`{ label, value }`), both optional. `image` is kept as an alias of
+  `images[0]` for back-compat. Add a product by writing these fields (plus
+  `brand`, `art`, `cat`); a record with no photo at all renders a neutral
+  placeholder, so no product needs placeholder art added by hand.
 - The **profile photo** is the one deliberate exception to "generated SVG
   only": a user-uploaded avatar. It goes to platform file storage through
   the bridge (`usernode.uploadFile`, see `public/js/profile-photo.js`);

@@ -15,6 +15,8 @@ import { avatarHtml, confirmDialog, esc, toast } from './ui.js';
 import { getTheme, themeName } from './theme.js';
 import { displayName } from './profile.js';
 import { getAvatarState } from './profile-photo.js';
+import { parseRoute } from './router.js';
+import { renderProduct } from './product.js';
 
 const LOCALES = [
   { code: 'en', label: 'English' },
@@ -153,16 +155,20 @@ function pickLanguage(anchorEl) {
       cancelLabel: 'Cancel',
       items: LOCALES.map((l) => ({
         label: l.label,
-        disabled: l.code !== 'en',
+        code: l.code,
       })),
     }).then((picked) => {
-      if (!picked || picked.disabled) return;
-      store.setPref('locale', 'en');
-      toast('Language set to English');
+      if (!picked || !picked.code) return;
+      store.setPref('locale', picked.code);
+      const found = LOCALES.find((l) => l.code === picked.code);
+      toast('Language set to ' + (found ? found.label : picked.code));
+      // The product detail page is the only surface with translations so
+      // far; re-render it so the Specifications section updates live.
+      if (parseRoute().view === 'product') renderProduct(parseRoute().id);
     });
     return;
   }
-  toast('More languages arrive in a later phase');
+  toast('Use the language picker in Settings');
 }
 
 function logout() {

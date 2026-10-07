@@ -164,10 +164,16 @@ export function productCard(p, opts = {}) {
   // letterboxes a photo whose shape cropping would ruin. The photo sits
   // inside the existing hover-scale wrapper, so hover zoom and the sold-out
   // dim still apply to it; the badge and heart button stay later siblings.
+  // The card shows the product's FIRST image from the shared `images` array —
+  // the very value the detail gallery opens on — so the two surfaces can never
+  // disagree. `p.image` is kept as a fallback for a record that predates the
+  // array. The generated illustration stays behind it as the instant first
+  // paint and the failure fallback.
+  const photo = (p.images && p.images.length) ? p.images[0] : p.image;
   const art = '<div class="relative h-full w-full transition-transform duration-300 group-hover:scale-[1.03]' + (p.oos ? ' opacity-60' : '') + '">'
     + productArt(p)
-    + (p.image
-      ? '<img src="' + esc(p.image) + '" alt="' + esc(p.name) + '" loading="lazy" decoding="async" data-product-image'
+    + (photo
+      ? '<img src="' + esc(photo) + '" alt="' + esc(p.name) + '" loading="lazy" decoding="async" data-product-image'
         + ' class="product-img absolute inset-0 h-full w-full ' + (p.imageFit === 'contain' ? 'object-contain' : 'object-cover') + '" onerror="this.remove()">'
       : '')
     + '</div>';

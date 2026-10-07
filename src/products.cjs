@@ -20,7 +20,7 @@ const catalog = require('../public/js/data.js');
 const { SORT_OPTIONS, DEFAULT_SORT } = require('../public/js/sort-options.js');
 
 const PRODUCTS = catalog.PRODUCTS;
-const { discountPct, subcategoryName } = catalog;
+const { discountPct, subcategoryName, specsFor } = catalog;
 
 // The curated Recommended order (recommended-data.js first, then the older
 // catalog rows), which is what the home grid showed before it was paged by
@@ -53,6 +53,8 @@ function toRow(p) {
     city: loc.city || '',
     kw: p.kw || '',
     image: p.image || null,
+    images: JSON.stringify(p.images || (p.image ? [p.image] : [])),
+    specs: JSON.stringify(specsFor(p)),
     flash: !!p.flash,
     pct: p.pct || 0,
     rank: RANK.has(p.id) ? RANK.get(p.id) : 0,
@@ -219,6 +221,22 @@ function select(rows, params) {
   return { items, total, page: params.page, limit: params.limit, hasMore: start + items.length < total };
 }
 
+/* JSON columns come back from pg already parsed when the driver returns
+ * json/jsonb; the TEXT test path hands back the raw string. Accept both, and
+ * fall back to a default when the value is missing. */
+function parseJsonArray(value, fallback) {
+  if (Array.isArray(value)) return value;
+  if (typeof value === 'string') {
+    try {
+      const parsed = JSON.parse(value);
+      return Array.isArray(parsed) ? parsed : fallback;
+    } catch {
+      return fallback;
+    }
+  }
+  return fallback;
+}
+
 /* One database row back into the client's product shape, so a card, the
  * product page and the cart read the same fields whether the row came from
  * the API or from the bundled catalog. */
@@ -240,6 +258,8 @@ function toProduct(row) {
     location: { province: row.province, city: row.city },
     kw: row.kw,
     image: row.image,
+    images: parseJsonArray(row.images, row.image ? [row.image] : []),
+    specs: parseJsonArray(row.specs, []),
     flash: row.flash,
     pct: row.pct,
   };

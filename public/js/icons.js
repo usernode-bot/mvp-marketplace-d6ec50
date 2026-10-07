@@ -887,6 +887,20 @@ const RICH_ART = {
   p45: artVerticalMouse, // Ombra Vertical Mouse
 };
 
+/* A neutral placeholder for a product that has no photo (or whose photo
+ * failed to load): a flat image glyph in the current text colour, so it reads
+ * in every theme. Used only by the product detail gallery, when there is truly
+ * nothing to show; the generated illustration (productArtView) is a different,
+ * richer fallback and is not used for a missing photo. */
+export function productPlaceholder(p, cls = 'absolute inset-0 h-full w-full text-zinc-400') {
+  return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" class="' + cls
+    + '" role="img" aria-label="' + attrEsc(p && p.name ? p.name : 'Product') + '">'
+    + '<rect x="120" y="140" width="160" height="120" rx="12" fill="none" stroke="currentColor" stroke-width="10"/>'
+    + '<circle cx="162" cy="184" r="14" fill="currentColor"/>'
+    + '<path d="M136 244 L186 196 L224 232 L264 190 L292 218" fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>'
+    + '</svg>';
+}
+
 /* Generate the artwork SVG for a product. */
 export function productArt(p) {
   return productArtView(p, 0);
