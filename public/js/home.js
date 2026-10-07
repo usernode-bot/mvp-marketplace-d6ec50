@@ -5,7 +5,7 @@
  */
 
 import { icon } from './icons.js';
-import { BANNERS, CATEGORIES, PRODUCTS, RECOMMENDED_FOR_YOU, TRENDING, discountPct } from './data.js';
+import { BANNERS, CATEGORIES, PRODUCTS, TRENDING, discountPct } from './data.js';
 import { store } from './store.js';
 import {
   emptyState,
@@ -15,8 +15,19 @@ import {
   skeletonBanner,
   skeletonCard,
   skeletonCategoryTile,
+  toast,
 } from './ui.js';
 import { goToHash } from './router.js';
+import { createFilterService, parseFilterParams, filterParams, hasActiveFilters } from './filters.js';
+import { fetchProducts } from './api.js';
+import { localProductPage } from './product-query.js';
+import {
+  activeFilterChipsHtml,
+  bindFilterControls,
+  filterBarHtml,
+  resultCountHtml,
+  updateFilterBar,
+} from './filter-ui.js';
 
 /* Escape a user-typed string for use inside markup and attribute values
  * (recent searches and typed queries end up in innerHTML-built panels). */
@@ -390,31 +401,77 @@ function initCarousel() {
 }
 
 /* ------------------------------------------------------------------ */
-/* Recommended grid + "Load more"                                      */
+/* Recommended grid + filter bar                                       */
 /* ------------------------------------------------------------------ */
 
-/* Products added per click. The grid renders REC_PAGE items on boot and
- * grows by REC_PAGE each time, so a long catalog stays tidy instead of
- * dumping hundreds of cards on first paint. */
+/* Products added per "Load more" click. The list itself is paged by the
+ * server; the grid renders one page and grows by one page. */
 const REC_PAGE = 12;
-let recShown = REC_PAGE;
 
-function renderRecommended(reset = false) {
-  if (reset) recShown = REC_PAGE;
+let recommendedSection = null;
+
+/* The hash for the current filter set on the home route. */
+function recommendedHash(f) {
+  const qs = filterParams(f).toString();
+  return '#/home' + (qs ? '?' + qs : '');
+}
+
+function renderRecommendedLoading() {
   const grid = document.getElementById('recommended-grid');
   const more = document.getElementById('recommended-more');
-  if (!grid) return;
+  if (grid) grid.innerHTML = Array.from({ length: REC_PAGE }, () => skeletonCard()).join('');
+  if (more) more.innerHTML = '';
+  const empty = document.getElementById('recommended-empty');
+  if (empty) { empty.classList.add('hidden'); empty.innerHTML = ''; }
+}
 
-  const list = RECOMMENDED_FOR_YOU;
-  grid.innerHTML = list.slice(0, recShown).map((p) => productCard(p)).join('');
+/* One render per state change. Keeps the toolbar, the chips, the count, the
+ * grid, the empty state and Load more all in step with the service. */
+function renderRecommended() {
+  const s = recommendedService;
+  const grid = document.getElementById('recommended-grid');
+  const more = document.getElementById('recommended-more');
+  const empty = document.getElementById('recommended-empty');
+  const chips = document.getElementById('recommended-chips');
+  if (!s || !grid) return;
 
-  if (!more) return;
-  const remaining = list.length - recShown;
-  if (remaining > 0) {
-    more.innerHTML = '<button type="button" id="recommended-more-btn" class="btn-outline btn-sm">Load more'
-      + '<span class="text-zinc-400">(' + remaining + ')</span></button>';
+  if (recommendedSection) updateFilterBar(recommendedSection, s.filters);
+  if (chips) {
+    chips.innerHTML = resultCountHtml(s.total) + activeFilterChipsHtml(s.filters);
+  }
+
+  if (s.loading && !s.items.length && !s.error) {
+    renderRecommendedLoading();
+    return;
+  }
+
+  if (s.items.length) {
+    grid.innerHTML = s.items.map((p) => productCard(p)).join('');
+    grid.classList.remove('hidden');
+    if (empty) { empty.classList.add('hidden'); empty.innerHTML = ''; }
+    if (more) {
+      const remaining = s.total - s.items.length;
+      more.innerHTML = remaining > 0
+        ? '<button type="button" id="recommended-more-btn" class="btn-outline btn-sm"'
+          + (s.loading ? ' disabled' : '') + '>Load more<span class="text-zinc-400">(' + remaining + ')</span></button>'
+        : '';
+    }
   } else {
-    more.innerHTML = '';
+    grid.innerHTML = '';
+    grid.classList.add('hidden');
+    if (more) more.innerHTML = '';
+    if (empty) {
+      empty.innerHTML = emptyState({
+        icon: 'search',
+        title: 'No products found.',
+        body: hasActiveFilters(s.filters)
+          ? 'Try changing your filters.'
+          : 'Nothing to show here right now. Try again in a moment.',
+        actionLabel: hasActiveFilters(s.filters) ? 'Clear all' : '',
+        actionAttr: 'data-filter-clear',
+      });
+      empty.classList.remove('hidden');
+    }
   }
 }
 
@@ -423,10 +480,41 @@ function bindRecommended() {
   if (!more) return;
   more.addEventListener('click', (e) => {
     if (!e.target.closest('#recommended-more-btn')) return;
-    recShown += REC_PAGE;
-    renderRecommended();
+    if (recommendedService) recommendedService.loadMore();
   });
 }
+
+/* The Recommended list. GET /api/products is the real path; when it cannot
+ * be reached (a container restart, a standalone run with no database) the
+ * bundled catalog answers the same filters in memory, so a filtered home
+ * still renders. The server is retried on the next filter change. */
+async function recommendedFetcher(params) {
+  const res = await fetchProducts(params);
+  if (res.ok && res.data && Array.isArray(res.data.items)) return res;
+  const fallback = localProductPage(params, { base: 'recommended' });
+  return { ok: true, status: res.status, data: fallback };
+}
+
+/* Feed the home route's filter params to the service. Called by the router
+ * every time the home tab renders, so a reload, a shared link or a back
+ * button all reconstruct the same filtered list. */
+export function applyHomeRoute(route) {
+  if (!recommendedService) return;
+  const query = (route && route.query) || new URLSearchParams();
+  recommendedService.adoptRoute(parseFilterParams(query));
+}
+
+/* The home grid's filter service. It pages the catalog from GET /api/products
+ * (with the bundled catalog as an offline fallback) and keeps its state in
+ * the home route's hash query. */
+const recommendedService = createFilterService({
+  fetcher: recommendedFetcher,
+  buildHash: recommendedHash,
+  pushHash: (hash) => goToHash(hash),
+  extraParams: () => ({}),
+  limit: REC_PAGE,
+  onError: (msg) => toast(msg),
+});
 
 /* ------------------------------------------------------------------ */
 /* Boot                                                                */
@@ -442,8 +530,17 @@ export function initHome() {
     '<div class="w-40 shrink-0 snap-start sm:w-44">' + skeletonCard(true) + '</div>').join('');
   document.getElementById('recommended-grid').innerHTML = Array.from({ length: 8 }, () => skeletonCard()).join('');
 
-  // 2. Real content shortly after. The data is static, so this is only long
-  //    enough for the skeleton state to be visible (and testable).
+  // 2. The Recommended filter bar: the toolbar renders at once (from the
+  //    default filter set), then the service fills the grid from the URL.
+  recommendedSection = document.getElementById('section-recommended');
+  const bar = document.getElementById('recommended-filterbar');
+  if (bar) bar.innerHTML = filterBarHtml(recommendedService.filters);
+  recommendedService.subscribe(renderRecommended);
+  bindFilterControls(recommendedSection, recommendedService);
+  bindRecommended();
+
+  // 3. Static home content shortly after. This is only long enough for the
+  //    skeleton state to be visible (and testable).
   setTimeout(() => {
     document.getElementById('promo-carousel').innerHTML = BANNERS.map(bannerHtml).join('');
     document.getElementById('category-grid').innerHTML =
@@ -451,14 +548,12 @@ export function initHome() {
     document.getElementById('flash-row').innerHTML =
       PRODUCTS.filter((p) => p.flash).map((p) =>
         '<div class="w-40 shrink-0 snap-start sm:w-44">' + productCard(p, { compact: true }) + '</div>').join('');
-    renderRecommended(true);
     initCarousel();
     initFlashNav();
   }, 450);
 
   startCountdown();
   bindSearch();
-  bindRecommended();
 }
 
 /* Banner CTA targets: the deals banner opens a discounted-items results view

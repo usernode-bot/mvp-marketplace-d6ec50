@@ -2,6 +2,8 @@ const express = require('express');
 const path = require('path');
 const { Pool } = require('pg');
 const jwt = require('jsonwebtoken');
+const { ROWS, parseParams, buildWhere, orderBy, toProduct } =
+  require('./src/products.cjs');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -31,7 +33,7 @@ const APP_AUDIENCE = process.env.USERNODE_APP_ID
 // caller's own avatar URL (already public content), and nulls when there is
 // no signed-in user, so a signed-out preview or a guest can render the page
 // without a spurious 401. The write routes below stay authenticated.
-const PUBLIC_API_PATHS = new Set(['/health', '/api/profile']);
+const PUBLIC_API_PATHS = new Set(['/health', '/api/profile', '/api/products']);
 
 app.use(express.json());
 
@@ -214,6 +216,99 @@ app.delete('/api/profile/photo', async (req, res) => {
   }
 });
 
+/* ------------------------------------------------------------------ */
+/* Product catalog (Phase 7)                                           */
+/*                                                                     */
+/* Browsing and filtering moved server-side: the route filters, orders */
+/* and pages in Postgres and answers one page at a time. It is public  */
+/* and identity-optional (like /api/profile) so a signed-out preview   */
+/* can still browse. Idempotent boot migration + a staging-only seed   */
+/* keep the table truthful in every environment.                       */
+/* ------------------------------------------------------------------ */
+
+async function ensureProductsTable() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS products (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      cat TEXT NOT NULL,
+      sub TEXT NOT NULL DEFAULT '',
+      brand TEXT NOT NULL,
+      art TEXT NOT NULL DEFAULT '',
+      price INTEGER NOT NULL,
+      orig INTEGER,
+      discount INTEGER NOT NULL DEFAULT 0,
+      rating NUMERIC(2,1) NOT NULL,
+      reviews INTEGER NOT NULL DEFAULT 0,
+      sold INTEGER NOT NULL DEFAULT 0,
+      oos BOOLEAN NOT NULL DEFAULT FALSE,
+      age INTEGER NOT NULL DEFAULT 0,
+      province TEXT NOT NULL DEFAULT '',
+      city TEXT NOT NULL DEFAULT '',
+      kw TEXT NOT NULL DEFAULT '',
+      image TEXT,
+      flash BOOLEAN NOT NULL DEFAULT FALSE,
+      pct INTEGER NOT NULL DEFAULT 0,
+      rank INTEGER NOT NULL DEFAULT 0,
+      search_text TEXT NOT NULL DEFAULT ''
+    )
+  `);
+  // Indexes for the filter and sort columns: price (the sort and range),
+  // city and province (the location filter), their pair (province + city
+  // together) and category (browse).
+  await pool.query('CREATE INDEX IF NOT EXISTS products_price_idx ON products (price)');
+  await pool.query('CREATE INDEX IF NOT EXISTS products_city_idx ON products (city)');
+  await pool.query('CREATE INDEX IF NOT EXISTS products_province_idx ON products (province)');
+  await pool.query('CREATE INDEX IF NOT EXISTS products_province_city_idx ON products (province, city)');
+  await pool.query('CREATE INDEX IF NOT EXISTS products_cat_idx ON products (cat)');
+}
+
+const PRODUCT_COLUMNS = [
+  'id', 'name', 'cat', 'sub', 'brand', 'art', 'price', 'orig', 'discount',
+  'rating', 'reviews', 'sold', 'oos', 'age', 'province', 'city', 'kw',
+  'image', 'flash', 'pct', 'rank', 'search_text',
+];
+
+/* Idempotent upsert of the bundled catalog as a flat table. Re-running on
+ * every boot refreshes rows edited in the catalog without duplicating them;
+ * it never deletes a row, so a locally added product is left alone. */
+async function seedCatalog(rows) {
+  const placeholders = PRODUCT_COLUMNS.map((_, i) => '$' + (i + 1)).join(', ');
+  const updates = PRODUCT_COLUMNS.filter((c) => c !== 'id')
+    .map((c) => c + ' = EXCLUDED.' + c).join(', ');
+  const sql = 'INSERT INTO products (' + PRODUCT_COLUMNS.join(', ') + ') VALUES (' + placeholders + ')'
+    + ' ON CONFLICT (id) DO UPDATE SET ' + updates;
+  for (const row of rows) {
+    await pool.query(sql, PRODUCT_COLUMNS.map((c) => row[c]));
+  }
+}
+
+app.get('/api/products', async (req, res) => {
+  const params = parseParams(req.query);
+  const where = buildWhere(params);
+  const offset = (params.page - 1) * params.limit;
+  try {
+    const totalResult = await pool.query(
+      'SELECT COUNT(*)::int AS total FROM products ' + where.clause, where.values);
+    const total = totalResult.rows[0].total;
+    const listResult = await pool.query(
+      'SELECT * FROM products ' + where.clause + ' ' + orderBy(params.sort)
+      + ' LIMIT $' + (where.values.length + 1) + ' OFFSET $' + (where.values.length + 2),
+      where.values.concat([params.limit, offset]));
+    const items = listResult.rows.map(toProduct);
+    return res.json({
+      items,
+      total,
+      page: params.page,
+      limit: params.limit,
+      hasMore: offset + items.length < total,
+    });
+  } catch (err) {
+    console.error('[products] load failed:', err.message);
+    return res.status(500).json({ error: 'Could not load products' });
+  }
+});
+
 app.use(express.static(path.join(__dirname, 'public')));
 
 // HTML shell: serve the app if authenticated. Unauthenticated top-level
@@ -264,6 +359,14 @@ async function start() {
       updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
     )
   `);
+
+  // Product catalog: create the table + its filter/sort indexes and load the
+  // bundled catalog. The catalog is a public table, so staging starts with a
+  // copy of production's rows; the upsert below also makes a fresh table
+  // non-empty. Development/testing runs against a fresh local database, so
+  // the same upsert is what fills it there.
+  await ensureProductsTable();
+  await seedCatalog(ROWS);
 
   const server = app.listen(port, () => console.log(`Listening on :${port}`));
   // Let Envoy retire idle upstream connections at 60s, with a 15s margin.
