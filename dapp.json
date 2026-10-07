@@ -1,8 +1,60 @@
 {
   "description": "A modern mobile-first marketplace: deals, categories and everyday essentials.",
   "icon": { "image": "brand/icon.png" },
+  "permissions": [
+    { "capability": "geolocation", "reason": "Find products shipping from a city near you" }
+  ],
   "secrets": [],
   "tests": [
+    {
+      "id": "home.filters-toolbar",
+      "name": "Home Recommended grid renders the filter and sort toolbar",
+      "path": "/",
+      "expectSelector": "#section-recommended [data-filter-toolbar] [data-filter-open]",
+      "expectText": "Filters",
+      "visual": true,
+      "impact": ["public/js/filter-ui.js", "public/js/filters.js", "public/js/home.js", "public/js/ui.js", "public/js/router.js", "public/index.html", "styles/tailwind-input.css", "src/products.cjs", "server.js"]
+    },
+    {
+      "id": "home.filter-city",
+      "name": "Filtering the home grid by city keeps only that city's products",
+      "path": "/#/home?city=Batam",
+      "expectSelector": "#recommended-chips [data-result-count]",
+      "expectText": "products"
+    },
+    {
+      "id": "home.filter-cities-multi",
+      "name": "Selecting two cities keeps products from both",
+      "path": "/#/home?city=Bandung,Bekasi",
+      "expectSelector": "#recommended-chips [data-result-count]",
+      "expectText": "14 products"
+    },
+    {
+      "id": "home.filter-city-card",
+      "name": "A filtered product card shows the city it ships from",
+      "path": "/#/home?city=Batam",
+      "expectSelector": "#recommended-grid [data-card-city]"
+    },
+    {
+      "id": "home.filter-sort-price",
+      "name": "Home grid applies a price range and sort from the URL",
+      "path": "/#/home?sort=price_asc&min=100&max=200",
+      "expectSelector": "[data-chip-remove='price']",
+      "expectText": "Price: Low to High"
+    },
+    {
+      "id": "home.filter-empty",
+      "name": "A city with no products shows the empty state",
+      "path": "/#/home?city=Nowhere",
+      "expectText": "No products found."
+    },
+    {
+      "id": "home.filter-province-chip",
+      "name": "A province filter renders a removable location chip",
+      "path": "/#/home?province=Bali",
+      "expectSelector": "[data-chip-remove='location']",
+      "expectText": "Bali"
+    },
     {
       "id": "home.default",
       "name": "Home renders with banners, categories, flash sale and products",

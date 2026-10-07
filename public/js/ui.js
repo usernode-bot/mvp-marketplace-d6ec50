@@ -192,6 +192,12 @@ export function productCard(p, opts = {}) {
     + (opts.compact ? '' : soldBlock)
     + '</div>'
     + (opts.compact ? soldBlock : '')
+    // Where the item ships from. A quiet map-pin line under the rating row,
+    // so the shopper can see at a glance which city a filtered list is from.
+    + (p.location && p.location.city
+      ? '<div class="mt-1 flex items-center gap-1 text-xs text-zinc-500" data-card-city>'
+        + icon('mapPin', 'h-3 w-3') + esc(p.location.city) + '</div>'
+      : '')
     + '<div class="mt-auto flex items-end justify-between gap-2 pt-2">'
     + '<div class="min-w-0">'
     + '<div class="text-base font-bold tabular-nums text-zinc-900">' + fmtPrice(p.price) + '</div>'

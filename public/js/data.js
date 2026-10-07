@@ -14,6 +14,7 @@
  */
 
 import { RECOMMENDED_PRODUCTS } from './recommended-data.js';
+import { LOCATIONS, allCities } from './locations.js';
 
 export const CATEGORIES = [
   { id: 'electronics', name: 'Electronics' },
@@ -645,6 +646,29 @@ export const PRODUCTS = [
   // read these recommendations without any rendering change.
   ...RECOMMENDED_PRODUCTS,
 ];
+
+/* ---------------------------------------------------------------------------
+ * Locations. Every catalog row carries a `location` drawn from the shared
+ * taxonomy in locations.js, so the home filter bar, the browse filter sheet,
+ * the product card's city line and the server's products table all agree on
+ * the same province/city names. A city row written by hand later still
+ * resolves its province through provinceByCity, and the assignment is
+ * deterministic per product id (idSum), so the same item always ships from
+ * the same city across boots, orders and the server's seeded table.
+ * ------------------------------------------------------------------------- */
+const CITY_ROWS = LOCATIONS.flatMap((province) =>
+  province.cities.map((city) => ({ province: province.name, city: city.name })));
+
+function locationForProduct(id) {
+  let s = 0;
+  for (let i = 0; i < id.length; i++) s += id.charCodeAt(i);
+  return CITY_ROWS[s % CITY_ROWS.length];
+}
+
+// Assign in place so PRODUCTS (and the RECOMMENDED_PRODUCTS rows spread into
+// it below) carry location whether the row came from this file or the
+// recommended catalog.
+PRODUCTS.forEach((p) => { p.location = locationForProduct(p.id); });
 
 /* ---------------------------------------------------------------------------
  * Lookups and derived helpers.

@@ -39,3 +39,20 @@ export async function apiFetch(path, options = {}) {
     return { ok: false, status: 0, data: null };
   }
 }
+
+/* Fetch one page of the product catalog. `params` is the plain object built
+ * by the filter service (q/cat/sub/province/city/min/max/sort/page/limit);
+ * empty values are dropped so the query string stays tidy. Returns the same
+ * { ok, status, data } shape as apiFetch, with data
+ * { items, total, page, limit, hasMore }.
+ */
+export function fetchProducts(params = {}) {
+  const qs = new URLSearchParams();
+  Object.keys(params).forEach((key) => {
+    const value = params[key];
+    if (value === undefined || value === null || value === '') return;
+    qs.set(key, String(value));
+  });
+  const query = qs.toString();
+  return apiFetch('/api/products' + (query ? '?' + query : ''));
+}
