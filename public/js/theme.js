@@ -11,12 +11,15 @@
  * Purple Dream, so an unset data-theme attribute renders the default.
  */
 
+import { t } from './i18n.js';
+import { esc } from './ui.js';
+
 export const THEMES = [
-  { id: 'purple', name: 'Purple Dream' },
-  { id: 'ocean', name: 'Ocean Breeze' },
-  { id: 'sunset', name: 'Sunset Glow' },
-  { id: 'mint', name: 'Fresh Mint' },
-  { id: 'midnight', name: 'Midnight' },
+  { id: 'purple', key: 'theme.purple' },
+  { id: 'ocean', key: 'theme.ocean' },
+  { id: 'sunset', key: 'theme.sunset' },
+  { id: 'mint', key: 'theme.mint' },
+  { id: 'midnight', key: 'theme.midnight' },
 ];
 
 const STORAGE_KEY = 'bazario:theme';
@@ -64,8 +67,8 @@ export function setTheme(id) {
 }
 
 export function themeName(id) {
-  const theme = THEMES.find((t) => t.id === id);
-  return theme ? theme.name : 'Purple Dream';
+  const theme = THEMES.find((x) => x.id === id) || THEMES[0];
+  return t(theme.key);
 }
 
 /* The swatch buttons themselves, shared by the header group (desktop) and
@@ -73,11 +76,12 @@ export function themeName(id) {
  * compiler sees them. */
 export function swatchButtons() {
   const current = getTheme();
-  return THEMES.map((t) =>
-    '<button type="button" class="theme-swatch theme-swatch-' + t.id + '" data-theme-swatch="' + t.id + '"'
-    + ' role="radio" aria-checked="' + (t.id === current) + '"'
-    + ' aria-label="Switch to ' + t.name + ' theme" title="' + t.name + '"></button>'
-  ).join('');
+  return THEMES.map((sw) => {
+    const name = t(sw.key);
+    return '<button type="button" class="theme-swatch theme-swatch-' + sw.id + '" data-theme-swatch="' + sw.id + '"'
+      + ' role="radio" aria-checked="' + (sw.id === current) + '"'
+      + ' aria-label="' + esc(t('theme.switchTo', { name })) + '" title="' + esc(name) + '"></button>';
+  }).join('');
 }
 
 /* Boot: apply the saved theme (the inline head bootstrap has usually already

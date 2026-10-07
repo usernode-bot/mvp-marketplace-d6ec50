@@ -15,60 +15,61 @@
 
 import { RECOMMENDED_PRODUCTS } from './recommended-data.js';
 import { LOCATIONS, allCities } from './locations.js';
+import { t } from './i18n.js';
 
 export const CATEGORIES = [
-  { id: 'electronics', name: 'Electronics' },
-  { id: 'fashion', name: 'Fashion' },
-  { id: 'beauty', name: 'Beauty' },
-  { id: 'home', name: 'Home' },
-  { id: 'sports', name: 'Sports' },
-  { id: 'groceries', name: 'Groceries' },
-  { id: 'accessories', name: 'Accessories' },
+  { id: 'electronics', key: 'category.electronics' },
+  { id: 'fashion', key: 'category.fashion' },
+  { id: 'beauty', key: 'category.beauty' },
+  { id: 'home', key: 'category.home' },
+  { id: 'sports', key: 'category.sports' },
+  { id: 'groceries', key: 'category.groceries' },
+  { id: 'accessories', key: 'category.accessories' },
 ];
 
 /* Subcategory per category. Product rows carry `sub` (a subcategory id). */
 export const SUBCATEGORIES = {
   electronics: [
-    { id: 'audio', name: 'Audio' },
-    { id: 'phones', name: 'Phones' },
-    { id: 'computing', name: 'Computing' },
-    { id: 'cameras', name: 'Cameras' },
-    { id: 'tv', name: 'TV & Video' },
-    { id: 'wearables', name: 'Wearables' },
-    { id: 'smarthome', name: 'Smart Home' },
+    { id: 'audio', key: 'sub.audio' },
+    { id: 'phones', key: 'sub.phones' },
+    { id: 'computing', key: 'sub.computing' },
+    { id: 'cameras', key: 'sub.cameras' },
+    { id: 'tv', key: 'sub.tv' },
+    { id: 'wearables', key: 'sub.wearables' },
+    { id: 'smarthome', key: 'sub.smarthome' },
   ],
   fashion: [
-    { id: 'tops', name: 'Tops' },
-    { id: 'dresses', name: 'Dresses' },
-    { id: 'outerwear', name: 'Outerwear' },
-    { id: 'bags', name: 'Bags' },
-    { id: 'eyewear', name: 'Eyewear' },
+    { id: 'tops', key: 'sub.tops' },
+    { id: 'dresses', key: 'sub.dresses' },
+    { id: 'outerwear', key: 'sub.outerwear' },
+    { id: 'bags', key: 'sub.bags' },
+    { id: 'eyewear', key: 'sub.eyewear' },
   ],
   beauty: [
-    { id: 'skincare', name: 'Skincare' },
-    { id: 'makeup', name: 'Makeup' },
+    { id: 'skincare', key: 'sub.skincare' },
+    { id: 'makeup', key: 'sub.makeup' },
   ],
   home: [
-    { id: 'furniture', name: 'Furniture' },
-    { id: 'lighting', name: 'Lighting' },
-    { id: 'bedding', name: 'Bedding' },
-    { id: 'decor', name: 'Decor' },
+    { id: 'furniture', key: 'sub.furniture' },
+    { id: 'lighting', key: 'sub.lighting' },
+    { id: 'bedding', key: 'sub.bedding' },
+    { id: 'decor', key: 'sub.decor' },
   ],
   sports: [
-    { id: 'fitness', name: 'Fitness' },
-    { id: 'outdoor', name: 'Outdoor' },
-    { id: 'team-sports', name: 'Team Sports' },
+    { id: 'fitness', key: 'sub.fitness' },
+    { id: 'outdoor', key: 'sub.outdoor' },
+    { id: 'team-sports', key: 'sub.team-sports' },
   ],
   groceries: [
-    { id: 'beverages', name: 'Beverages' },
-    { id: 'pantry', name: 'Pantry' },
-    { id: 'fresh', name: 'Fresh Produce' },
+    { id: 'beverages', key: 'sub.beverages' },
+    { id: 'pantry', key: 'sub.pantry' },
+    { id: 'fresh', key: 'sub.fresh' },
   ],
   accessories: [
-    { id: 'watches', name: 'Watches' },
-    { id: 'jewelry', name: 'Jewelry' },
-    { id: 'small-goods', name: 'Bags & Wallets' },
-    { id: 'travel', name: 'Travel' },
+    { id: 'watches', key: 'sub.watches' },
+    { id: 'jewelry', key: 'sub.jewelry' },
+    { id: 'small-goods', key: 'sub.small-goods' },
+    { id: 'travel', key: 'sub.travel' },
   ],
 };
 
@@ -79,27 +80,21 @@ export const BANNERS = [
     id: 'mega-weekend',
     tone: 'brand',
     icon: 'percent',
-    title: 'Mega Weekend Sale',
-    subtitle: 'Up to 60% off across every category. Ends Sunday.',
-    cta: 'Shop the deals',
+    key: 'home.banner.mega',
     action: { type: 'deals' },
   },
   {
     id: 'flash-live',
     tone: 'rose',
     icon: 'flame',
-    title: 'Flash Sale Live Now',
-    subtitle: 'Lightning deals on bestsellers. Gone when the clock hits zero.',
-    cta: 'See flash deals',
+    key: 'home.banner.flash',
     action: { type: 'scroll', target: 'flash' },
   },
   {
     id: 'new-season',
     tone: 'slate',
     icon: 'sparkles',
-    title: 'New Season Arrivals',
-    subtitle: 'Fresh fits and fresh tech just dropped in Fashion and Electronics.',
-    cta: 'Explore new in',
+    key: 'home.banner.season',
     action: { type: 'category', id: 'fashion' },
   },
 ];
@@ -128,15 +123,15 @@ export const POPULAR_SEARCHES = [
  * Sellers. Mock marketplace: each brand is its own storefront.
  * ------------------------------------------------------------------------- */
 export const SELLERS = {
-  Aurex: { rating: 4.8, since: 2021, followers: '12.4k', response: '96%', badge: 'Official store' },
-  Novo: { rating: 4.7, since: 2022, followers: '9.1k', response: '94%', badge: 'Official store' },
-  Klarita: { rating: 4.8, since: 2020, followers: '15.2k', response: '97%', badge: 'Official store' },
-  Vantia: { rating: 4.6, since: 2019, followers: '18.9k', response: '92%', badge: 'Official store' },
-  Pikol: { rating: 4.7, since: 2021, followers: '11.3k', response: '95%', badge: 'Verified seller' },
-  Mendo: { rating: 4.6, since: 2020, followers: '8.7k', response: '93%', badge: 'Verified seller' },
-  Strida: { rating: 4.7, since: 2021, followers: '10.5k', response: '95%', badge: 'Verified seller' },
-  Ombra: { rating: 4.5, since: 2019, followers: '7.9k', response: '90%', badge: 'Verified seller' },
-  Luma: { rating: 4.6, since: 2022, followers: '5.4k', response: '91%', badge: 'Official store' },
+  Aurex: { rating: 4.8, since: 2021, followers: '12.4k', response: '96%', badgeKey: 'seller.official' },
+  Novo: { rating: 4.7, since: 2022, followers: '9.1k', response: '94%', badgeKey: 'seller.official' },
+  Klarita: { rating: 4.8, since: 2020, followers: '15.2k', response: '97%', badgeKey: 'seller.official' },
+  Vantia: { rating: 4.6, since: 2019, followers: '18.9k', response: '92%', badgeKey: 'seller.official' },
+  Pikol: { rating: 4.7, since: 2021, followers: '11.3k', response: '95%', badgeKey: 'seller.verified' },
+  Mendo: { rating: 4.6, since: 2020, followers: '8.7k', response: '93%', badgeKey: 'seller.verified' },
+  Strida: { rating: 4.7, since: 2021, followers: '10.5k', response: '95%', badgeKey: 'seller.verified' },
+  Ombra: { rating: 4.5, since: 2019, followers: '7.9k', response: '90%', badgeKey: 'seller.verified' },
+  Luma: { rating: 4.6, since: 2022, followers: '5.4k', response: '91%', badgeKey: 'seller.official' },
 };
 
 /* ---------------------------------------------------------------------------
@@ -706,11 +701,11 @@ export function voucherByCode(code) {
  * page so both always word it the same way. */
 export function voucherDescription(v) {
   const base = v.type === 'percent'
-    ? v.value + '% off your order'
+    ? t('voucher.percent', { value: v.value })
     : v.type === 'fixed'
-      ? '$' + (v.value / 100).toFixed(2) + ' off your order'
-      : 'Free shipping on your order';
-  return base + ' · orders over ' + '$' + (v.min / 100).toFixed(2);
+      ? t('voucher.fixed', { value: '$' + (v.value / 100).toFixed(2) })
+      : t('voucher.ship');
+  return t('voucher.min', { base, min: '$' + (v.min / 100).toFixed(2) });
 }
 
 export function discountPct(p) {
@@ -799,7 +794,7 @@ export function subcategoryById(catId, subId) {
 
 export function subcategoryName(catId, subId) {
   const s = subcategoryById(catId, subId);
-  return s ? s.name : '';
+  return s ? t(s.key) : '';
 }
 
 /* Full-text search across name, brand, category, subcategory and keywords. */
@@ -880,8 +875,11 @@ const SPEC_BY_ART = {
 };
 
 export function specsFor(p) {
-  const base = SPEC_BY_ART[p.art] || [['Material', 'See description']];
-  return base.concat([['Brand', p.brand], ['Warranty', p.cat === 'electronics' ? '24 months' : '12 months']]);
+  const base = SPEC_BY_ART[p.art] || [[t('spec.material'), t('spec.seeDescription')]];
+  return base.concat([
+    [t('spec.brand'), p.brand],
+    [t('spec.warranty'), p.cat === 'electronics' ? t('spec.warranty24') : t('spec.warranty12')],
+  ]);
 }
 
 /* ---------------------------------------------------------------------------
@@ -897,8 +895,8 @@ function idSum(id) {
 export function shippingFor(p) {
   return {
     fee: p.price >= 3500 ? 0 : 499,
-    eta: idSum(p.id) % 3 === 0 ? '3-5 business days' : '2-4 business days',
-    returns: '30-day free returns',
+    eta: t(idSum(p.id) % 3 === 0 ? 'ship.eta.3to5' : 'ship.eta.2to4'),
+    returns: t('ship.returns'),
   };
 }
 
@@ -950,7 +948,7 @@ function ratingPattern(rating) {
   return [4, 5, 4, 3, 4, 5, 2, 4];
 }
 
-const REVIEW_AGES = ['3 days ago', '1 week ago', '2 weeks ago', '2 weeks ago', '3 weeks ago', '1 month ago', '2 months ago', '3 months ago'];
+const REVIEW_AGES = ['review.when.3days', 'review.when.1week', 'review.when.2weeks', 'review.when.2weeks', 'review.when.3weeks', 'review.when.1month', 'review.when.2months', 'review.when.3months'];
 
 export function reviewsFor(p) {
   const start = idSum(p.id) % REVIEW_AUTHORS.length;
@@ -970,7 +968,7 @@ export function reviewsFor(p) {
       tintFg: author[2],
       rating,
       text,
-      when: REVIEW_AGES[i],
+      when: t(REVIEW_AGES[i]),
       verified: i % 4 !== 2,
       images: withPhotos ? (i === 1 ? [1] : [0, 2]) : [],
     });
