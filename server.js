@@ -247,6 +247,8 @@ async function ensureProductsTable() {
       city TEXT NOT NULL DEFAULT '',
       kw TEXT NOT NULL DEFAULT '',
       image TEXT,
+      images JSONB NOT NULL DEFAULT '[]'::jsonb,
+      specs JSONB NOT NULL DEFAULT '[]'::jsonb,
       flash BOOLEAN NOT NULL DEFAULT FALSE,
       pct INTEGER NOT NULL DEFAULT 0,
       rank INTEGER NOT NULL DEFAULT 0,
@@ -261,12 +263,17 @@ async function ensureProductsTable() {
   await pool.query('CREATE INDEX IF NOT EXISTS products_province_idx ON products (province)');
   await pool.query('CREATE INDEX IF NOT EXISTS products_province_city_idx ON products (province, city)');
   await pool.query('CREATE INDEX IF NOT EXISTS products_cat_idx ON products (cat)');
+  // Added after the table first shipped: the shared `images` array and the
+  // per-product `specs` rows the detail page renders. ADD COLUMN IF NOT EXISTS
+  // upgrades a staging copy whose table predates this change.
+  await pool.query("ALTER TABLE products ADD COLUMN IF NOT EXISTS images JSONB NOT NULL DEFAULT '[]'::jsonb");
+  await pool.query("ALTER TABLE products ADD COLUMN IF NOT EXISTS specs JSONB NOT NULL DEFAULT '[]'::jsonb");
 }
 
 const PRODUCT_COLUMNS = [
   'id', 'name', 'cat', 'sub', 'brand', 'art', 'price', 'orig', 'discount',
   'rating', 'reviews', 'sold', 'oos', 'age', 'province', 'city', 'kw',
-  'image', 'flash', 'pct', 'rank', 'search_text',
+  'image', 'images', 'specs', 'flash', 'pct', 'rank', 'search_text',
 ];
 
 /* Idempotent upsert of the bundled catalog as a flat table. Re-running on
