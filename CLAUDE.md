@@ -139,6 +139,36 @@ soon" on those entry points rather than hiding them.
   public (a public avatar URL, no sensitive fields); staging starts empty,
   and the letter placeholder is the real empty state. `GET /api/profile`
   serves a staging-only demo avatar behind `?demo=1` for the check.
+- **Reviews** live in `public/js/reviews.js`; the product page only supplies
+  the `#pdp-reviews` mount point. `reviews` and `review_images` are public
+  tables (a review and its photos are public content); the `reviews` table
+  carries an opaque `order_ref`/`order_item_ref` and never a foreign key into
+  a private table. A review is allowed only for a verified purchase: one
+  completed `order_items` row for that product under the reviewer's
+  `user_id`, checked server-side; the badge is that same check. One review
+  per purchased line is enforced by a partial unique index, so posting again
+  edits the first row.
+- **Review photos** go through the same platform-file path as the profile
+  avatar: the browser resizes each pick to a 1600px longest edge on a canvas
+  and re-encodes it (which is what strips EXIF, GPS included), then uploads
+  the bytes with `usernode.uploadFile` and persists only the returned URL.
+  The server never decodes an image; it validates the URL shape (https +
+  `/app-files/`, or a data URI in staging only) exactly like the avatar.
+  Uploads are authenticated; guests get the platform's `account_required`
+  sheet. Attach at most 5 photos per review.
+- **Orders** are mirrored into Postgres at place-order time (`orders` /
+  `order_items`, both `staging:private` — a buyer and what they bought).
+  The localStorage order path stays the source of truth for the Orders tab
+  and keeps working offline; the server write is best-effort and idempotent
+  on (user, order number). It exists so a verified-purchase look-up has
+  something to find.
+- Review live updates are an in-process `EventEmitter` fanned out per product
+  over SSE (`GET /api/reviews/stream`). It assumes a single container; the
+  client opens the stream only after the page has settled, because a pending
+  EventSource otherwise stops a headless page from ever reaching
+  network-idle. Image moderation is a documented hook keyed on
+  `USERNODE_LLM_PROXY_URL`/`_TOKEN`; it is off (publish immediately) when
+  those are absent, which is always in staging.
 - Shipping/expedition options live in `public/js/shipping.js`: a typed
   `COUNTRIES` config where every country offers at least three couriers
   (`{ id, name, service, eta, etaDays, price }`) and names a

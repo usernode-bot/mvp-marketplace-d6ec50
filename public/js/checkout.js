@@ -18,6 +18,7 @@
 import { icon, productArt } from './icons.js';
 import { store } from './store.js';
 import { fmtEtaDate, fmtPrice, emptyState, toast } from './ui.js';
+import { createOrder } from './api.js';
 import { methodById } from './payment.js';
 import {
   COUNTRIES,
@@ -528,6 +529,22 @@ function completeOrder(entries) {
   state.phase = 'idle';
   state.draft = null;
   renderSuccess(order);
+
+  // Mirror the order into Postgres so a verified-purchase look-up has
+  // something to find later. Best effort and non-blocking: placing an order
+  // must succeed even offline, so a failed mirror only toasts.
+  const lineItems = order.items.map((it) => ({ id: it.id, name: it.name, qty: it.qty, price: it.price }));
+  createOrder({
+    number: order.number,
+    status: order.status,
+    total: order.total,
+    currency: 'USD',
+    shipping: { courier: order.courierName, country: order.countryName, eta: order.etaLabel },
+    address: order.address,
+    items: lineItems,
+  }).then((res) => {
+    if (!res.ok) toast('Order placed. We could not sync it to your account yet.');
+  });
 }
 
 function placeOrder() {

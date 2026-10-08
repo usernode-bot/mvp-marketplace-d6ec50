@@ -14,8 +14,6 @@ import {
   discountPct,
   productById,
   PRODUCTS,
-  ratingDistribution,
-  reviewsFor,
   score,
   shippingFor,
   specsFor,
@@ -24,6 +22,7 @@ import { store } from './store.js';
 import { emptyState, esc, fmtCount, fmtPrice, productCard, starRow, toast } from './ui.js';
 import { goToHash } from './router.js';
 import { t } from './i18n.js';
+import { initReviews, mountReviews } from './reviews.js';
 
 
 let p = null;
@@ -184,48 +183,12 @@ function descriptionHtml() {
     + '<p class="mt-2 text-sm leading-relaxed text-zinc-600">' + p.desc + '</p></section>';
 }
 
-function reviewCard(r) {
-  const photos = r.images.length
-    ? '<div class="mt-2.5 flex gap-2">' + r.images.map((v) =>
-      '<div class="h-16 w-16 overflow-hidden rounded-lg bg-zinc-100">' + productArtView(p, v) + '</div>').join('') + '</div>'
-    : '';
-  return '<article class="card p-4">'
-    + '<div class="flex items-center gap-3">'
-    + '<span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-bold ' + r.tintBg + ' ' + r.tintFg + '">' + r.author.charAt(0) + '</span>'
-    + '<div class="min-w-0">'
-    + '<div class="text-sm font-semibold text-zinc-900">' + r.author + '</div>'
-    + '<div class="flex items-center gap-1.5">' + starRow(r.rating, 'h-3 w-3') + '<span class="text-xs text-zinc-400">' + r.when + '</span></div>'
-    + '</div>'
-    + (r.verified ? '<span class="ml-auto inline-flex shrink-0 items-center gap-1 rounded-full bg-brand-50 px-2 py-0.5 text-[10px] font-semibold text-brand-700">' + icon('check', 'h-3 w-3') + 'Verified purchase</span>' : '')
-    + '</div>'
-    + '<p class="mt-2.5 text-sm leading-relaxed text-zinc-600">' + r.text + '</p>'
-    + photos
-    + '</article>';
-}
-
+/* The reviews section is owned by reviews.js: it loads the real rows from
+ * the server, streams live updates and renders the composer and lightbox.
+ * This is just the mount point, left in the page so the rating row's
+ * "scroll to reviews" link always has a target. */
 function reviewsHtml() {
-  const reviews = reviewsFor(p);
-  const dist = ratingDistribution(p.rating);
-  const bars = dist.map((share, i) => {
-    const stars = 5 - i;
-    return '<div class="flex items-center gap-2 text-xs text-zinc-500">'
-      + '<span class="w-3 shrink-0 text-right tabular-nums">' + stars + '</span>'
-      + icon('star', 'h-3 w-3 shrink-0 text-amber-400')
-      + '<div class="h-1.5 flex-1 overflow-hidden rounded-full bg-zinc-100"><div class="h-full rounded-full bg-amber-400" style="width:' + Math.round(share * 100) + '%"></div></div>'
-      + '</div>';
-  }).join('');
-
-  return '<section id="pdp-reviews" class="mt-8 scroll-mt-20"><h2 class="text-base font-bold text-zinc-900">Reviews</h2>'
-    + '<div class="card mt-3 p-4"><div class="flex items-center gap-5">'
-    + '<div class="shrink-0 text-center">'
-    + '<div class="text-3xl font-bold tabular-nums text-zinc-900">' + p.rating.toFixed(1) + '</div>'
-    + starRow(p.rating)
-    + '<div class="mt-1 text-xs text-zinc-500">' + fmtCount(p.reviews) + ' reviews</div>'
-    + '</div>'
-    + '<div class="flex-1 space-y-1.5">' + bars + '</div>'
-    + '</div></div>'
-    + '<div class="mt-3 space-y-3">' + reviews.map(reviewCard).join('') + '</div>'
-    + '</section>';
+  return '<section id="pdp-reviews" class="mt-8 scroll-mt-20"></section>';
 }
 
 function relatedHtml() {
@@ -424,4 +387,10 @@ export function renderProduct(id) {
     bindProductEvents();
     bound = true;
   }
+
+  // Fill the reviews section for this product. reviews.js owns the live
+  // stream and re-mounts on every product navigation.
+  initReviews();
+  const demo = new URLSearchParams(location.search).get('demo') === '1';
+  mountReviews(document.getElementById('pdp-reviews'), p, { demo });
 }
