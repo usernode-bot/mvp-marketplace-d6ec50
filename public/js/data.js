@@ -665,6 +665,47 @@ function locationForProduct(id) {
 // recommended catalog.
 PRODUCTS.forEach((p) => { p.location = locationForProduct(p.id); });
 
+/* How many committed photos exist for each product's image basename
+ * (public/images/products/<base>-<n>.jpg, numbered from 1 with no gaps). A
+ * product's `image` names its first photo; this table lets the catalog give
+ * every product an ordered `images` array read by BOTH the listing cards and
+ * the product detail gallery, so the two surfaces can never disagree. Only
+ * basenames with more than one file are listed; a photo with no entry is a
+ * single-image product. A product with no `image` at all keeps an empty
+ * array, which renders the neutral placeholder. */
+const IMAGE_SET_COUNTS = {
+  airfryer: 5, backpack: 6, bag: 10, bed: 3, bottle: 8, cable: 5, cap: 5,
+  case: 5, charger: 5, coffeeMaker: 5, diffuser: 5, drone: 6, droplet: 3,
+  dumbbell: 2, gem: 3, headphones: 2, jacket: 6, keyboard: 7, lamp: 8,
+  monitor: 5, mouse: 6, notebook: 6, powerbank: 6, shoe: 7, smartphone: 3,
+  smartwatch: 10, sparkles: 3, speaker: 8, steelwatch: 2, sunglasses: 7,
+  tablet: 5, tent: 6, usbhub: 6, vacuum: 5, wallet: 6, webcam: 5,
+};
+
+/* Build a product's ordered image list from its photo basename. The current
+ * `image` is always entry 0 (so the card photo leads the gallery), then every
+ * other committed file for that basename follows in numeric order. */
+function imagesForProduct(p) {
+  const src = p.image;
+  if (!src) return [];
+  const m = /^(.*\/)([^/]+?)-(\d+)\.jpg$/.exec(src);
+  if (!m) return [src];
+  const prefix = m[1];
+  const base = m[2];
+  const first = Number(m[3]);
+  const count = IMAGE_SET_COUNTS[base] || 1;
+  const rest = [];
+  for (let i = 1; i <= count; i += 1) if (i !== first) rest.push(prefix + base + '-' + i + '.jpg');
+  return [src].concat(rest);
+}
+
+// Every catalog row carries a derived `images` array. `image` stays as the
+// first entry (back-compat); a record with no photo gets an empty array.
+PRODUCTS.forEach((p) => {
+  p.images = imagesForProduct(p);
+  p.image = p.images[0] || null;
+});
+
 /* ---------------------------------------------------------------------------
  * Lookups and derived helpers.
  * ------------------------------------------------------------------------- */
@@ -820,66 +861,166 @@ export function imagesFor(p) {
 }
 
 /* ---------------------------------------------------------------------------
- * Specifications. Per-product specs keyed by the product's artwork kind, so
- * values stay plausible for what the item actually is.
+ * Specifications. Each product renders a clean two-column table. Rows are
+ * keyed with a translation key (see public/js/i18n.js) and an English label
+ * that is the fallback; a row whose value is empty is dropped, so a field
+ * that does not apply is HIDDEN rather than shown as "N/A".
+ *
+ * The label set is chosen by category, per the product it is:
+ *   - laptops / computing notebooks: Display, Processor, RAM, Storage,
+ *     Graphics, Battery, Weight, Operating System, Ports
+ *   - phones: Display, Chipset, RAM, Storage, Camera, Battery, OS, SIM
+ *   - clothing / fashion: Material, Size options, Fit, Care, Origin
+ *   - everything else: Dimensions, Weight, Material, Power / Capacity
+ * Every product also shows Brand, Model, Product ID and Stock, plus a
+ * Warranty row where one applies (electronics, home, sports, accessories and
+ * fashion; not groceries or beauty).
  * ------------------------------------------------------------------------- */
-const SPEC_BY_ART = {
-  headphones: [['Driver', '40 mm dynamic'], ['Battery life', 'Up to 40 hours'], ['Bluetooth', '5.3'], ['Charging', 'USB-C, 10 min = 4 h']],
-  smartphone: [['Display', '6.7" AMOLED, 120 Hz'], ['Storage', '128 GB'], ['Camera', '50 MP triple'], ['Battery', '5000 mAh, 65 W fast charge']],
-  laptop: [['Material', 'Water-repellent polyester'], ['Padding', '8 mm closed-cell foam'], ['Fits', 'Up to 14" laptops'], ['Pockets', 'Front zip + slip pocket']],
-  camera: [['Sensor', '1/1.7" CMOS'], ['Video', '4K at 60 fps'], ['Waterproof', '10 m, no case needed'], ['Stabilisation', '3-axis EIS']],
-  tv: [['Panel', '55" LED, 4K UHD'], ['Refresh rate', '60 Hz'], ['Smart platform', 'BazTV OS'], ['Ports', '3x HDMI, 2x USB']],
-  speaker: [['Output', '12 W full-range'], ['Battery', 'Up to 18 hours'], ['Water resistance', 'IPX7'], ['Bluetooth', '5.3, 30 m range']],
-  watch: [['Display', '1.4" AMOLED'], ['Battery', 'Up to 10 days'], ['Sensors', 'Heart rate, SpO2, GPS'], ['Water resistance', '5 ATM']],
-  shirt: [['Material', 'See description'], ['Fit', 'True to size'], ['Care', 'Machine wash 30°C'], ['Origin', 'Made in Portugal']],
-  bag: [['Material', 'Water-resistant canvas'], ['Dimensions', '26 × 20 × 9 cm'], ['Strap', 'Adjustable, up to 130 cm'], ['Pockets', 'Inner zip + phone slot']],
-  glasses: [['Lens', 'UV400 polarised'], ['Frame', 'Hand-polished acetate'], ['Width', '142 mm'], ['Includes', 'Hard case + cloth']],
-  sparkles: [['Size', 'Standard retail'], ['Formula', 'Talc-free, fragrance-free'], ['Cruelty free', 'Yes'], ['Shelf life', '24 months unopened']],
-  droplet: [['Volume', '30 ml'], ['Key actives', 'See description'], ['Skin types', 'All, patch test first'], ['Free from', 'Parabens, alcohol, dyes']],
-  armchair: [['Dimensions', '82 W × 88 D × 78 H cm'], ['Upholstery', 'Woven polyester blend'], ['Frame', 'Solid oak legs'], ['Assembly', 'Legs attach, tool included']],
-  lamp: [['Height', '46 cm'], ['Shade', 'Natural linen'], ['Bulb', 'E27, 8 W LED included'], ['Switch', 'Inline dimmer']],
-  bed: [['Thread count', '300 TC percale'], ['Includes', 'Flat + fitted + 2 cases'], ['Fitted depth', 'Up to 35 cm'], ['Care', 'Machine wash 40°C']],
-  dumbbell: [['Material', 'See description'], ['Included', 'See description'], ['Grip', 'Knurled, rubber-coated'], ['Storage', 'Compact stand or mesh bag']],
-  ball: [['Construction', 'Machine-stitched TPU'], ['Bladder', 'Butyl, air-tight'], ['Sizes', 'See variants'], ['Use', 'Match and training']],
-  bottle: [['Capacity', '1 L'], ['Material', '18/8 stainless steel'], ['Insulation', 'Cold 24 h / hot 12 h'], ['Lid', 'Flip, leak-proof']],
-  apple: [['Origin', 'Orchard: Rioja valley'], ['Count', '6 apples'], ['Class', 'Organic certified'], ['Storage', 'Keep cool and dry']],
-  coffee: [['Roast', 'Medium'], ['Origin', 'Single estate'], ['Grind', 'Whole bean / sachets'], ['Storage', 'Resealable, valve bag']],
-  jar: [['Net weight', 'See variants'], ['Ingredients', '100% single-source'], ['Additives', 'None'], ['Storage', 'Room temperature']],
-  wallet: [['Material', 'Full-grain vegetable-tanned leather'], ['Capacity', '6 cards + cash fold'], ['Protection', 'RFID-blocking layer'], ['Dimensions', '10.5 × 8 cm']],
-  gem: [['Stone', '4 mm lab-grown'], ['Metal', 'Rhodium-plated 925 silver'], ['Backing', 'Hypoallergenic posts'], ['Packaging', 'Gift box']],
-  shoe: [['Upper', 'Draining mesh'], ['Midsole', 'EVA with rock plate'], ['Outsole', '4 mm lugs, rubber'], ['Drop', '8 mm']],
-  keyboard: [['Switches', 'Hot-swappable, tactile'], ['Layout', '75%, 82 keys'], ['Connection', 'USB-C, detachable'], ['Backlight', 'Per-key RGB']],
-  drone: [['Camera', '4K, 3-axis gimbal'], ['Flight time', 'Up to 30 min'], ['Range', '6 km transmission'], ['Weight', '249 g']],
-  cream: [['Volume', '50 ml'], ['Key actives', 'Hyaluronic acid, ceramides'], ['Skin types', 'All, fragrance-free'], ['Use', 'Morning, under makeup']],
-  table: [['Material', 'Solid oak'], ['Dimensions', '45 Ø × 45 H cm'], ['Finish', 'Hardwax oil'], ['Assembly', 'Legs attach, tool included']],
-  mat: [['Thickness', '6 mm'], ['Material', 'TPE, closed-cell'], ['Dimensions', '183 × 61 cm'], ['Weight', '1.1 kg']],
-  tent: [['Capacity', '2 person'], ['Waterproofing', '3000 mm fly'], ['Weight', '4.2 kg packed'], ['Pitch time', 'About 12 min']],
-  banana: [['Origin', 'Ecuador'], ['Count', 'About 9 bananas'], ['Class', 'Category I'], ['Storage', 'Ripen at room temperature']],
-  belt: [['Material', 'Full-grain leather'], ['Width', '3.5 cm'], ['Buckle', 'Rotating, reversible'], ['Lengths', 'S to XL']],
-  // Recommended-for-you art kinds (recommended-data.js).
-  notebook: [['Display', '14" IPS, 1920 x 1200'], ['Memory', '16 GB RAM'], ['Storage', '512 GB SSD'], ['Battery', 'Up to 12 hours']],
-  tablet: [['Display', '11" laminated, 120 Hz'], ['Memory', '8 GB RAM'], ['Storage', '256 GB'], ['Battery', 'Up to 11 hours']],
-  monitor: [['Panel', '27" IPS, QHD'], ['Refresh rate', '165 Hz'], ['Ports', 'USB-C, 2x HDMI, DP'], ['Stand', 'Height and tilt adjustable']],
-  webcam: [['Resolution', '1080p at 60 fps'], ['Field of view', '78 degrees'], ['Microphone', 'Dual noise-cancelling'], ['Mount', 'Clip or tripod thread']],
-  powerbank: [['Capacity', '20000 mAh'], ['Output', '65 W USB-C PD'], ['Ports', '2x USB-C, 1x USB-A'], ['Display', 'Charge status screen']],
-  charger: [['Output', '15 W Qi'], ['Input', 'USB-C'], ['Safety', 'Foreign-object detection'], ['Surface', 'Non-slip silicone']],
-  cable: [['Length', '2 m'], ['Power', '100 W USB-C PD'], ['Data', 'Up to 480 Mbps'], ['Jacket', 'Braided nylon']],
-  usbhub: [['Video', '4K HDMI at 30 Hz'], ['Power', '100 W pass-through'], ['Ports', 'USB-C, 2x USB-A'], ['Readers', 'SD and microSD']],
-  jacket: [['Shell', 'Water-repellent ripstop'], ['Hood', 'Packable, adjustable'], ['Pockets', '2 zip hand, 1 chest'], ['Seams', 'Fully taped']],
-  cap: [['Material', 'Washed cotton twill'], ['Closure', 'Adjustable metal buckle'], ['Brim', 'Curved'], ['Crown', 'Unstructured, 6 panel']],
-  backpack: [['Capacity', '20 L'], ['Laptop', 'Fits up to 15"'], ['Material', 'Water-resistant recycled nylon'], ['Straps', 'Padded, breathable mesh']],
-  airfryer: [['Capacity', '5 L'], ['Presets', '8 cooking programs'], ['Power', '1500 W'], ['Basket', 'Non-stick, dishwasher safe']],
-  vacuum: [['Navigation', 'LiDAR mapping'], ['Runtime', 'Up to 180 minutes'], ['Base', 'Self-emptying'], ['App', 'Room-by-room scheduling']],
-  coffeeMaker: [['Pressure', '15 bar'], ['Grinder', 'Built-in conical burr'], ['Steam wand', 'Yes'], ['Water tank', '1.8 L']],
-  diffuser: [['Capacity', '300 ml'], ['Runtime', 'Up to 10 hours'], ['Light', 'Soft colour, optional'], ['Safety', 'Auto shut-off']],
+
+function row(k, l, v) { return { k: k, l: l, v: v }; }
+
+const LAPTOP_SPECS = [
+  row('spec.display', 'Display', '14" IPS, 1920 x 1200'),
+  row('spec.processor', 'Processor', 'Intel Core i5-1335U'),
+  row('spec.ram', 'RAM', '16 GB DDR4'),
+  row('spec.storage', 'Storage', '512 GB NVMe SSD'),
+  row('spec.graphics', 'Graphics', 'Intel Iris Xe'),
+  row('spec.battery', 'Battery', 'Up to 12 hours'),
+  row('spec.weight', 'Weight', '1.3 kg'),
+  row('spec.os', 'Operating System', 'Windows 11 Home'),
+  row('spec.ports', 'Ports', '2x USB-C, 2x USB-A, HDMI'),
+];
+
+const PHONE_SPECS = [
+  row('spec.display', 'Display', '6.7" AMOLED, 120 Hz'),
+  row('spec.chipset', 'Chipset', 'Snapdragon 8 Gen 2'),
+  row('spec.ram', 'RAM', '8 GB'),
+  row('spec.storage', 'Storage', '128 GB'),
+  row('spec.camera', 'Camera', '50 MP triple'),
+  row('spec.battery', 'Battery', '5000 mAh, 65 W fast charge'),
+  row('spec.os', 'Operating System', 'Android 14'),
+  row('spec.sim', 'SIM', 'Dual SIM, unlocked'),
+];
+
+const CLOTHING_SPECS = [
+  row('spec.material', 'Material', 'Combed cotton blend'),
+  row('spec.sizes', 'Size options', 'S, M, L, XL'),
+  row('spec.fit', 'Fit', 'True to size'),
+  row('spec.care', 'Care instructions', 'Machine wash 30°C'),
+  row('spec.origin', 'Origin', 'Made in Portugal'),
+];
+
+/* Dimensions, Weight, Material and Power / Capacity for every non-laptop,
+ * non-phone, non-clothing kind. Values stay plausible for the item. */
+const OTHER_SPECS = {
+  headphones: [row('spec.dimensions', 'Dimensions', '18 × 17 × 8 cm'), row('spec.weight', 'Weight', '255 g'), row('spec.material', 'Material', 'Aluminium + memory foam'), row('spec.power', 'Power / Capacity', 'USB-C, 40 h per charge')],
+  camera: [row('spec.dimensions', 'Dimensions', '6 × 4 × 3 cm'), row('spec.weight', 'Weight', '154 g'), row('spec.material', 'Material', 'Polycarbonate body'), row('spec.power', 'Power / Capacity', '4K60 video, 10 m waterproof')],
+  tv: [row('spec.dimensions', 'Dimensions', '123 × 71 × 8 cm'), row('spec.weight', 'Weight', '12.4 kg'), row('spec.material', 'Material', 'Aluminium frame'), row('spec.power', 'Power / Capacity', '55" 4K UHD, 120 W')],
+  speaker: [row('spec.dimensions', 'Dimensions', '10 × 10 × 9 cm'), row('spec.weight', 'Weight', '320 g'), row('spec.material', 'Material', 'Silicone + mesh'), row('spec.power', 'Power / Capacity', '12 W, IPX7, 18 h')],
+  watch: [row('spec.dimensions', 'Dimensions', '44 × 38 × 10 mm'), row('spec.weight', 'Weight', '45 g'), row('spec.material', 'Material', 'Aluminium case'), row('spec.power', 'Power / Capacity', '10-day battery, 5 ATM')],
+  bag: [row('spec.dimensions', 'Dimensions', '26 × 20 × 9 cm'), row('spec.weight', 'Weight', '480 g'), row('spec.material', 'Material', 'Water-resistant canvas'), row('spec.power', 'Power / Capacity', '12 L capacity')],
+  glasses: [row('spec.dimensions', 'Dimensions', '142 × 45 × 20 mm'), row('spec.weight', 'Weight', '24 g'), row('spec.material', 'Material', 'Hand-polished acetate'), row('spec.power', 'Power / Capacity', 'UV400 polarised')],
+  droplet: [row('spec.dimensions', 'Dimensions', '30 ml bottle'), row('spec.weight', 'Weight', '75 g'), row('spec.material', 'Material', 'Glass bottle, dropper'), row('spec.power', 'Power / Capacity', '30 ml')],
+  sparkles: [row('spec.dimensions', 'Dimensions', '12 × 8 × 2 cm'), row('spec.weight', 'Weight', '120 g'), row('spec.material', 'Material', 'Talc-free pressed powder'), row('spec.power', 'Power / Capacity', 'Standard retail size')],
+  cream: [row('spec.dimensions', 'Dimensions', '50 ml jar'), row('spec.weight', 'Weight', '95 g'), row('spec.material', 'Material', 'Hyaluronic acid base'), row('spec.power', 'Power / Capacity', '50 ml')],
+  jar: [row('spec.dimensions', 'Dimensions', '13 × 9 × 9 cm'), row('spec.weight', 'Weight', '560 g'), row('spec.material', 'Material', 'Glass jar, metal lid'), row('spec.power', 'Power / Capacity', 'See pack size')],
+  armchair: [row('spec.dimensions', 'Dimensions', '82 W × 88 D × 78 H cm'), row('spec.weight', 'Weight', '24 kg'), row('spec.material', 'Material', 'Woven polyester, oak legs'), row('spec.power', 'Power / Capacity', 'Seats one')],
+  lamp: [row('spec.dimensions', 'Dimensions', '18 × 18 × 46 cm'), row('spec.weight', 'Weight', '1.4 kg'), row('spec.material', 'Material', 'Ceramic base, linen shade'), row('spec.power', 'Power / Capacity', 'E27, 8 W LED')],
+  bed: [row('spec.dimensions', 'Dimensions', '220 × 240 cm'), row('spec.weight', 'Weight', '1.8 kg'), row('spec.material', 'Material', '300 TC cotton percale'), row('spec.power', 'Power / Capacity', 'Double + 2 pillowcases')],
+  table: [row('spec.dimensions', 'Dimensions', '45 Ø × 45 H cm'), row('spec.weight', 'Weight', '6.2 kg'), row('spec.material', 'Material', 'Solid oak'), row('spec.power', 'Power / Capacity', 'Hardwax oil finish')],
+  dumbbell: [row('spec.dimensions', 'Dimensions', '32 × 20 × 20 cm'), row('spec.weight', 'Weight', '20 kg set'), row('spec.material', 'Material', 'Steel, rubber-coated'), row('spec.power', 'Power / Capacity', '5-20 kg adjustable')],
+  ball: [row('spec.dimensions', 'Dimensions', '22 cm diameter'), row('spec.weight', 'Weight', '410 g'), row('spec.material', 'Material', 'Machine-stitched TPU'), row('spec.power', 'Power / Capacity', 'Size 5 match ball')],
+  bottle: [row('spec.dimensions', 'Dimensions', '8 × 8 × 26 cm'), row('spec.weight', 'Weight', '320 g'), row('spec.material', 'Material', '18/8 stainless steel'), row('spec.power', 'Power / Capacity', '1 L, cold 24 h / hot 12 h')],
+  apple: [row('spec.dimensions', 'Dimensions', '6-pack tray'), row('spec.weight', 'Weight', 'About 1.1 kg'), row('spec.material', 'Material', 'Fresh organic fruit'), row('spec.power', 'Power / Capacity', '6 apples')],
+  coffee: [row('spec.dimensions', 'Dimensions', '10 × 8 × 24 cm'), row('spec.weight', 'Weight', '1 kg'), row('spec.material', 'Material', 'Arabica beans'), row('spec.power', 'Power / Capacity', 'Medium roast, whole bean')],
+  wallet: [row('spec.dimensions', 'Dimensions', '10.5 × 8 cm'), row('spec.weight', 'Weight', '72 g'), row('spec.material', 'Material', 'Full-grain vegetable-tanned leather'), row('spec.power', 'Power / Capacity', '6 cards + cash fold')],
+  gem: [row('spec.dimensions', 'Dimensions', 'Small, gift boxed'), row('spec.weight', 'Weight', '4 g'), row('spec.material', 'Material', 'Rhodium-plated 925 silver'), row('spec.power', 'Power / Capacity', 'Gift box included')],
+  shoe: [row('spec.dimensions', 'Dimensions', 'EU 38-43'), row('spec.weight', 'Weight', '285 g per shoe'), row('spec.material', 'Material', 'Draining mesh, EVA midsole'), row('spec.power', 'Power / Capacity', '8 mm heel drop')],
+  mat: [row('spec.dimensions', 'Dimensions', '183 × 61 cm'), row('spec.weight', 'Weight', '1.1 kg'), row('spec.material', 'Material', 'TPE, closed-cell'), row('spec.power', 'Power / Capacity', '6 mm thick, non-slip')],
+  tent: [row('spec.dimensions', 'Dimensions', 'Packed 60 × 18 cm'), row('spec.weight', 'Weight', '4.2 kg'), row('spec.material', 'Material', 'Ripstop polyester'), row('spec.power', 'Power / Capacity', '2 person, 3000 mm fly')],
+  banana: [row('spec.dimensions', 'Dimensions', '1 kg bunch'), row('spec.weight', 'Weight', 'About 1 kg'), row('spec.material', 'Material', 'Fresh fruit'), row('spec.power', 'Power / Capacity', 'About 9 bananas')],
+  belt: [row('spec.dimensions', 'Dimensions', 'Length S-XL'), row('spec.weight', 'Weight', '180 g'), row('spec.material', 'Material', 'Full-grain leather'), row('spec.power', 'Power / Capacity', '3.5 cm, reversible buckle')],
+  mouse: [row('spec.dimensions', 'Dimensions', '12 × 7 × 7 cm'), row('spec.weight', 'Weight', '105 g'), row('spec.material', 'Material', 'Recycled ABS'), row('spec.power', 'Power / Capacity', 'Wireless, weeks per charge')],
+  keyboard: [row('spec.dimensions', 'Dimensions', '32 × 13 × 4 cm'), row('spec.weight', 'Weight', '820 g'), row('spec.material', 'Material', 'Aluminium + PBT keycaps'), row('spec.power', 'Power / Capacity', 'USB-C, detachable')],
+  drone: [row('spec.dimensions', 'Dimensions', 'Folded 18 × 10 cm'), row('spec.weight', 'Weight', '249 g'), row('spec.material', 'Material', 'Composite shell'), row('spec.power', 'Power / Capacity', 'Up to 30 min flight')],
+  monitor: [row('spec.dimensions', 'Dimensions', '61 × 36 cm panel'), row('spec.weight', 'Weight', '5.4 kg'), row('spec.material', 'Material', 'IPS panel, metal stand'), row('spec.power', 'Power / Capacity', '27" QHD, 165 Hz')],
+  webcam: [row('spec.dimensions', 'Dimensions', '9 × 3 × 3 cm'), row('spec.weight', 'Weight', '95 g'), row('spec.material', 'Material', 'ABS housing'), row('spec.power', 'Power / Capacity', '1080p60, USB-C')],
+  powerbank: [row('spec.dimensions', 'Dimensions', '14 × 7 × 3 cm'), row('spec.weight', 'Weight', '395 g'), row('spec.material', 'Material', 'Aluminium shell'), row('spec.power', 'Power / Capacity', '20000 mAh, 65 W USB-C PD')],
+  charger: [row('spec.dimensions', 'Dimensions', '9 × 9 × 12 cm'), row('spec.weight', 'Weight', '165 g'), row('spec.material', 'Material', 'ABS, non-slip silicone'), row('spec.power', 'Power / Capacity', '15 W Qi wireless')],
+  cable: [row('spec.dimensions', 'Dimensions', '2 m braided'), row('spec.weight', 'Weight', '60 g'), row('spec.material', 'Material', 'Braided nylon'), row('spec.power', 'Power / Capacity', '100 W USB-C PD, 480 Mbps')],
+  usbhub: [row('spec.dimensions', 'Dimensions', '11 × 4 × 2 cm'), row('spec.weight', 'Weight', '78 g'), row('spec.material', 'Material', 'Aluminium shell'), row('spec.power', 'Power / Capacity', '7-in-1, 100 W pass-through')],
+  case: [row('spec.dimensions', 'Dimensions', 'Fits X4 Pro'), row('spec.weight', 'Weight', '32 g'), row('spec.material', 'Material', 'Shock-absorbing TPU'), row('spec.power', 'Power / Capacity', '1.2 mm, anti-yellowing')],
+  airfryer: [row('spec.dimensions', 'Dimensions', '36 × 30 × 32 cm'), row('spec.weight', 'Weight', '5.6 kg'), row('spec.material', 'Material', 'Plastic + non-stick basket'), row('spec.power', 'Power / Capacity', '5 L, 1500 W')],
+  vacuum: [row('spec.dimensions', 'Dimensions', '35 × 35 × 10 cm'), row('spec.weight', 'Weight', '3.4 kg'), row('spec.material', 'Material', 'Recycled plastic'), row('spec.power', 'Power / Capacity', 'LiDAR, 180 min, self-empty')],
+  coffeeMaker: [row('spec.dimensions', 'Dimensions', '32 × 30 × 40 cm'), row('spec.weight', 'Weight', '7.2 kg'), row('spec.material', 'Material', 'Stainless steel'), row('spec.power', 'Power / Capacity', '15 bar, 1.8 L tank')],
+  diffuser: [row('spec.dimensions', 'Dimensions', '12 × 12 × 18 cm'), row('spec.weight', 'Weight', '580 g'), row('spec.material', 'Material', 'Bamboo + BPA-free plastic'), row('spec.power', 'Power / Capacity', '300 ml, up to 10 h')],
+  backpack: [row('spec.dimensions', 'Dimensions', '46 × 30 × 16 cm'), row('spec.weight', 'Weight', '880 g'), row('spec.material', 'Material', 'Recycled nylon'), row('spec.power', 'Power / Capacity', '20 L, fits 15" laptop')],
+  smarthome: [row('spec.dimensions', 'Dimensions', '12 cm sphere'), row('spec.weight', 'Weight', '410 g'), row('spec.material', 'Material', 'Polycarbonate shell'), row('spec.power', 'Power / Capacity', 'Mains, Wi-Fi + Zigbee')],
 };
 
+/* Kinds that use the clothing label set. */
+const CLOTHING_ART = new Set(['shirt', 'jacket', 'cap']);
+
+/* Per-product value overrides: when an item's category is right but its own
+ * details differ from the category default (a linen dress, a laptop sleeve,
+ * a phone case), replace the matching row and/or add rows. Keyed by product
+ * id; a row replaces one with the same label, otherwise it is appended. */
+const PRODUCT_SPEC_OVERRIDES = {
+  // Fashion: the description names the real material.
+  p09: [row('spec.material', 'Material', '240 gsm combed cotton')],
+  p10: [row('spec.material', 'Material', '13 oz rigid denim')],
+  p36: [row('spec.material', 'Material', 'Washed linen'), row('spec.fit', 'Fit', 'Relaxed, midi length')],
+  p37: [row('spec.material', 'Material', 'Lambswool blend')],
+  p48: [row('spec.material', 'Material', 'Brushed-back fleece')],
+  p49: [row('spec.material', 'Material', 'Fluid crepe, lined')],
+  p50: [row('spec.material', 'Material', 'Full-grain leather')],
+  p62: [row('spec.material', 'Material', 'Full-grain leather'), row('spec.sizes', 'Size options', 'S, M, L, XL')],
+  // Products whose artwork kind is a gadget but whose category is not.
+  p07: [row('spec.dimensions', 'Dimensions', 'Fits up to 14" laptops'), row('spec.weight', 'Weight', '260 g'), row('spec.material', 'Material', 'Water-repellent polyester'), row('spec.power', 'Power / Capacity', '8 mm foam padding')],
+  p35: [row('spec.dimensions', 'Dimensions', '11 × 4 × 2 cm'), row('spec.weight', 'Weight', '78 g'), row('spec.material', 'Material', 'Aluminium shell'), row('spec.power', 'Power / Capacity', '7-in-1, 100 W pass-through')],
+  p34: [row('spec.dimensions', 'Dimensions', '9 × 9 × 12 cm'), row('spec.weight', 'Weight', '165 g'), row('spec.material', 'Material', 'ABS, non-slip silicone'), row('spec.power', 'Power / Capacity', '15 W Qi wireless')],
+  p43: [row('spec.dimensions', 'Dimensions', 'Fits X4 Pro'), row('spec.weight', 'Weight', '32 g'), row('spec.material', 'Material', 'Shock-absorbing TPU'), row('spec.power', 'Power / Capacity', '1.2 mm, anti-yellowing')],
+};
+
+/* A short model name: the product name without its leading brand. */
+function modelOf(p) {
+  const name = p.name || '';
+  const brand = p.brand || '';
+  if (brand && name.toLowerCase().startsWith(brand.toLowerCase() + ' ')) {
+    return name.slice(brand.length + 1).trim();
+  }
+  return name;
+}
+
+/* Rows of [translation key, English label, value]. Identity rows are appended
+ * to every product; Warranty is omitted where it does not apply. */
 export function specsFor(p) {
-  const base = SPEC_BY_ART[p.art] || [[t('spec.material'), t('spec.seeDescription')]];
-  return base.concat([
-    [t('spec.brand'), p.brand],
-    [t('spec.warranty'), p.cat === 'electronics' ? t('spec.warranty24') : t('spec.warranty12')],
+  const art = p.art;
+  let rows;
+  if (art === 'notebook') rows = LAPTOP_SPECS.slice();
+  else if (art === 'smartphone') rows = PHONE_SPECS.slice();
+  else if (CLOTHING_ART.has(art)) rows = CLOTHING_SPECS.slice();
+  else rows = (OTHER_SPECS[art] || OTHER_SPECS.bag).slice();
+
+  const overrides = PRODUCT_SPEC_OVERRIDES[p.id];
+  if (overrides) {
+    for (const o of overrides) {
+      const i = rows.findIndex((r) => r.l === o.l);
+      if (i === -1) rows.push(o);
+      else rows[i] = o;
+    }
+  }
+
+  rows = rows.concat([
+    row('spec.brand', 'Brand', p.brand),
+    row('spec.model', 'Model', modelOf(p)),
+    row('spec.sku', 'Product ID', p.id),
+    row('spec.stock', 'Stock', p.oos ? 'Sold out' : 'In stock'),
   ]);
+  if (p.cat !== 'groceries' && p.cat !== 'beauty') {
+    rows.push(row('spec.warranty', 'Warranty', p.cat === 'electronics' ? '24 months' : '12 months'));
+  }
+  return rows.filter((r) => r.v !== undefined && r.v !== null && r.v !== '');
 }
 
 /* ---------------------------------------------------------------------------

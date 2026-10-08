@@ -8,7 +8,7 @@
  * (checkout itself is a later phase).
  */
 
-import { icon, productArtView } from './icons.js';
+import { icon, productArtView, productPlaceholder } from './icons.js';
 import {
   SELLERS,
   discountPct,
@@ -25,7 +25,6 @@ import { emptyState, esc, fmtCount, fmtPrice, productCard, starRow, toast } from
 import { goToHash } from './router.js';
 import { t, tc } from './i18n.js';
 
-const VIEW_COUNT = 4;
 
 let p = null;
 let st = { qty: 1, color: '', size: '', view: 0 };
@@ -34,29 +33,64 @@ let st = { qty: 1, color: '', size: '', view: 0 };
 /* Sections                                                             */
 /* ------------------------------------------------------------------ */
 
+function galleryImages() {
+  // The product's real photo list: a selected colour's images when it has
+  // its own, otherwise the default list. An empty list means "no photo".
+  if (st.color && p.variantImages && p.variantImages[st.color] && p.variantImages[st.color].length) {
+    return p.variantImages[st.color];
+  }
+  return Array.isArray(p.images) ? p.images : [];
+}
+
+/* One gallery photo. The neutral placeholder is drawn behind the image: it is
+ * hidden the moment the photo paints (the img box is opaque) and shows through
+ * only when the product has no photo, or the URL fails and the img removes
+ * itself (onerror). */
+function photoMain(src, i) {
+  const fit = p.imageFit === 'contain' ? 'object-contain' : 'object-cover';
+  return '<div class="absolute inset-0 bg-zinc-100">'
+    + productPlaceholder(p, 'absolute inset-0 h-full w-full text-zinc-300')
+    + (src
+      ? '<img src="' + esc(src) + '" alt="' + esc(p.name + ' photo ' + (i + 1)) + '" data-product-image data-gallery-img'
+        + ' class="product-img absolute inset-0 h-full w-full bg-zinc-100 ' + fit + '" onerror="this.remove()">'
+      : '')
+    + '</div>';
+}
+
 function galleryHtml() {
   const disc = discountPct(p);
-  const photoAria = (i) => esc(t('product.photoAria', { i: i + 1, n: VIEW_COUNT }));
-  const dots = Array.from({ length: VIEW_COUNT }, (_, i) =>
-    '<button type="button" data-img-go="' + i + '" aria-label="' + photoAria(i)
-    + '" class="h-1.5 rounded-full transition-all ' + (i === 0 ? 'w-5 bg-brand-600' : 'w-1.5 bg-zinc-300') + '"></button>').join('');
-  const thumbs = Array.from({ length: VIEW_COUNT }, (_, i) =>
-    '<button type="button" data-img-go="' + i + '" aria-label="' + photoAria(i)
-    + '" class="h-16 w-16 shrink-0 overflow-hidden rounded-lg border-2 ' + (i === 0 ? 'border-brand-600' : 'border-transparent') + '">'
-    + productArtView(p, i) + '</button>').join('');
+  const imgs = galleryImages();
+  const n = imgs.length;
+  const view = n ? st.view % n : 0;
+
+  const photoAria = (i) => esc(t('product.photoAria', { i: i + 1, n: n }));
+  const dots = n > 1
+    ? Array.from({ length: n }, (_, i) =>
+      '<button type="button" data-img-go="' + i + '" aria-label="' + photoAria(i)
+      + '" aria-current="' + (i === view) + '" class="h-1.5 rounded-full transition-all ' + (i === view ? 'w-5 bg-brand-600' : 'w-1.5 bg-zinc-300') + '"></button>').join('')
+    : '';
+  const thumbs = n > 1
+    ? Array.from({ length: n }, (_, i) =>
+      '<button type="button" data-img-go="' + i + '" aria-label="' + photoAria(i)
+      + '" class="h-16 w-16 shrink-0 overflow-hidden rounded-lg border-2 bg-zinc-100 ' + (i === view ? 'border-brand-600' : 'border-transparent') + '">'
+      + (imgs[i]
+        ? '<img src="' + esc(imgs[i]) + '" alt="" class="product-img h-full w-full ' + (p.imageFit === 'contain' ? 'object-contain' : 'object-cover') + '" onerror="this.remove()">'
+        : '')
+      + '</button>').join('')
+    : '';
   const fav = store.isFavorite(p.id);
 
   return '<div class="relative aspect-square overflow-hidden rounded-2xl bg-zinc-100">'
-    + '<div id="pdp-img">' + productArtView(p, 0) + '</div>'
+    + '<div id="pdp-img">' + photoMain(imgs[view], view) + '</div>'
     + (disc ? '<span class="badge-sale absolute left-3 top-3">-' + disc + '%</span>' : '')
     + (p.oos ? '<span class="badge absolute bottom-3 left-3 bg-zinc-900/80 text-white">' + esc(t('card.soldOut')) + '</span>' : '')
     + '<button type="button" data-fav="' + p.id + '" aria-label="' + esc(t('card.toggleFav')) + '" aria-pressed="' + fav
     + '" class="fav-btn absolute right-3 top-3' + (fav ? ' fav-btn-on' : '') + '">' + icon(fav ? 'heartFilled' : 'heart', 'h-4 w-4') + '</button>'
-    + '<button type="button" data-img-prev aria-label="' + esc(t('product.prevPhoto')) + '" class="absolute left-2 top-1/2 hidden h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-zinc-700 shadow-card md:flex">' + icon('chevronLeft', 'h-4 w-4') + '</button>'
-    + '<button type="button" data-img-next aria-label="' + esc(t('product.nextPhoto')) + '" class="absolute right-2 top-1/2 hidden h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-zinc-700 shadow-card md:flex">' + icon('chevronRight', 'h-4 w-4') + '</button>'
+    + (n > 1 ? '<button type="button" data-img-prev aria-label="' + esc(t('product.prevPhoto')) + '" class="absolute left-2 top-1/2 hidden h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-zinc-700 shadow-card md:flex">' + icon('chevronLeft', 'h-4 w-4') + '</button>' : '')
+    + (n > 1 ? '<button type="button" data-img-next aria-label="' + esc(t('product.nextPhoto')) + '" class="absolute right-2 top-1/2 hidden h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-zinc-700 shadow-card md:flex">' + icon('chevronRight', 'h-4 w-4') + '</button>' : '')
     + '</div>'
-    + '<div class="mt-3 flex justify-center gap-1.5">' + dots + '</div>'
-    + '<div class="mt-3 hidden gap-2 md:flex">' + thumbs + '</div>';
+    + (dots ? '<div class="mt-3 flex justify-center gap-1.5">' + dots + '</div>' : '')
+    + (thumbs ? '<div class="mt-3 hidden gap-2 md:flex">' + thumbs + '</div>' : '');
 }
 
 function infoHtml() {
@@ -132,10 +166,18 @@ function sellerHtml() {
 }
 
 function specsHtml() {
-  const rows = specsFor(p).map((row) =>
-    '<div class="flex gap-4 px-3.5 py-2.5 text-sm"><dt class="w-32 shrink-0 text-zinc-500">' + row[0] + '</dt><dd class="text-zinc-800">' + row[1] + '</dd></div>').join('');
+  // Two columns on wide screens, one on phones. Every row is keyed for
+  // translation; an empty value is dropped by specsFor, so a non-applicable
+  // field is hidden rather than shown as "N/A".
+  const rows = specsFor(p).map((r) => {
+    const label = t(r.k);
+    return '<div class="flex items-start gap-3 border-b border-zinc-100 px-3.5 py-2.5 text-sm">'
+      + '<dt class="w-28 shrink-0 text-zinc-500 sm:w-36">' + esc(label) + '</dt>'
+      + '<dd class="min-w-0 text-zinc-800">' + esc(r.v) + '</dd></div>';
+  }).join('');
   return '<section class="mt-8"><h2 class="text-base font-bold text-zinc-900">' + esc(t('product.specifications')) + '</h2>'
-    + '<dl class="mt-3 divide-y divide-zinc-100 rounded-xl border border-zinc-100 bg-white">' + rows + '</dl></section>';
+    + '<dl class="mt-3 overflow-hidden rounded-xl border border-zinc-100 bg-white sm:grid sm:grid-cols-2 sm:gap-x-6">'
+    + rows + '</dl></section>';
 }
 
 function descriptionHtml() {
@@ -236,14 +278,20 @@ function notFoundHtml() {
 /* ------------------------------------------------------------------ */
 
 function syncGallery() {
+  const imgs = galleryImages();
+  const n = imgs.length;
+  if (n) st.view = ((st.view % n) + n) % n;
+  else st.view = 0;
   const img = document.getElementById('pdp-img');
-  if (img) img.innerHTML = productArtView(p, st.view);
+  if (img) img.innerHTML = photoMain(imgs[st.view], st.view);
   document.querySelectorAll('#view-product [data-img-go]').forEach((btn) => {
     const i = Number(btn.getAttribute('data-img-go'));
+    const on = i === st.view;
     if (btn.classList.contains('h-1.5')) {
-      btn.className = 'h-1.5 rounded-full transition-all ' + (i === st.view ? 'w-5 bg-brand-600' : 'w-1.5 bg-zinc-300');
+      btn.className = 'h-1.5 rounded-full transition-all ' + (on ? 'w-5 bg-brand-600' : 'w-1.5 bg-zinc-300');
+      btn.setAttribute('aria-current', String(on));
     } else {
-      btn.className = 'h-16 w-16 shrink-0 overflow-hidden rounded-lg border-2 ' + (i === st.view ? 'border-brand-600' : 'border-transparent');
+      btn.className = 'h-16 w-16 shrink-0 overflow-hidden rounded-lg border-2 bg-zinc-100 ' + (on ? 'border-brand-600' : 'border-transparent');
     }
   });
 }
@@ -283,20 +331,27 @@ function bindProductEvents() {
     if (!target) return;
 
     if (target.hasAttribute('data-img-go')) {
-      st.view = Number(target.getAttribute('data-img-go')) % VIEW_COUNT;
+      const n = galleryImages().length || 1;
+      st.view = Number(target.getAttribute('data-img-go')) % n;
       syncGallery();
       return;
     }
     if (target.hasAttribute('data-img-prev') || target.hasAttribute('data-img-next')) {
       const dir = target.hasAttribute('data-img-next') ? 1 : -1;
-      st.view = (st.view + dir + VIEW_COUNT) % VIEW_COUNT;
+      const n = galleryImages().length || 1;
+      st.view = (st.view + dir + n) % n;
       syncGallery();
       return;
     }
     const color = target.getAttribute('data-variant-color');
     if (color) {
       st.color = color;
+      // A colour may have its own photos; switching resets to that set's
+      // first image (falling back to the product's default images).
+      st.view = 0;
       syncVariantButtons();
+      const gal = document.getElementById('pdp-gallery');
+      if (gal) gal.innerHTML = galleryHtml();
       return;
     }
     const size = target.getAttribute('data-variant-size');
@@ -355,7 +410,7 @@ export function renderProduct(id) {
   view.innerHTML = '<div class="mx-auto max-w-5xl px-4 pb-32 pt-3">'
     + '<button type="button" data-back class="icon-btn -ml-2 mb-3" aria-label="' + esc(t('common.back')) + '">' + icon('chevronLeft', 'h-5 w-5') + '</button>'
     + '<div class="md:grid md:grid-cols-2 md:gap-8">'
-    + '<div class="md:sticky md:top-6 md:self-start">' + galleryHtml() + '</div>'
+    + '<div id="pdp-gallery" class="md:sticky md:top-6 md:self-start">' + galleryHtml() + '</div>'
     + '<div class="mt-5 md:mt-0">' + infoHtml() + '</div>'
     + '</div>'
     + descriptionHtml()
