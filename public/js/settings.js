@@ -5,8 +5,8 @@
  * through the store's prefs (persisted under the bazario: prefix). The
  * Theme row shows the active color theme (the swatches themselves live in
  * the desktop header and the Profile page, see theme.js). Language: English
- * is the only shipped locale so far; the picker lists the upcoming ones as
- * disabled rows.
+ * and Bahasa Indonesia; the picker calls i18n.setLocale, which changes the
+ * whole app.
  */
 
 import { icon } from './icons.js';
@@ -15,19 +15,11 @@ import { avatarHtml, confirmDialog, esc, toast } from './ui.js';
 import { getTheme, themeName } from './theme.js';
 import { displayName } from './profile.js';
 import { getAvatarState } from './profile-photo.js';
-import { parseRoute } from './router.js';
-import { renderProduct } from './product.js';
-
-const LOCALES = [
-  { code: 'en', label: 'English' },
-  { code: 'es', label: 'Español' },
-  { code: 'pt-BR', label: 'Português (Brasil)' },
-  { code: 'id', label: 'Bahasa Indonesia' },
-];
+import { LOCALES, localeLabel, setLocale, t } from './i18n.js';
 
 function pageHeader(title, backRoute) {
   return '<div class="flex items-center gap-1">'
-    + '<button type="button" data-route="' + backRoute + '" class="icon-btn -ml-2" aria-label="Back">'
+    + '<button type="button" data-route="' + backRoute + '" class="icon-btn -ml-2" aria-label="' + esc(t('common.back')) + '">'
     + icon('chevronLeft', 'h-5 w-5') + '</button>'
     + '<h1 class="section-title">' + title + '</h1>'
     + '</div>';
@@ -55,11 +47,6 @@ function toggleRow(iconName, label, prefKey, checked) {
 /* Settings page                                                       */
 /* ------------------------------------------------------------------ */
 
-function localeLabel() {
-  const found = LOCALES.find((l) => l.code === store.prefs.locale);
-  return found ? found.label : 'English';
-}
-
 export function renderSettingsView() {
   const segs = (location.hash || '').replace(/^#\/?/, '').split('/').filter(Boolean);
   if (segs[1] === 'edit') return renderEditProfile();
@@ -68,35 +55,35 @@ export function renderSettingsView() {
   const name = displayName();
 
   view.innerHTML =
-    pageHeader('Settings', 'profile')
+    pageHeader(t('settings.title'), 'profile')
     + '<div class="mt-4">'
-    + sectionLabel('Account')
+    + sectionLabel(t('settings.account'))
     + '<div class="card divide-y divide-zinc-100 overflow-hidden">'
-    + valueRow('user', 'Account settings', 'data-route="profile/edit"', name ? '@' + name : 'Guest shopper')
+    + valueRow('user', t('settings.accountSettings'), 'data-route="profile/edit"', name ? '@' + name : t('settings.guest'))
     + '</div>'
 
-    + sectionLabel('Notification settings')
+    + sectionLabel(t('settings.notifications'))
     + '<div class="card divide-y divide-zinc-100 overflow-hidden">'
-    + toggleRow('package', 'Order updates', 'orderUpdates', store.prefs.orderUpdates)
-    + toggleRow('percent', 'Promotions and deals', 'promotions', store.prefs.promotions)
+    + toggleRow('package', t('settings.orderUpdates'), 'orderUpdates', store.prefs.orderUpdates)
+    + toggleRow('percent', t('settings.promotions'), 'promotions', store.prefs.promotions)
     + '</div>'
 
-    + sectionLabel('Preferences')
+    + sectionLabel(t('settings.preferences'))
     + '<div class="card divide-y divide-zinc-100 overflow-hidden">'
-    + valueRow('globe', 'Language', 'data-lang-pick', localeLabel())
-    + valueRow('moon', 'Theme', 'data-theme-info', themeName(getTheme()))
+    + valueRow('globe', t('settings.language'), 'data-lang-pick', localeLabel())
+    + valueRow('moon', t('settings.theme'), 'data-theme-info', themeName(getTheme()))
     + '</div>'
 
-    + sectionLabel('Privacy')
+    + sectionLabel(t('settings.privacy'))
     + '<div class="card divide-y divide-zinc-100 overflow-hidden">'
-    + toggleRow('sparkles', 'Personalized recommendations', 'personalized', store.prefs.personalized)
-    + toggleRow('search', 'Save search history', 'saveSearch', store.prefs.saveSearch)
+    + toggleRow('sparkles', t('settings.personalized'), 'personalized', store.prefs.personalized)
+    + toggleRow('search', t('settings.saveSearch'), 'saveSearch', store.prefs.saveSearch)
     + '</div>'
     + '</div>'
 
     + '<div class="card mt-6 overflow-hidden">'
     + '<button type="button" data-logout class="menu-row justify-center text-rose-600 hover:bg-rose-50">'
-    + icon('logout', 'h-5 w-5') + 'Log out</button>'
+    + icon('logout', 'h-5 w-5') + esc(t('settings.logout')) + '</button>'
     + '</div>';
 }
 
@@ -117,9 +104,9 @@ function renderEditProfile() {
   const name = displayName();
 
   view.innerHTML =
-    pageHeader('Edit profile', 'profile')
+    pageHeader(t('settings.editProfile'), 'profile')
     + '<div class="card mt-4 flex items-center gap-4 p-4">'
-    + '<button type="button" data-avatar-edit class="relative shrink-0 rounded-full" aria-label="Change profile photo">'
+    + '<button type="button" data-avatar-edit class="relative shrink-0 rounded-full" aria-label="' + esc(t('settings.changePhotoLabel')) + '">'
     + avatarHtml({
       url: getAvatarState().url,
       name: name || (p.name || null),
@@ -129,18 +116,18 @@ function renderEditProfile() {
     + '</button>'
     + '<input type="file" id="avatar-file-input" class="hidden" accept="image/jpeg,image/png,image/webp">'
     + '<div class="min-w-0 flex-1">'
-    + '<p class="text-sm font-semibold text-zinc-900">Profile photo</p>'
-    + '<p class="mt-0.5 text-xs text-zinc-500">Tap the photo to choose from your gallery or remove it.</p>'
+    + '<p class="text-sm font-semibold text-zinc-900">' + esc(t('settings.profilePhoto')) + '</p>'
+    + '<p class="mt-0.5 text-xs text-zinc-500">' + esc(t('settings.profilePhotoHint')) + '</p>'
     + '</div>'
-    + '<button type="button" data-avatar-edit class="btn-outline btn-sm shrink-0">Change</button>'
+    + '<button type="button" data-avatar-edit class="btn-outline btn-sm shrink-0">' + esc(t('settings.change')) + '</button>'
     + '</div>'
     + '<form data-profile-form class="card mt-4 space-y-4 p-4">'
-    + fieldRow('Display name', '<input name="name" class="field" required maxlength="40" value="' + esc(p.name || name || '') + '">')
-    + fieldRow('Email', '<input name="email" type="email" class="field" maxlength="80" value="' + esc(p.email || '') + '" autocomplete="email">')
-    + fieldRow('Phone', '<input name="phone" type="tel" class="field" maxlength="30" value="' + esc(p.phone || '') + '" autocomplete="tel">')
-    + '<button type="submit" class="btn-primary w-full">Save changes</button>'
+    + fieldRow(esc(t('settings.displayName')), '<input name="name" class="field" required maxlength="40" value="' + esc(p.name || name || '') + '">')
+    + fieldRow(esc(t('settings.email')), '<input name="email" type="email" class="field" maxlength="80" value="' + esc(p.email || '') + '" autocomplete="email">')
+    + fieldRow(esc(t('settings.phone')), '<input name="phone" type="tel" class="field" maxlength="30" value="' + esc(p.phone || '') + '" autocomplete="tel">')
+    + '<button type="submit" class="btn-primary w-full">' + esc(t('settings.saveChanges')) + '</button>'
     + '</form>'
-    + '<p class="mt-3 px-1 text-xs text-zinc-400">Your sign-in stays with Homeroom. These details personalize your MVP Marketplace account.</p>';
+    + '<p class="mt-3 px-1 text-xs text-zinc-400">' + esc(t('settings.signInNote')) + '</p>';
 }
 
 /* ------------------------------------------------------------------ */
@@ -151,35 +138,33 @@ function pickLanguage(anchorEl) {
   if (window.unNative && typeof window.unNative.menu === 'function') {
     window.unNative.menu({
       anchorEl,
-      title: 'Language',
-      cancelLabel: 'Cancel',
+      title: t('settings.language'),
+      cancelLabel: t('common.cancel'),
       items: LOCALES.map((l) => ({
         label: l.label,
         code: l.code,
       })),
     }).then((picked) => {
       if (!picked || !picked.code) return;
-      store.setPref('locale', picked.code);
-      const found = LOCALES.find((l) => l.code === picked.code);
-      toast('Language set to ' + (found ? found.label : picked.code));
-      // The product detail page is the only surface with translations so
-      // far; re-render it so the Specifications section updates live.
-      if (parseRoute().view === 'product') renderProduct(parseRoute().id);
+      // setLocale persists, retranslates and fires `localechange`; app.js
+      // re-renders the current screen from that event.
+      setLocale(picked.code);
+      toast(t('settings.languageSet', { language: localeLabel() }));
     });
     return;
   }
-  toast('Use the language picker in Settings');
+  toast(t('settings.languageFallback'));
 }
 
 function logout() {
   confirmDialog({
-    title: 'Log out?',
-    message: 'MVP Marketplace keeps your cart, wishlist, addresses and settings on this device. Logging out clears them.',
-    confirmLabel: 'Log out',
+    title: t('settings.logoutTitle'),
+    message: t('settings.logoutMessage'),
+    confirmLabel: t('settings.logout'),
   }).then((ok) => {
     if (!ok) return;
     store.clearAll();
-    toast('Logged out');
+    toast(t('settings.loggedOut'));
     location.hash = '/home';
   });
 }
@@ -198,7 +183,7 @@ export function initSettings() {
       return;
     }
     if (el.hasAttribute('data-theme-info')) {
-      toast('Use the color swatches to change the theme (header on desktop, Profile page on mobile)');
+      toast(t('settings.themeInfo'));
       return;
     }
     logout();
@@ -218,7 +203,7 @@ export function initSettings() {
       email: form.elements.email.value,
       phone: form.elements.phone.value,
     });
-    toast('Profile saved');
+    toast(t('settings.profileSaved'));
     location.hash = '/profile';
   });
 }

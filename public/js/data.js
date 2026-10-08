@@ -15,6 +15,52 @@
 
 import { RECOMMENDED_PRODUCTS } from './recommended-data.js';
 import { LOCATIONS, allCities } from './locations.js';
+import { has, t } from './i18n.js';
+
+/* UI vocabulary that lives in this module (category and subcategory names,
+ * banner copy, seller badges, colour names, voucher wording, shipping and
+ * stock text) resolves through t() at read time, never at import time, so a
+ * language change shows on the next render. Records keep stable ids; the
+ * display name is a getter (or one of the helpers below). */
+
+/* Look up a catalog key, falling back to the raw (English) text. */
+function label(key, fallback) {
+  return has(key) ? t(key) : fallback;
+}
+
+/* Localized category name by id. */
+export function catName(id) {
+  const c = CATEGORIES.find((x) => x.id === id);
+  return label('catalog.cat.' + id, c ? c._name : '');
+}
+
+/* Localized subcategory name by category id and subcategory id. */
+export function subName(catId, subId) {
+  const s = (SUBCATEGORIES[catId] || []).find((x) => x.id === subId);
+  return label('catalog.sub.' + subId, s ? s._name : '');
+}
+
+/* Localized colour name for a swatch name stored on a product ("Midnight
+ * Black"). The stored name stays the stable variant value (the cart keeps
+ * it); only the label shown to people is translated. */
+export function colorName(name) {
+  if (!name) return '';
+  return label('catalog.color.' + String(name).toLowerCase().replace(/\s+/g, '-'), name);
+}
+
+/* A record whose `name` is a localized getter; `_name` keeps the English
+ * source for backward compatibility and fallbacks. */
+function localized(rec, keyOf) {
+  const out = Object.assign({}, rec);
+  out._name = rec.name;
+  delete out.name;
+  Object.defineProperty(out, 'name', {
+    enumerable: true,
+    get() { return label(keyOf(rec), rec.name); },
+  });
+  Object.defineProperty(out, '_name', { enumerable: false, value: rec.name });
+  return out;
+}
 
 export const CATEGORIES = [
   { id: 'electronics', name: 'Electronics' },
@@ -24,10 +70,10 @@ export const CATEGORIES = [
   { id: 'sports', name: 'Sports' },
   { id: 'groceries', name: 'Groceries' },
   { id: 'accessories', name: 'Accessories' },
-];
+].map((c) => localized(c, (r) => 'catalog.cat.' + r.id));
 
 /* Subcategory per category. Product rows carry `sub` (a subcategory id). */
-export const SUBCATEGORIES = {
+const SUBCATEGORY_SOURCE = {
   electronics: [
     { id: 'audio', name: 'Audio' },
     { id: 'phones', name: 'Phones' },
@@ -71,10 +117,13 @@ export const SUBCATEGORIES = {
     { id: 'travel', name: 'Travel' },
   ],
 };
+export const SUBCATEGORIES = Object.fromEntries(Object.entries(SUBCATEGORY_SOURCE).map(
+  ([cat, list]) => [cat, list.map((sub) => localized(sub, (r) => 'catalog.sub.' + r.id))]));
+
 
 /* Promotional carousel. tone picks the gradient (whole literal classes in
  * home.js); action is what the CTA does. */
-export const BANNERS = [
+const BANNER_SOURCE = [
   {
     id: 'mega-weekend',
     tone: 'brand',
@@ -103,6 +152,18 @@ export const BANNERS = [
     action: { type: 'category', id: 'fashion' },
   },
 ];
+/* title / subtitle / cta are getters: catalog.banner.<id>.<field>. */
+export const BANNERS = BANNER_SOURCE.map((b) => {
+  const out = Object.assign({}, b);
+  for (const field of ['title', 'subtitle', 'cta']) {
+    Object.defineProperty(out, field, {
+      enumerable: true,
+      get() { return label('catalog.banner.' + b.id + '.' + field, b[field]); },
+    });
+  }
+  return out;
+});
+
 
 export const TRENDING = [
   'wireless earbuds',
@@ -127,7 +188,7 @@ export const POPULAR_SEARCHES = [
 /* ---------------------------------------------------------------------------
  * Sellers. Mock marketplace: each brand is its own storefront.
  * ------------------------------------------------------------------------- */
-export const SELLERS = {
+const SELLER_SOURCE = {
   Aurex: { rating: 4.8, since: 2021, followers: '12.4k', response: '96%', badge: 'Official store' },
   Novo: { rating: 4.7, since: 2022, followers: '9.1k', response: '94%', badge: 'Official store' },
   Klarita: { rating: 4.8, since: 2020, followers: '15.2k', response: '97%', badge: 'Official store' },
@@ -138,6 +199,19 @@ export const SELLERS = {
   Ombra: { rating: 4.5, since: 2019, followers: '7.9k', response: '90%', badge: 'Verified seller' },
   Luma: { rating: 4.6, since: 2022, followers: '5.4k', response: '91%', badge: 'Official store' },
 };
+
+/* `badge` is a getter ('Official store' / 'Verified seller'), localized by
+ * catalog.seller.official / catalog.seller.verified. */
+export const SELLERS = Object.fromEntries(Object.entries(SELLER_SOURCE).map(([brand, rec]) => {
+  const out = Object.assign({}, rec);
+  const kind = rec.badge === 'Official store' ? 'official' : 'verified';
+  Object.defineProperty(out, 'badge', {
+    enumerable: true,
+    get() { return label('catalog.seller.' + kind, rec.badge); },
+  });
+  return [brand, out];
+}));
+
 
 /* ---------------------------------------------------------------------------
  * Variants. `colors` maps a swatch key to [display name, hex]; helpers below
@@ -746,12 +820,10 @@ export function voucherByCode(code) {
  * $20.00"). Shared by the cart's voucher block and the profile's Coupons
  * page so both always word it the same way. */
 export function voucherDescription(v) {
-  const base = v.type === 'percent'
-    ? v.value + '% off your order'
-    : v.type === 'fixed'
-      ? '$' + (v.value / 100).toFixed(2) + ' off your order'
-      : 'Free shipping on your order';
-  return base + ' · orders over ' + '$' + (v.min / 100).toFixed(2);
+  const min = '$' + (v.min / 100).toFixed(2);
+  if (v.type === 'percent') return t('catalog.voucher.percent', { value: v.value, min: min });
+  if (v.type === 'fixed') return t('catalog.voucher.fixed', { amount: '$' + (v.value / 100).toFixed(2), min: min });
+  return t('catalog.voucher.ship', { min: min });
 }
 
 export function discountPct(p) {
@@ -882,7 +954,8 @@ export function subcategoryName(catId, subId) {
 export function matchSearch(p, query) {
   const terms = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
   if (!terms.length) return true;
-  const hay = [p.name, p.brand, p.cat, subcategoryName(p.cat, p.sub), p.kw || '']
+  const sub = subcategoryById(p.cat, p.sub);
+  const hay = [p.name, p.brand, p.cat, sub ? sub._name : '', subcategoryName(p.cat, p.sub), p.kw || '']
     .join(' ')
     .toLowerCase();
   return terms.every((t) => hay.includes(t));
@@ -920,82 +993,82 @@ export function imagesFor(p) {
 function row(k, l, v) { return { k: k, l: l, v: v }; }
 
 const LAPTOP_SPECS = [
-  row('spec.display', 'Display', '14" IPS, 1920 x 1200'),
-  row('spec.processor', 'Processor', 'Intel Core i5-1335U'),
-  row('spec.ram', 'RAM', '16 GB DDR4'),
-  row('spec.storage', 'Storage', '512 GB NVMe SSD'),
-  row('spec.graphics', 'Graphics', 'Intel Iris Xe'),
-  row('spec.battery', 'Battery', 'Up to 12 hours'),
-  row('spec.weight', 'Weight', '1.3 kg'),
-  row('spec.os', 'Operating System', 'Windows 11 Home'),
-  row('spec.ports', 'Ports', '2x USB-C, 2x USB-A, HDMI'),
+  row('product.spec.display', 'Display', '14" IPS, 1920 x 1200'),
+  row('product.spec.processor', 'Processor', 'Intel Core i5-1335U'),
+  row('product.spec.ram', 'RAM', '16 GB DDR4'),
+  row('product.spec.storage', 'Storage', '512 GB NVMe SSD'),
+  row('product.spec.graphics', 'Graphics', 'Intel Iris Xe'),
+  row('product.spec.battery', 'Battery', 'Up to 12 hours'),
+  row('product.spec.weight', 'Weight', '1.3 kg'),
+  row('product.spec.os', 'Operating System', 'Windows 11 Home'),
+  row('product.spec.ports', 'Ports', '2x USB-C, 2x USB-A, HDMI'),
 ];
 
 const PHONE_SPECS = [
-  row('spec.display', 'Display', '6.7" AMOLED, 120 Hz'),
-  row('spec.chipset', 'Chipset', 'Snapdragon 8 Gen 2'),
-  row('spec.ram', 'RAM', '8 GB'),
-  row('spec.storage', 'Storage', '128 GB'),
-  row('spec.camera', 'Camera', '50 MP triple'),
-  row('spec.battery', 'Battery', '5000 mAh, 65 W fast charge'),
-  row('spec.os', 'Operating System', 'Android 14'),
-  row('spec.sim', 'SIM', 'Dual SIM, unlocked'),
+  row('product.spec.display', 'Display', '6.7" AMOLED, 120 Hz'),
+  row('product.spec.chipset', 'Chipset', 'Snapdragon 8 Gen 2'),
+  row('product.spec.ram', 'RAM', '8 GB'),
+  row('product.spec.storage', 'Storage', '128 GB'),
+  row('product.spec.camera', 'Camera', '50 MP triple'),
+  row('product.spec.battery', 'Battery', '5000 mAh, 65 W fast charge'),
+  row('product.spec.os', 'Operating System', 'Android 14'),
+  row('product.spec.sim', 'SIM', 'Dual SIM, unlocked'),
 ];
 
 const CLOTHING_SPECS = [
-  row('spec.material', 'Material', 'Combed cotton blend'),
-  row('spec.sizes', 'Size options', 'S, M, L, XL'),
-  row('spec.fit', 'Fit', 'True to size'),
-  row('spec.care', 'Care instructions', 'Machine wash 30°C'),
-  row('spec.origin', 'Origin', 'Made in Portugal'),
+  row('product.spec.material', 'Material', 'Combed cotton blend'),
+  row('product.spec.sizes', 'Size options', 'S, M, L, XL'),
+  row('product.spec.fit', 'Fit', 'True to size'),
+  row('product.spec.care', 'Care instructions', 'Machine wash 30°C'),
+  row('product.spec.origin', 'Origin', 'Made in Portugal'),
 ];
 
 /* Dimensions, Weight, Material and Power / Capacity for every non-laptop,
  * non-phone, non-clothing kind. Values stay plausible for the item. */
 const OTHER_SPECS = {
-  headphones: [row('spec.dimensions', 'Dimensions', '18 × 17 × 8 cm'), row('spec.weight', 'Weight', '255 g'), row('spec.material', 'Material', 'Aluminium + memory foam'), row('spec.power', 'Power / Capacity', 'USB-C, 40 h per charge')],
-  camera: [row('spec.dimensions', 'Dimensions', '6 × 4 × 3 cm'), row('spec.weight', 'Weight', '154 g'), row('spec.material', 'Material', 'Polycarbonate body'), row('spec.power', 'Power / Capacity', '4K60 video, 10 m waterproof')],
-  tv: [row('spec.dimensions', 'Dimensions', '123 × 71 × 8 cm'), row('spec.weight', 'Weight', '12.4 kg'), row('spec.material', 'Material', 'Aluminium frame'), row('spec.power', 'Power / Capacity', '55" 4K UHD, 120 W')],
-  speaker: [row('spec.dimensions', 'Dimensions', '10 × 10 × 9 cm'), row('spec.weight', 'Weight', '320 g'), row('spec.material', 'Material', 'Silicone + mesh'), row('spec.power', 'Power / Capacity', '12 W, IPX7, 18 h')],
-  watch: [row('spec.dimensions', 'Dimensions', '44 × 38 × 10 mm'), row('spec.weight', 'Weight', '45 g'), row('spec.material', 'Material', 'Aluminium case'), row('spec.power', 'Power / Capacity', '10-day battery, 5 ATM')],
-  bag: [row('spec.dimensions', 'Dimensions', '26 × 20 × 9 cm'), row('spec.weight', 'Weight', '480 g'), row('spec.material', 'Material', 'Water-resistant canvas'), row('spec.power', 'Power / Capacity', '12 L capacity')],
-  glasses: [row('spec.dimensions', 'Dimensions', '142 × 45 × 20 mm'), row('spec.weight', 'Weight', '24 g'), row('spec.material', 'Material', 'Hand-polished acetate'), row('spec.power', 'Power / Capacity', 'UV400 polarised')],
-  droplet: [row('spec.dimensions', 'Dimensions', '30 ml bottle'), row('spec.weight', 'Weight', '75 g'), row('spec.material', 'Material', 'Glass bottle, dropper'), row('spec.power', 'Power / Capacity', '30 ml')],
-  sparkles: [row('spec.dimensions', 'Dimensions', '12 × 8 × 2 cm'), row('spec.weight', 'Weight', '120 g'), row('spec.material', 'Material', 'Talc-free pressed powder'), row('spec.power', 'Power / Capacity', 'Standard retail size')],
-  cream: [row('spec.dimensions', 'Dimensions', '50 ml jar'), row('spec.weight', 'Weight', '95 g'), row('spec.material', 'Material', 'Hyaluronic acid base'), row('spec.power', 'Power / Capacity', '50 ml')],
-  jar: [row('spec.dimensions', 'Dimensions', '13 × 9 × 9 cm'), row('spec.weight', 'Weight', '560 g'), row('spec.material', 'Material', 'Glass jar, metal lid'), row('spec.power', 'Power / Capacity', 'See pack size')],
-  armchair: [row('spec.dimensions', 'Dimensions', '82 W × 88 D × 78 H cm'), row('spec.weight', 'Weight', '24 kg'), row('spec.material', 'Material', 'Woven polyester, oak legs'), row('spec.power', 'Power / Capacity', 'Seats one')],
-  lamp: [row('spec.dimensions', 'Dimensions', '18 × 18 × 46 cm'), row('spec.weight', 'Weight', '1.4 kg'), row('spec.material', 'Material', 'Ceramic base, linen shade'), row('spec.power', 'Power / Capacity', 'E27, 8 W LED')],
-  bed: [row('spec.dimensions', 'Dimensions', '220 × 240 cm'), row('spec.weight', 'Weight', '1.8 kg'), row('spec.material', 'Material', '300 TC cotton percale'), row('spec.power', 'Power / Capacity', 'Double + 2 pillowcases')],
-  table: [row('spec.dimensions', 'Dimensions', '45 Ø × 45 H cm'), row('spec.weight', 'Weight', '6.2 kg'), row('spec.material', 'Material', 'Solid oak'), row('spec.power', 'Power / Capacity', 'Hardwax oil finish')],
-  dumbbell: [row('spec.dimensions', 'Dimensions', '32 × 20 × 20 cm'), row('spec.weight', 'Weight', '20 kg set'), row('spec.material', 'Material', 'Steel, rubber-coated'), row('spec.power', 'Power / Capacity', '5-20 kg adjustable')],
-  ball: [row('spec.dimensions', 'Dimensions', '22 cm diameter'), row('spec.weight', 'Weight', '410 g'), row('spec.material', 'Material', 'Machine-stitched TPU'), row('spec.power', 'Power / Capacity', 'Size 5 match ball')],
-  bottle: [row('spec.dimensions', 'Dimensions', '8 × 8 × 26 cm'), row('spec.weight', 'Weight', '320 g'), row('spec.material', 'Material', '18/8 stainless steel'), row('spec.power', 'Power / Capacity', '1 L, cold 24 h / hot 12 h')],
-  apple: [row('spec.dimensions', 'Dimensions', '6-pack tray'), row('spec.weight', 'Weight', 'About 1.1 kg'), row('spec.material', 'Material', 'Fresh organic fruit'), row('spec.power', 'Power / Capacity', '6 apples')],
-  coffee: [row('spec.dimensions', 'Dimensions', '10 × 8 × 24 cm'), row('spec.weight', 'Weight', '1 kg'), row('spec.material', 'Material', 'Arabica beans'), row('spec.power', 'Power / Capacity', 'Medium roast, whole bean')],
-  wallet: [row('spec.dimensions', 'Dimensions', '10.5 × 8 cm'), row('spec.weight', 'Weight', '72 g'), row('spec.material', 'Material', 'Full-grain vegetable-tanned leather'), row('spec.power', 'Power / Capacity', '6 cards + cash fold')],
-  gem: [row('spec.dimensions', 'Dimensions', 'Small, gift boxed'), row('spec.weight', 'Weight', '4 g'), row('spec.material', 'Material', 'Rhodium-plated 925 silver'), row('spec.power', 'Power / Capacity', 'Gift box included')],
-  shoe: [row('spec.dimensions', 'Dimensions', 'EU 38-43'), row('spec.weight', 'Weight', '285 g per shoe'), row('spec.material', 'Material', 'Draining mesh, EVA midsole'), row('spec.power', 'Power / Capacity', '8 mm heel drop')],
-  mat: [row('spec.dimensions', 'Dimensions', '183 × 61 cm'), row('spec.weight', 'Weight', '1.1 kg'), row('spec.material', 'Material', 'TPE, closed-cell'), row('spec.power', 'Power / Capacity', '6 mm thick, non-slip')],
-  tent: [row('spec.dimensions', 'Dimensions', 'Packed 60 × 18 cm'), row('spec.weight', 'Weight', '4.2 kg'), row('spec.material', 'Material', 'Ripstop polyester'), row('spec.power', 'Power / Capacity', '2 person, 3000 mm fly')],
-  banana: [row('spec.dimensions', 'Dimensions', '1 kg bunch'), row('spec.weight', 'Weight', 'About 1 kg'), row('spec.material', 'Material', 'Fresh fruit'), row('spec.power', 'Power / Capacity', 'About 9 bananas')],
-  belt: [row('spec.dimensions', 'Dimensions', 'Length S-XL'), row('spec.weight', 'Weight', '180 g'), row('spec.material', 'Material', 'Full-grain leather'), row('spec.power', 'Power / Capacity', '3.5 cm, reversible buckle')],
-  mouse: [row('spec.dimensions', 'Dimensions', '12 × 7 × 7 cm'), row('spec.weight', 'Weight', '105 g'), row('spec.material', 'Material', 'Recycled ABS'), row('spec.power', 'Power / Capacity', 'Wireless, weeks per charge')],
-  keyboard: [row('spec.dimensions', 'Dimensions', '32 × 13 × 4 cm'), row('spec.weight', 'Weight', '820 g'), row('spec.material', 'Material', 'Aluminium + PBT keycaps'), row('spec.power', 'Power / Capacity', 'USB-C, detachable')],
-  drone: [row('spec.dimensions', 'Dimensions', 'Folded 18 × 10 cm'), row('spec.weight', 'Weight', '249 g'), row('spec.material', 'Material', 'Composite shell'), row('spec.power', 'Power / Capacity', 'Up to 30 min flight')],
-  monitor: [row('spec.dimensions', 'Dimensions', '61 × 36 cm panel'), row('spec.weight', 'Weight', '5.4 kg'), row('spec.material', 'Material', 'IPS panel, metal stand'), row('spec.power', 'Power / Capacity', '27" QHD, 165 Hz')],
-  webcam: [row('spec.dimensions', 'Dimensions', '9 × 3 × 3 cm'), row('spec.weight', 'Weight', '95 g'), row('spec.material', 'Material', 'ABS housing'), row('spec.power', 'Power / Capacity', '1080p60, USB-C')],
-  powerbank: [row('spec.dimensions', 'Dimensions', '14 × 7 × 3 cm'), row('spec.weight', 'Weight', '395 g'), row('spec.material', 'Material', 'Aluminium shell'), row('spec.power', 'Power / Capacity', '20000 mAh, 65 W USB-C PD')],
-  charger: [row('spec.dimensions', 'Dimensions', '9 × 9 × 12 cm'), row('spec.weight', 'Weight', '165 g'), row('spec.material', 'Material', 'ABS, non-slip silicone'), row('spec.power', 'Power / Capacity', '15 W Qi wireless')],
-  cable: [row('spec.dimensions', 'Dimensions', '2 m braided'), row('spec.weight', 'Weight', '60 g'), row('spec.material', 'Material', 'Braided nylon'), row('spec.power', 'Power / Capacity', '100 W USB-C PD, 480 Mbps')],
-  usbhub: [row('spec.dimensions', 'Dimensions', '11 × 4 × 2 cm'), row('spec.weight', 'Weight', '78 g'), row('spec.material', 'Material', 'Aluminium shell'), row('spec.power', 'Power / Capacity', '7-in-1, 100 W pass-through')],
-  case: [row('spec.dimensions', 'Dimensions', 'Fits X4 Pro'), row('spec.weight', 'Weight', '32 g'), row('spec.material', 'Material', 'Shock-absorbing TPU'), row('spec.power', 'Power / Capacity', '1.2 mm, anti-yellowing')],
-  airfryer: [row('spec.dimensions', 'Dimensions', '36 × 30 × 32 cm'), row('spec.weight', 'Weight', '5.6 kg'), row('spec.material', 'Material', 'Plastic + non-stick basket'), row('spec.power', 'Power / Capacity', '5 L, 1500 W')],
-  vacuum: [row('spec.dimensions', 'Dimensions', '35 × 35 × 10 cm'), row('spec.weight', 'Weight', '3.4 kg'), row('spec.material', 'Material', 'Recycled plastic'), row('spec.power', 'Power / Capacity', 'LiDAR, 180 min, self-empty')],
-  coffeeMaker: [row('spec.dimensions', 'Dimensions', '32 × 30 × 40 cm'), row('spec.weight', 'Weight', '7.2 kg'), row('spec.material', 'Material', 'Stainless steel'), row('spec.power', 'Power / Capacity', '15 bar, 1.8 L tank')],
-  diffuser: [row('spec.dimensions', 'Dimensions', '12 × 12 × 18 cm'), row('spec.weight', 'Weight', '580 g'), row('spec.material', 'Material', 'Bamboo + BPA-free plastic'), row('spec.power', 'Power / Capacity', '300 ml, up to 10 h')],
-  backpack: [row('spec.dimensions', 'Dimensions', '46 × 30 × 16 cm'), row('spec.weight', 'Weight', '880 g'), row('spec.material', 'Material', 'Recycled nylon'), row('spec.power', 'Power / Capacity', '20 L, fits 15" laptop')],
-  smarthome: [row('spec.dimensions', 'Dimensions', '12 cm sphere'), row('spec.weight', 'Weight', '410 g'), row('spec.material', 'Material', 'Polycarbonate shell'), row('spec.power', 'Power / Capacity', 'Mains, Wi-Fi + Zigbee')],
+  headphones: [row('product.spec.dimensions', 'Dimensions', '18 × 17 × 8 cm'), row('product.spec.weight', 'Weight', '255 g'), row('product.spec.material', 'Material', 'Aluminium + memory foam'), row('product.spec.power', 'Power / Capacity', 'USB-C, 40 h per charge')],
+  camera: [row('product.spec.dimensions', 'Dimensions', '6 × 4 × 3 cm'), row('product.spec.weight', 'Weight', '154 g'), row('product.spec.material', 'Material', 'Polycarbonate body'), row('product.spec.power', 'Power / Capacity', '4K60 video, 10 m waterproof')],
+  tv: [row('product.spec.dimensions', 'Dimensions', '123 × 71 × 8 cm'), row('product.spec.weight', 'Weight', '12.4 kg'), row('product.spec.material', 'Material', 'Aluminium frame'), row('product.spec.power', 'Power / Capacity', '55" 4K UHD, 120 W')],
+  speaker: [row('product.spec.dimensions', 'Dimensions', '10 × 10 × 9 cm'), row('product.spec.weight', 'Weight', '320 g'), row('product.spec.material', 'Material', 'Silicone + mesh'), row('product.spec.power', 'Power / Capacity', '12 W, IPX7, 18 h')],
+  watch: [row('product.spec.dimensions', 'Dimensions', '44 × 38 × 10 mm'), row('product.spec.weight', 'Weight', '45 g'), row('product.spec.material', 'Material', 'Aluminium case'), row('product.spec.power', 'Power / Capacity', '10-day battery, 5 ATM')],
+  bag: [row('product.spec.dimensions', 'Dimensions', '26 × 20 × 9 cm'), row('product.spec.weight', 'Weight', '480 g'), row('product.spec.material', 'Material', 'Water-resistant canvas'), row('product.spec.power', 'Power / Capacity', '12 L capacity')],
+  glasses: [row('product.spec.dimensions', 'Dimensions', '142 × 45 × 20 mm'), row('product.spec.weight', 'Weight', '24 g'), row('product.spec.material', 'Material', 'Hand-polished acetate'), row('product.spec.power', 'Power / Capacity', 'UV400 polarised')],
+  droplet: [row('product.spec.dimensions', 'Dimensions', '30 ml bottle'), row('product.spec.weight', 'Weight', '75 g'), row('product.spec.material', 'Material', 'Glass bottle, dropper'), row('product.spec.power', 'Power / Capacity', '30 ml')],
+  sparkles: [row('product.spec.dimensions', 'Dimensions', '12 × 8 × 2 cm'), row('product.spec.weight', 'Weight', '120 g'), row('product.spec.material', 'Material', 'Talc-free pressed powder'), row('product.spec.power', 'Power / Capacity', 'Standard retail size')],
+  cream: [row('product.spec.dimensions', 'Dimensions', '50 ml jar'), row('product.spec.weight', 'Weight', '95 g'), row('product.spec.material', 'Material', 'Hyaluronic acid base'), row('product.spec.power', 'Power / Capacity', '50 ml')],
+  jar: [row('product.spec.dimensions', 'Dimensions', '13 × 9 × 9 cm'), row('product.spec.weight', 'Weight', '560 g'), row('product.spec.material', 'Material', 'Glass jar, metal lid'), row('product.spec.power', 'Power / Capacity', 'See pack size')],
+  armchair: [row('product.spec.dimensions', 'Dimensions', '82 W × 88 D × 78 H cm'), row('product.spec.weight', 'Weight', '24 kg'), row('product.spec.material', 'Material', 'Woven polyester, oak legs'), row('product.spec.power', 'Power / Capacity', 'Seats one')],
+  lamp: [row('product.spec.dimensions', 'Dimensions', '18 × 18 × 46 cm'), row('product.spec.weight', 'Weight', '1.4 kg'), row('product.spec.material', 'Material', 'Ceramic base, linen shade'), row('product.spec.power', 'Power / Capacity', 'E27, 8 W LED')],
+  bed: [row('product.spec.dimensions', 'Dimensions', '220 × 240 cm'), row('product.spec.weight', 'Weight', '1.8 kg'), row('product.spec.material', 'Material', '300 TC cotton percale'), row('product.spec.power', 'Power / Capacity', 'Double + 2 pillowcases')],
+  table: [row('product.spec.dimensions', 'Dimensions', '45 Ø × 45 H cm'), row('product.spec.weight', 'Weight', '6.2 kg'), row('product.spec.material', 'Material', 'Solid oak'), row('product.spec.power', 'Power / Capacity', 'Hardwax oil finish')],
+  dumbbell: [row('product.spec.dimensions', 'Dimensions', '32 × 20 × 20 cm'), row('product.spec.weight', 'Weight', '20 kg set'), row('product.spec.material', 'Material', 'Steel, rubber-coated'), row('product.spec.power', 'Power / Capacity', '5-20 kg adjustable')],
+  ball: [row('product.spec.dimensions', 'Dimensions', '22 cm diameter'), row('product.spec.weight', 'Weight', '410 g'), row('product.spec.material', 'Material', 'Machine-stitched TPU'), row('product.spec.power', 'Power / Capacity', 'Size 5 match ball')],
+  bottle: [row('product.spec.dimensions', 'Dimensions', '8 × 8 × 26 cm'), row('product.spec.weight', 'Weight', '320 g'), row('product.spec.material', 'Material', '18/8 stainless steel'), row('product.spec.power', 'Power / Capacity', '1 L, cold 24 h / hot 12 h')],
+  apple: [row('product.spec.dimensions', 'Dimensions', '6-pack tray'), row('product.spec.weight', 'Weight', 'About 1.1 kg'), row('product.spec.material', 'Material', 'Fresh organic fruit'), row('product.spec.power', 'Power / Capacity', '6 apples')],
+  coffee: [row('product.spec.dimensions', 'Dimensions', '10 × 8 × 24 cm'), row('product.spec.weight', 'Weight', '1 kg'), row('product.spec.material', 'Material', 'Arabica beans'), row('product.spec.power', 'Power / Capacity', 'Medium roast, whole bean')],
+  wallet: [row('product.spec.dimensions', 'Dimensions', '10.5 × 8 cm'), row('product.spec.weight', 'Weight', '72 g'), row('product.spec.material', 'Material', 'Full-grain vegetable-tanned leather'), row('product.spec.power', 'Power / Capacity', '6 cards + cash fold')],
+  gem: [row('product.spec.dimensions', 'Dimensions', 'Small, gift boxed'), row('product.spec.weight', 'Weight', '4 g'), row('product.spec.material', 'Material', 'Rhodium-plated 925 silver'), row('product.spec.power', 'Power / Capacity', 'Gift box included')],
+  shoe: [row('product.spec.dimensions', 'Dimensions', 'EU 38-43'), row('product.spec.weight', 'Weight', '285 g per shoe'), row('product.spec.material', 'Material', 'Draining mesh, EVA midsole'), row('product.spec.power', 'Power / Capacity', '8 mm heel drop')],
+  mat: [row('product.spec.dimensions', 'Dimensions', '183 × 61 cm'), row('product.spec.weight', 'Weight', '1.1 kg'), row('product.spec.material', 'Material', 'TPE, closed-cell'), row('product.spec.power', 'Power / Capacity', '6 mm thick, non-slip')],
+  tent: [row('product.spec.dimensions', 'Dimensions', 'Packed 60 × 18 cm'), row('product.spec.weight', 'Weight', '4.2 kg'), row('product.spec.material', 'Material', 'Ripstop polyester'), row('product.spec.power', 'Power / Capacity', '2 person, 3000 mm fly')],
+  banana: [row('product.spec.dimensions', 'Dimensions', '1 kg bunch'), row('product.spec.weight', 'Weight', 'About 1 kg'), row('product.spec.material', 'Material', 'Fresh fruit'), row('product.spec.power', 'Power / Capacity', 'About 9 bananas')],
+  belt: [row('product.spec.dimensions', 'Dimensions', 'Length S-XL'), row('product.spec.weight', 'Weight', '180 g'), row('product.spec.material', 'Material', 'Full-grain leather'), row('product.spec.power', 'Power / Capacity', '3.5 cm, reversible buckle')],
+  mouse: [row('product.spec.dimensions', 'Dimensions', '12 × 7 × 7 cm'), row('product.spec.weight', 'Weight', '105 g'), row('product.spec.material', 'Material', 'Recycled ABS'), row('product.spec.power', 'Power / Capacity', 'Wireless, weeks per charge')],
+  keyboard: [row('product.spec.dimensions', 'Dimensions', '32 × 13 × 4 cm'), row('product.spec.weight', 'Weight', '820 g'), row('product.spec.material', 'Material', 'Aluminium + PBT keycaps'), row('product.spec.power', 'Power / Capacity', 'USB-C, detachable')],
+  drone: [row('product.spec.dimensions', 'Dimensions', 'Folded 18 × 10 cm'), row('product.spec.weight', 'Weight', '249 g'), row('product.spec.material', 'Material', 'Composite shell'), row('product.spec.power', 'Power / Capacity', 'Up to 30 min flight')],
+  monitor: [row('product.spec.dimensions', 'Dimensions', '61 × 36 cm panel'), row('product.spec.weight', 'Weight', '5.4 kg'), row('product.spec.material', 'Material', 'IPS panel, metal stand'), row('product.spec.power', 'Power / Capacity', '27" QHD, 165 Hz')],
+  webcam: [row('product.spec.dimensions', 'Dimensions', '9 × 3 × 3 cm'), row('product.spec.weight', 'Weight', '95 g'), row('product.spec.material', 'Material', 'ABS housing'), row('product.spec.power', 'Power / Capacity', '1080p60, USB-C')],
+  powerbank: [row('product.spec.dimensions', 'Dimensions', '14 × 7 × 3 cm'), row('product.spec.weight', 'Weight', '395 g'), row('product.spec.material', 'Material', 'Aluminium shell'), row('product.spec.power', 'Power / Capacity', '20000 mAh, 65 W USB-C PD')],
+  charger: [row('product.spec.dimensions', 'Dimensions', '9 × 9 × 12 cm'), row('product.spec.weight', 'Weight', '165 g'), row('product.spec.material', 'Material', 'ABS, non-slip silicone'), row('product.spec.power', 'Power / Capacity', '15 W Qi wireless')],
+  cable: [row('product.spec.dimensions', 'Dimensions', '2 m braided'), row('product.spec.weight', 'Weight', '60 g'), row('product.spec.material', 'Material', 'Braided nylon'), row('product.spec.power', 'Power / Capacity', '100 W USB-C PD, 480 Mbps')],
+  usbhub: [row('product.spec.dimensions', 'Dimensions', '11 × 4 × 2 cm'), row('product.spec.weight', 'Weight', '78 g'), row('product.spec.material', 'Material', 'Aluminium shell'), row('product.spec.power', 'Power / Capacity', '7-in-1, 100 W pass-through')],
+  case: [row('product.spec.dimensions', 'Dimensions', 'Fits X4 Pro'), row('product.spec.weight', 'Weight', '32 g'), row('product.spec.material', 'Material', 'Shock-absorbing TPU'), row('product.spec.power', 'Power / Capacity', '1.2 mm, anti-yellowing')],
+  airfryer: [row('product.spec.dimensions', 'Dimensions', '36 × 30 × 32 cm'), row('product.spec.weight', 'Weight', '5.6 kg'), row('product.spec.material', 'Material', 'Plastic + non-stick basket'), row('product.spec.power', 'Power / Capacity', '5 L, 1500 W')],
+  vacuum: [row('product.spec.dimensions', 'Dimensions', '35 × 35 × 10 cm'), row('product.spec.weight', 'Weight', '3.4 kg'), row('product.spec.material', 'Material', 'Recycled plastic'), row('product.spec.power', 'Power / Capacity', 'LiDAR, 180 min, self-empty')],
+  coffeeMaker: [row('product.spec.dimensions', 'Dimensions', '32 × 30 × 40 cm'), row('product.spec.weight', 'Weight', '7.2 kg'), row('product.spec.material', 'Material', 'Stainless steel'), row('product.spec.power', 'Power / Capacity', '15 bar, 1.8 L tank')],
+  diffuser: [row('product.spec.dimensions', 'Dimensions', '12 × 12 × 18 cm'), row('product.spec.weight', 'Weight', '580 g'), row('product.spec.material', 'Material', 'Bamboo + BPA-free plastic'), row('product.spec.power', 'Power / Capacity', '300 ml, up to 10 h')],
+  backpack: [row('product.spec.dimensions', 'Dimensions', '46 × 30 × 16 cm'), row('product.spec.weight', 'Weight', '880 g'), row('product.spec.material', 'Material', 'Recycled nylon'), row('product.spec.power', 'Power / Capacity', '20 L, fits 15" laptop')],
+  smarthome: [row('product.spec.dimensions', 'Dimensions', '12 cm sphere'), row('product.spec.weight', 'Weight', '410 g'), row('product.spec.material', 'Material', 'Polycarbonate shell'), row('product.spec.power', 'Power / Capacity', 'Mains, Wi-Fi + Zigbee')],
 };
 
 /* Kinds that use the clothing label set. */
@@ -1007,19 +1080,19 @@ const CLOTHING_ART = new Set(['shirt', 'jacket', 'cap']);
  * id; a row replaces one with the same label, otherwise it is appended. */
 const PRODUCT_SPEC_OVERRIDES = {
   // Fashion: the description names the real material.
-  p09: [row('spec.material', 'Material', '240 gsm combed cotton')],
-  p10: [row('spec.material', 'Material', '13 oz rigid denim')],
-  p36: [row('spec.material', 'Material', 'Washed linen'), row('spec.fit', 'Fit', 'Relaxed, midi length')],
-  p37: [row('spec.material', 'Material', 'Lambswool blend')],
-  p48: [row('spec.material', 'Material', 'Brushed-back fleece')],
-  p49: [row('spec.material', 'Material', 'Fluid crepe, lined')],
-  p50: [row('spec.material', 'Material', 'Full-grain leather')],
-  p62: [row('spec.material', 'Material', 'Full-grain leather'), row('spec.sizes', 'Size options', 'S, M, L, XL')],
+  p09: [row('product.spec.material', 'Material', '240 gsm combed cotton')],
+  p10: [row('product.spec.material', 'Material', '13 oz rigid denim')],
+  p36: [row('product.spec.material', 'Material', 'Washed linen'), row('product.spec.fit', 'Fit', 'Relaxed, midi length')],
+  p37: [row('product.spec.material', 'Material', 'Lambswool blend')],
+  p48: [row('product.spec.material', 'Material', 'Brushed-back fleece')],
+  p49: [row('product.spec.material', 'Material', 'Fluid crepe, lined')],
+  p50: [row('product.spec.material', 'Material', 'Full-grain leather')],
+  p62: [row('product.spec.material', 'Material', 'Full-grain leather'), row('product.spec.sizes', 'Size options', 'S, M, L, XL')],
   // Products whose artwork kind is a gadget but whose category is not.
-  p07: [row('spec.dimensions', 'Dimensions', 'Fits up to 14" laptops'), row('spec.weight', 'Weight', '260 g'), row('spec.material', 'Material', 'Water-repellent polyester'), row('spec.power', 'Power / Capacity', '8 mm foam padding')],
-  p35: [row('spec.dimensions', 'Dimensions', '11 × 4 × 2 cm'), row('spec.weight', 'Weight', '78 g'), row('spec.material', 'Material', 'Aluminium shell'), row('spec.power', 'Power / Capacity', '7-in-1, 100 W pass-through')],
-  p34: [row('spec.dimensions', 'Dimensions', '9 × 9 × 12 cm'), row('spec.weight', 'Weight', '165 g'), row('spec.material', 'Material', 'ABS, non-slip silicone'), row('spec.power', 'Power / Capacity', '15 W Qi wireless')],
-  p43: [row('spec.dimensions', 'Dimensions', 'Fits X4 Pro'), row('spec.weight', 'Weight', '32 g'), row('spec.material', 'Material', 'Shock-absorbing TPU'), row('spec.power', 'Power / Capacity', '1.2 mm, anti-yellowing')],
+  p07: [row('product.spec.dimensions', 'Dimensions', 'Fits up to 14" laptops'), row('product.spec.weight', 'Weight', '260 g'), row('product.spec.material', 'Material', 'Water-repellent polyester'), row('product.spec.power', 'Power / Capacity', '8 mm foam padding')],
+  p35: [row('product.spec.dimensions', 'Dimensions', '11 × 4 × 2 cm'), row('product.spec.weight', 'Weight', '78 g'), row('product.spec.material', 'Material', 'Aluminium shell'), row('product.spec.power', 'Power / Capacity', '7-in-1, 100 W pass-through')],
+  p34: [row('product.spec.dimensions', 'Dimensions', '9 × 9 × 12 cm'), row('product.spec.weight', 'Weight', '165 g'), row('product.spec.material', 'Material', 'ABS, non-slip silicone'), row('product.spec.power', 'Power / Capacity', '15 W Qi wireless')],
+  p43: [row('product.spec.dimensions', 'Dimensions', 'Fits X4 Pro'), row('product.spec.weight', 'Weight', '32 g'), row('product.spec.material', 'Material', 'Shock-absorbing TPU'), row('product.spec.power', 'Power / Capacity', '1.2 mm, anti-yellowing')],
 };
 
 /* A short model name: the product name without its leading brand. */
@@ -1052,13 +1125,13 @@ export function specsFor(p) {
   }
 
   rows = rows.concat([
-    row('spec.brand', 'Brand', p.brand),
-    row('spec.model', 'Model', modelOf(p)),
-    row('spec.sku', 'Product ID', p.id),
-    row('spec.stock', 'Stock', p.oos ? 'Sold out' : 'In stock'),
+    row('product.spec.brand', 'Brand', p.brand),
+    row('product.spec.model', 'Model', modelOf(p)),
+    row('product.spec.sku', 'Product ID', p.id),
+    row('product.spec.stock', 'Stock', p.oos ? t('product.soldOut') : t('product.inStock')),
   ]);
   if (p.cat !== 'groceries' && p.cat !== 'beauty') {
-    rows.push(row('spec.warranty', 'Warranty', p.cat === 'electronics' ? '24 months' : '12 months'));
+    rows.push(row('product.spec.warranty', 'Warranty', t('catalog.warranty.months', { count: p.cat === 'electronics' ? 24 : 12 })));
   }
   return rows.filter((r) => r.v !== undefined && r.v !== null && r.v !== '');
 }
@@ -1076,8 +1149,8 @@ function idSum(id) {
 export function shippingFor(p) {
   return {
     fee: p.price >= 3500 ? 0 : 499,
-    eta: idSum(p.id) % 3 === 0 ? '3-5 business days' : '2-4 business days',
-    returns: '30-day free returns',
+    eta: idSum(p.id) % 3 === 0 ? t('catalog.eta.range', { from: 3, to: 5 }) : t('catalog.eta.range', { from: 2, to: 4 }),
+    returns: t('catalog.returns'),
   };
 }
 
@@ -1129,7 +1202,8 @@ function ratingPattern(rating) {
   return [4, 5, 4, 3, 4, 5, 2, 4];
 }
 
-const REVIEW_AGES = ['3 days ago', '1 week ago', '2 weeks ago', '2 weeks ago', '3 weeks ago', '1 month ago', '2 months ago', '3 months ago'];
+/* [unit, amount] pairs rendered through catalog.age.<unit> at call time. */
+const REVIEW_AGES = [['day', 3], ['week', 1], ['week', 2], ['week', 2], ['week', 3], ['month', 1], ['month', 2], ['month', 3]];
 
 export function reviewsFor(p) {
   const start = idSum(p.id) % REVIEW_AUTHORS.length;
@@ -1149,7 +1223,7 @@ export function reviewsFor(p) {
       tintFg: author[2],
       rating,
       text,
-      when: REVIEW_AGES[i],
+      when: t('catalog.age.' + REVIEW_AGES[i][0], { count: REVIEW_AGES[i][1] }),
       verified: i % 4 !== 2,
       images: withPhotos ? (i === 1 ? [1] : [0, 2]) : [],
     });

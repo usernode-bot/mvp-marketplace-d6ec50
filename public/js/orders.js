@@ -13,6 +13,9 @@
 import { icon, productArt } from './icons.js';
 import { ORDER_SEEDS, productById } from './data.js';
 import { store } from './store.js';
+import { t, has } from './i18n.js';
+import { countryLabel, courierLabel } from './shipping.js';
+import { paymentLabel } from './payment.js';
 import { fmtDate, fmtPrice, emptyState, esc, toast, confirmDialog } from './ui.js';
 
 const HOUR = 3600000;
@@ -22,45 +25,54 @@ const DAY = 86400000;
  * so the Tailwind compiler sees every one of them. */
 const STATUS_META = {
   to_pay: {
-    label: 'To Pay',
     badge: 'bg-amber-50 text-amber-700',
     text: 'text-amber-700',
-    hint: 'Awaiting payment. This order ships as soon as payment is confirmed.',
   },
   to_ship: {
-    label: 'To Ship',
     badge: 'bg-sky-50 text-sky-700',
     text: 'text-sky-700',
-    hint: 'Payment received. We are packing your order for shipment.',
   },
   shipped: {
-    label: 'Shipped',
     badge: 'bg-indigo-50 text-indigo-700',
     text: 'text-indigo-700',
-    hint: 'On the way. Track the delivery below.',
   },
   completed: {
-    label: 'Completed',
     badge: 'bg-emerald-50 text-emerald-700',
     text: 'text-emerald-700',
-    hint: 'Delivered. We hope you are enjoying your order.',
   },
   cancelled: {
-    label: 'Cancelled',
     badge: 'bg-zinc-100 text-zinc-500',
     text: 'text-zinc-500',
-    hint: 'This order was cancelled. Any payment is refunded within 3-5 business days.',
   },
 };
 
 const TABS = [
-  { id: 'all', label: 'All' },
-  { id: 'to_pay', label: 'To Pay' },
-  { id: 'to_ship', label: 'To Ship' },
-  { id: 'shipped', label: 'Shipped' },
-  { id: 'completed', label: 'Completed' },
-  { id: 'cancelled', label: 'Cancelled' },
+  { id: 'all' },
+  { id: 'to_pay' },
+  { id: 'to_ship' },
+  { id: 'shipped' },
+  { id: 'completed' },
+  { id: 'cancelled' },
 ];
+
+/* Tab/status labels resolve at render time so a language change shows up. */
+function tabLabel(id) { return t('orders.tab.' + id); }
+function statusLabel(id) { return t('orders.status.' + id); }
+function statusHint(id) { return t('orders.hint.' + id); }
+
+/* The seed orders carry English snapshot text for payment, delivery method
+ * and ETA; known values map to keys, anything else (a placed order's own
+ * snapshot, a courier name) is shown as stored. */
+const SNAPSHOT_IDS = {
+  payment: { 'Visa ending in 4242': 'visa', 'MVP Marketplace Pay': 'pay', 'Payment on delivery': 'cod' },
+  method: { 'Standard delivery': 'standard', 'Express delivery': 'express' },
+  eta: { '3-5 business days': 'd35', '1-2 business days': 'd12' },
+};
+function snapshotText(group, value) {
+  const id = SNAPSHOT_IDS[group][value];
+  const key = 'orders.snap.' + group + '.' + id;
+  return id && has(key) ? t(key) : value;
+}
 
 let selectedTab = 'all';
 
@@ -80,11 +92,14 @@ function placedSeeds() {
     status: 'to_ship',
     daysAgo: Math.max(0, (Date.now() - o.placedAt) / DAY),
     items: o.items.map((it) => ({ id: it.id, qty: it.qty })),
-    payment: o.paymentName || 'Payment on delivery',
-    shipMethod: o.courierName || o.shippingName,
+    // Orders placed in the app carry stable ids: re-localize from them so a
+    // language switch updates the stored order too. The name snapshots are the
+    // fallback for older orders.
+    payment: (o.paymentId && paymentLabel(o.paymentId)) || o.paymentName || 'Payment on delivery', // snapshot; localized on display via snapshotText
+    shipMethod: (o.shippingId && courierLabel(o.shippingId)) || o.courierName || o.shippingName,
     shipEta: o.etaLabel,
-    countryName: o.countryName || '',
-    courierName: o.courierName || o.shippingName || '',
+    countryName: (o.countryId && countryLabel(o.countryId)) || o.countryName || '',
+    courierName: (o.shippingId && courierLabel(o.shippingId)) || o.courierName || o.shippingName || '',
     shipping: o.shipping,
     address: {
       name: o.address.name,
@@ -148,21 +163,21 @@ export function countOrders() {
 
 function timelineSteps(o) {
   const s = statusOf(o);
-  const placed = { label: 'Order placed', date: o.createdAt };
-  const paid = { label: 'Payment confirmed', date: o.paidAt };
-  const shipped = { label: 'Shipped', date: o.shippedAt };
-  const delivered = { label: 'Delivered', date: o.deliveredAt };
+  const placed = { label: t('orders.timeline.placed'), date: o.createdAt };
+  const paid = { label: t('orders.timeline.paid'), date: o.paidAt };
+  const shipped = { label: t('orders.timeline.shipped'), date: o.shippedAt };
+  const delivered = { label: t('orders.timeline.delivered'), date: o.deliveredAt };
 
   if (s === 'cancelled') {
     return [
       Object.assign({}, placed, { state: 'done' }),
-      { label: 'Order cancelled', date: o.cancelledAt, state: 'cancelled' },
+      { label: t('orders.timeline.cancelled'), date: o.cancelledAt, state: 'cancelled' },
     ];
   }
   if (s === 'to_pay') {
     return [
       Object.assign({}, placed, { state: 'done' }),
-      { label: 'Payment confirmed', date: null, hint: 'Awaiting payment', state: 'current' },
+      { label: t('orders.timeline.paid'), date: null, hint: t('orders.timeline.awaitingPayment'), state: 'current' },
       Object.assign({}, shipped, { state: 'pending' }),
       Object.assign({}, delivered, { state: 'pending' }),
     ];
@@ -171,7 +186,7 @@ function timelineSteps(o) {
     return [
       Object.assign({}, placed, { state: 'done' }),
       Object.assign({}, paid, { state: 'done' }),
-      { label: 'Packing your order', date: null, hint: 'Usually ships in 1-2 days', state: 'current' },
+      { label: t('orders.timeline.packing'), date: null, hint: t('orders.timeline.usuallyShips'), state: 'current' },
       Object.assign({}, shipped, { state: 'pending' }),
       Object.assign({}, delivered, { state: 'pending' }),
     ];
@@ -181,7 +196,7 @@ function timelineSteps(o) {
       Object.assign({}, placed, { state: 'done' }),
       Object.assign({}, paid, { state: 'done' }),
       Object.assign({}, shipped, { state: 'done' }),
-      { label: 'Delivered', date: null, hint: 'In transit', state: 'current' },
+      { label: t('orders.timeline.delivered'), date: null, hint: t('orders.timeline.inTransit'), state: 'current' },
     ];
   }
   return [placed, paid, shipped, delivered].map((st) => Object.assign({}, st, { state: 'done' }));
@@ -206,17 +221,17 @@ function timelineHtml(o) {
     const line = i < steps.length - 1 ? '<span class="min-h-4 w-px flex-1 bg-zinc-100"></span>' : '';
     const when = st.date
       ? fmtDate(st.date)
-      : (st.hint ? '<span class="' + (st.state === 'current' ? 'font-medium text-brand-700' : 'text-zinc-400') + '">' + st.hint + '</span>' : '');
+      : (st.hint ? '<span class="' + (st.state === 'current' ? 'font-medium text-brand-700' : 'text-zinc-400') + '">' + esc(st.hint) + '</span>' : '');
     const labelCls = st.state === 'pending' ? 'text-zinc-400' : 'text-zinc-800';
     return '<li class="flex gap-3">'
       + '<span class="flex flex-col items-center">' + timelineDot(st.state) + line + '</span>'
       + '<div class="min-w-0 flex-1 pb-1">'
-      + '<p class="text-sm font-medium ' + labelCls + '">' + st.label + '</p>'
+      + '<p class="text-sm font-medium ' + labelCls + '">' + esc(st.label) + '</p>'
       + (when ? '<p class="mt-0.5 text-xs text-zinc-500">' + when + '</p>' : '')
       + '</div></li>';
   }).join('');
   return '<div class="card p-4" data-order-timeline>'
-    + '<h2 class="text-sm font-semibold text-zinc-900">Timeline</h2>'
+    + '<h2 class="text-sm font-semibold text-zinc-900">' + esc(t('orders.timeline.title')) + '</h2>'
     + '<ol class="mt-3 flex flex-col">' + rows + '</ol></div>';
 }
 
@@ -226,7 +241,7 @@ function timelineHtml(o) {
 
 function statusBadge(order) {
   const meta = STATUS_META[statusOf(order)];
-  return '<span class="badge ' + meta.badge + '">' + meta.label + '</span>';
+  return '<span class="badge ' + meta.badge + '">' + esc(statusLabel(statusOf(order))) + '</span>';
 }
 
 function orderCard(o) {
@@ -234,36 +249,36 @@ function orderCard(o) {
   const more = o.items.length - 1;
   return '<article class="card p-4" data-order-card="' + o.no + '">'
     + '<div class="flex items-center gap-2">'
-    + '<span class="min-w-0 truncate text-xs font-medium text-zinc-500">No. ' + o.no + '</span>'
+    + '<span class="min-w-0 truncate text-xs font-medium text-zinc-500">' + esc(t('orders.number', { no: o.no })) + '</span>'
     + '<span class="ml-auto shrink-0">' + statusBadge(o) + '</span>'
     + '</div>'
     + '<div class="mt-3 flex gap-3">'
     + '<div class="h-16 w-16 shrink-0 overflow-hidden rounded-lg">' + productArt(first.product) + '</div>'
     + '<div class="min-w-0 flex-1">'
     + '<h3 class="truncate text-sm font-medium text-zinc-800">' + first.product.name + '</h3>'
-    + '<p class="mt-0.5 text-xs text-zinc-500">Qty ' + first.qty
-    + (more > 0 ? ' · +' + more + ' more item' + (more === 1 ? '' : 's') : '') + '</p>'
+    + '<p class="mt-0.5 text-xs text-zinc-500">' + esc(t('orders.qty', { qty: first.qty }))
+    + (more > 0 ? ' · ' + esc(t('orders.moreItems', { count: more })) : '') + '</p>'
     + '<p class="mt-1 text-sm font-bold tabular-nums text-zinc-900">' + fmtPrice(o.total) + '</p>'
     + '</div>'
     + '</div>'
-    + '<p class="mt-2 text-xs text-zinc-400">Placed ' + fmtDate(o.createdAt) + '</p>'
+    + '<p class="mt-2 text-xs text-zinc-400">' + esc(t('orders.placedOn', { date: fmtDate(o.createdAt) })) + '</p>'
     + '<div class="mt-3 flex gap-2 border-t border-zinc-100 pt-3">'
-    + '<button type="button" data-order-view="' + o.no + '" class="btn-outline btn-sm flex-1">View Details</button>'
-    + '<button type="button" data-order-rebuy="' + o.no + '" class="btn-secondary btn-sm flex-1">Buy Again</button>'
+    + '<button type="button" data-order-view="' + o.no + '" class="btn-outline btn-sm flex-1">' + esc(t('orders.viewDetails')) + '</button>'
+    + '<button type="button" data-order-rebuy="' + o.no + '" class="btn-secondary btn-sm flex-1">' + esc(t('orders.buyAgain')) + '</button>'
     + '</div>'
     + '</article>';
 }
 
 function tabsHtml(counts) {
-  return '<div role="tablist" aria-label="Order status" class="no-scrollbar -mx-4 mt-3 flex gap-2 overflow-x-auto px-4 pb-1">'
-    + TABS.map((t) => {
-      const active = t.id === selectedTab;
-      const count = t.id === 'all' ? counts.all : counts[t.id];
-      const countHtml = t.id !== 'all' && count
+  return '<div role="tablist" aria-label="' + esc(t('orders.statusLabel')) + '" class="no-scrollbar -mx-4 mt-3 flex gap-2 overflow-x-auto px-4 pb-1">'
+    + TABS.map((tab) => {
+      const active = tab.id === selectedTab;
+      const count = tab.id === 'all' ? counts.all : counts[tab.id];
+      const countHtml = tab.id !== 'all' && count
         ? '<span class="tabular-nums opacity-70">' + count + '</span>'
         : '';
-      return '<button type="button" role="tab" aria-selected="' + active + '" data-order-tab="' + t.id
-        + '" class="tab-pill' + (active ? ' tab-pill-active' : '') + '">' + t.label + countHtml + '</button>';
+      return '<button type="button" role="tab" aria-selected="' + active + '" data-order-tab="' + tab.id
+        + '" class="tab-pill' + (active ? ' tab-pill-active' : '') + '">' + esc(tabLabel(tab.id)) + countHtml + '</button>';
     }).join('')
     + '</div>';
 }
@@ -273,29 +288,30 @@ function renderOrdersList() {
   const orders = buildOrders();
 
   const counts = { all: orders.length };
-  TABS.forEach((t) => {
-    if (t.id !== 'all') counts[t.id] = orders.filter((o) => statusOf(o) === t.id).length;
+  TABS.forEach((tab) => {
+    if (tab.id !== 'all') counts[tab.id] = orders.filter((o) => statusOf(o) === tab.id).length;
   });
 
   const shown = selectedTab === 'all' ? orders : orders.filter((o) => statusOf(o) === selectedTab);
-  const tabLabel = TABS.find((t) => t.id === selectedTab).label.toLowerCase();
 
   const body = shown.length
     ? '<div class="mt-4 flex flex-col gap-3">' + shown.map(orderCard).join('') + '</div>'
     : '<div class="card mt-4">' + emptyState({
       icon: 'package',
-      title: 'No ' + tabLabel + ' orders',
-      body: 'Orders in this status will show up here as soon as there are any.',
+      title: selectedTab === 'all'
+        ? t('orders.empty.all')
+        : t('orders.empty.status', { status: tabLabel(selectedTab).toLowerCase() }),
+      body: t('orders.empty.body'),
     }) + '</div>';
 
   view.innerHTML =
-    '<h1 class="section-title">Orders</h1>'
+    '<h1 class="section-title">' + esc(t('orders.title')) + '</h1>'
     + tabsHtml(counts)
     + body;
 }
 
 export function setOrdersTab(id) {
-  if (!TABS.some((t) => t.id === id)) return;
+  if (!TABS.some((tab) => tab.id === id)) return;
   selectedTab = id;
   renderOrdersList();
 }
@@ -328,13 +344,13 @@ function productsHtml(o) {
       + '<div class="min-w-0 flex-1">'
       + '<h3 class="truncate text-sm font-medium text-zinc-800">' + p.name + '</h3>'
       + (p.variant ? '<p class="mt-0.5 truncate text-xs text-zinc-500">' + p.variant + '</p>' : '')
-      + '<p class="mt-0.5 text-xs text-zinc-500">Qty ' + e.qty + '</p>'
+      + '<p class="mt-0.5 text-xs text-zinc-500">' + esc(t('orders.qty', { qty: e.qty })) + '</p>'
       + '</div>'
       + '<span class="shrink-0 text-sm font-semibold tabular-nums text-zinc-900">' + fmtPrice(p.price * e.qty) + '</span>'
       + '</div>';
   }).join('');
   return '<div class="card mt-4 divide-y divide-zinc-100 overflow-hidden">'
-    + '<h2 class="px-4 pt-4 text-sm font-semibold text-zinc-900">Products</h2>'
+    + '<h2 class="px-4 pt-4 text-sm font-semibold text-zinc-900">' + esc(t('orders.products')) + '</h2>'
     + '<div class="mt-1">' + rows + '</div></div>';
 }
 
@@ -342,13 +358,13 @@ function actionsHtml(o) {
   const s = statusOf(o);
   const buttons = [];
   if (s === 'shipped' || s === 'completed') {
-    buttons.push('<button type="button" data-order-track="' + o.no + '" class="btn-outline flex-1">Track Order</button>');
+    buttons.push('<button type="button" data-order-track="' + o.no + '" class="btn-outline flex-1">' + esc(t('orders.track')) + '</button>');
   }
   if (s === 'to_pay' || s === 'to_ship') {
-    buttons.push('<button type="button" data-order-cancel="' + o.no + '" class="btn-outline flex-1 text-rose-600 hover:bg-rose-50">Cancel Order</button>');
+    buttons.push('<button type="button" data-order-cancel="' + o.no + '" class="btn-outline flex-1 text-rose-600 hover:bg-rose-50">' + esc(t('orders.cancel')) + '</button>');
   }
-  buttons.push('<button type="button" data-order-rebuy="' + o.no + '" class="btn-primary flex-1">Buy Again</button>');
-  buttons.push('<button type="button" data-order-contact="' + o.no + '" class="btn-outline flex-1">Contact Seller</button>');
+  buttons.push('<button type="button" data-order-rebuy="' + o.no + '" class="btn-primary flex-1">' + esc(t('orders.buyAgain')) + '</button>');
+  buttons.push('<button type="button" data-order-contact="' + o.no + '" class="btn-outline flex-1">' + esc(t('orders.contact')) + '</button>');
   return '<div class="mt-4 flex flex-wrap gap-2">' + buttons.join('') + '</div>';
 }
 
@@ -365,27 +381,27 @@ function renderOrderDetail(no) {
 
   view.innerHTML =
     '<div class="flex items-center gap-1">'
-    + '<button type="button" data-orders-back class="icon-btn -ml-2" aria-label="Back to orders">' + icon('chevronLeft', 'h-5 w-5') + '</button>'
-    + '<h1 class="section-title">Order details</h1>'
+    + '<button type="button" data-orders-back class="icon-btn -ml-2" aria-label="' + esc(t('orders.backToOrders')) + '">' + icon('chevronLeft', 'h-5 w-5') + '</button>'
+    + '<h1 class="section-title">' + esc(t('orders.detailsTitle')) + '</h1>'
     + '</div>'
 
     // Status card
     + '<div class="card mt-4 p-4">'
     + '<div class="flex items-start gap-3">'
     + '<div class="min-w-0 flex-1">'
-    + '<p class="text-xs font-medium text-zinc-500">Order ' + o.no + '</p>'
-    + '<h2 class="mt-0.5 text-lg font-bold ' + meta.text + '">' + meta.label + '</h2>'
-    + '<p class="mt-1 text-sm text-zinc-500">' + meta.hint + '</p>'
-    + '<p class="mt-1 text-xs text-zinc-400">Placed ' + fmtDate(o.createdAt) + '</p>'
+    + '<p class="text-xs font-medium text-zinc-500">' + esc(t('orders.orderNo', { no: o.no })) + '</p>'
+    + '<h2 class="mt-0.5 text-lg font-bold ' + meta.text + '">' + esc(statusLabel(s)) + '</h2>'
+    + '<p class="mt-1 text-sm text-zinc-500">' + esc(statusHint(s)) + '</p>'
+    + '<p class="mt-1 text-xs text-zinc-400">' + esc(t('orders.placedOn', { date: fmtDate(o.createdAt) })) + '</p>'
     + '</div>'
-    + '<button type="button" data-copy-text="' + o.no + '" class="icon-btn shrink-0" aria-label="Copy order number">' + icon('copy', 'h-4 w-4') + '</button>'
+    + '<button type="button" data-copy-text="' + o.no + '" class="icon-btn shrink-0" aria-label="' + esc(t('orders.copyOrderNumber')) + '">' + icon('copy', 'h-4 w-4') + '</button>'
     + '</div></div>'
 
     + '<div class="mt-4">' + timelineHtml(o) + '</div>'
 
     // Shipping address
     + '<div class="card mt-4 p-4">'
-    + '<h2 class="text-sm font-semibold text-zinc-900">Shipping address</h2>'
+    + '<h2 class="text-sm font-semibold text-zinc-900">' + esc(t('orders.shippingAddress')) + '</h2>'
     + '<div class="mt-2 flex items-start gap-3">'
     + '<span class="mt-0.5 shrink-0 text-zinc-400">' + icon('mapPin', 'h-5 w-5') + '</span>'
     + '<div class="min-w-0 text-sm">'
@@ -398,19 +414,19 @@ function renderOrderDetail(no) {
 
     // Payment + shipping method
     + '<div class="card mt-4 divide-y divide-zinc-100 overflow-hidden">'
-    + infoRow('creditCard', 'Payment method', esc(o.payment))
-    + infoRow('truck', 'Courier', esc(o.courierName || o.shipMethod), (o.countryName ? 'Ship to ' + esc(o.countryName) + ' · ' : '') + o.shipEta)
+    + infoRow('creditCard', esc(t('orders.paymentMethod')), esc(snapshotText('payment', o.payment)))
+    + infoRow('truck', esc(t('orders.courier')), esc(o.courierName || snapshotText('method', o.shipMethod)), (o.countryName ? esc(t('orders.shipTo', { country: o.countryName })) + ' · ' : '') + esc(snapshotText('eta', o.shipEta)))
     + '</div>'
 
     // Price breakdown
     + '<div class="card mt-4 p-4">'
-    + '<h2 class="text-sm font-semibold text-zinc-900">Price summary</h2>'
+    + '<h2 class="text-sm font-semibold text-zinc-900">' + esc(t('orders.priceSummary')) + '</h2>'
     + '<div class="mt-3 space-y-1.5 text-sm">'
-    + summaryRow('Subtotal (' + o.itemCount + (o.itemCount === 1 ? ' item' : ' items') + ')', fmtPrice(o.subtotal))
-    + (o.discount ? summaryRow('Product discounts', '-' + fmtPrice(o.discount), 'text-brand-700') : '')
-    + summaryRow('Shipping', o.shipping === 0 ? 'Free' : fmtPrice(o.shipping), o.shipping === 0 ? 'text-brand-700' : 'text-zinc-900')
+    + summaryRow(esc(t('orders.subtotal', { count: o.itemCount })), fmtPrice(o.subtotal))
+    + (o.discount ? summaryRow(esc(t('orders.productDiscounts')), '-' + fmtPrice(o.discount), 'text-brand-700') : '')
+    + summaryRow(esc(t('orders.shipping')), o.shipping === 0 ? esc(t('orders.free')) : fmtPrice(o.shipping), o.shipping === 0 ? 'text-brand-700' : 'text-zinc-900')
     + '</div>'
-    + '<div class="mt-3 flex justify-between border-t border-zinc-100 pt-3 text-base font-bold text-zinc-900"><span>Total</span><span class="tabular-nums">' + fmtPrice(o.total) + '</span></div>'
+    + '<div class="mt-3 flex justify-between border-t border-zinc-100 pt-3 text-base font-bold text-zinc-900"><span>' + esc(t('orders.total')) + '</span><span class="tabular-nums">' + fmtPrice(o.total) + '</span></div>'
     + '</div>'
 
     + actionsHtml(o);
@@ -426,7 +442,7 @@ export function buyAgain(no) {
   o.items.forEach((e) => {
     for (let i = 0; i < e.qty; i++) store.addToCart(e.product.id);
   });
-  toast('Items added to cart');
+  toast(t('orders.toast.addedToCart'));
   location.hash = '/cart';
 }
 
@@ -434,13 +450,13 @@ function cancelOrder(no) {
   const o = orderByNo(no);
   if (!o) return;
   confirmDialog({
-    title: 'Cancel order?',
-    message: 'Order ' + no + ' will be cancelled. Any payment is refunded within 3-5 business days.',
-    confirmLabel: 'Cancel order',
+    title: t('orders.cancelConfirm.title'),
+    message: t('orders.cancelConfirm.message', { no }),
+    confirmLabel: t('orders.cancelConfirm.confirm'),
   }).then((ok) => {
     if (!ok) return;
     store.setOrderStatus(no, 'cancelled');
-    toast('Order cancelled');
+    toast(t('orders.toast.cancelled'));
     renderOrdersView(); // show the cancelled state (and its actions) right away
   });
 }
@@ -453,13 +469,13 @@ function trackSheetElement(o) {
   const trackingNo = 'SP-' + o.no.replace(/\D/g, '');
   const done = statusOf(o) === 'completed';
   const checkpoints = [
-    { label: 'Label created', date: o.createdAt, state: 'done' },
-    { label: 'Picked up by ' + (o.courierName || 'the courier'), date: o.shippedAt, state: 'done' },
-    { label: 'In transit', date: null, hint: 'Moving through the network', state: done ? 'done' : 'current' },
+    { label: t('orders.track.labelCreated'), date: o.createdAt, state: 'done' },
+    { label: o.courierName ? t('orders.track.pickedUpBy', { courier: o.courierName }) : t('orders.track.pickedUpByCourier'), date: o.shippedAt, state: 'done' },
+    { label: t('orders.track.inTransit'), date: null, hint: t('orders.track.moving'), state: done ? 'done' : 'current' },
     {
-      label: 'Delivered',
+      label: t('orders.timeline.delivered'),
       date: o.deliveredAt,
-      hint: done ? '' : 'Estimated ' + fmtDate(o.createdAt + 4 * DAY),
+      hint: done ? '' : t('orders.track.estimated', { date: fmtDate(o.createdAt + 4 * DAY) }),
       state: done ? 'done' : 'pending',
     },
   ];
@@ -469,19 +485,19 @@ function trackSheetElement(o) {
     return '<li class="flex gap-3">'
       + '<span class="flex flex-col items-center">' + timelineDot(c.state) + line + '</span>'
       + '<div class="min-w-0 flex-1 pb-1">'
-      + '<p class="text-sm font-medium text-zinc-800">' + c.label + '</p>'
-      + (when ? '<p class="mt-0.5 text-xs text-zinc-500">' + when + '</p>' : '')
+      + '<p class="text-sm font-medium text-zinc-800">' + esc(c.label) + '</p>'
+      + (when ? '<p class="mt-0.5 text-xs text-zinc-500">' + esc(when) + '</p>' : '')
       + '</div></li>';
   }).join('');
 
   el.innerHTML =
-    '<h3 class="text-base font-bold text-zinc-900">Track order</h3>'
-    + '<p class="mt-0.5 text-xs text-zinc-500">Order ' + o.no + '</p>'
+    '<h3 class="text-base font-bold text-zinc-900">' + esc(t('orders.trackTitle')) + '</h3>'
+    + '<p class="mt-0.5 text-xs text-zinc-500">' + esc(t('orders.orderNo', { no: o.no })) + '</p>'
     + '<div class="mt-4 flex items-center gap-3 rounded-lg border border-zinc-100 p-3">'
     + '<span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-50 text-brand-600">' + icon('truck', 'h-4 w-4') + '</span>'
     + '<div class="min-w-0 flex-1"><p class="text-sm font-semibold text-zinc-900">' + esc(o.courierName || 'SwiftPost') + '</p>'
-    + '<p class="text-xs text-zinc-500">Tracking ' + trackingNo + '</p></div>'
-    + '<button type="button" data-copy-text="' + trackingNo + '" class="icon-btn shrink-0" aria-label="Copy tracking number">' + icon('copy', 'h-4 w-4') + '</button>'
+    + '<p class="text-xs text-zinc-500">' + esc(t('orders.trackingNo', { no: trackingNo })) + '</p></div>'
+    + '<button type="button" data-copy-text="' + trackingNo + '" class="icon-btn shrink-0" aria-label="' + esc(t('orders.copyTracking')) + '">' + icon('copy', 'h-4 w-4') + '</button>'
     + '</div>'
     + '<ol class="mt-4 flex flex-col">' + rows + '</ol>';
   return el;
@@ -500,25 +516,25 @@ function trackOrder(no) {
     });
     return;
   }
-  const courier = o.courierName || 'the courier';
+  const courier = o.courierName || t('orders.theCourier');
   toast(statusOf(o) === 'completed'
-    ? 'Delivered by ' + courier
-    : 'In transit with ' + courier + '. Arriving soon.');
+    ? t('orders.toast.deliveredBy', { courier })
+    : t('orders.toast.inTransitWith', { courier }));
 }
 
 function contactSeller(no) {
-  const message = 'In-app seller messaging arrives in a later phase. Your order number is ' + no
-    + '. Keep it handy when contacting support.';
+  const message = t('orders.contactMessage', { no });
+  const copyLabel = t('orders.copyOrderNumberBtn');
   if (window.unNative && typeof window.unNative.alert === 'function') {
     window.unNative.alert({
-      title: 'Contact seller',
+      title: t('orders.contactTitle'),
       message,
       buttons: [
-        { label: 'Close', style: 'cancel' },
-        { label: 'Copy order number', style: 'default' },
+        { label: t('orders.close'), style: 'cancel' },
+        { label: copyLabel, style: 'default' },
       ],
     }).then((r) => {
-      if (r && r.button && r.button.label === 'Copy order number') copyText(no);
+      if (r && r.button && r.button.label === copyLabel) copyText(no);
     });
     return;
   }
@@ -528,7 +544,7 @@ function contactSeller(no) {
 function copyText(text) {
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(text).then(
-      () => toast('Copied'),
+      () => toast(t('orders.toast.copied')),
       () => toast(text),
     );
     return;

@@ -16,7 +16,9 @@ import {
   skeletonCard,
   skeletonCategoryTile,
   toast,
+  categoryName,
 } from './ui.js';
+import { t, has } from './i18n.js';
 import { goToHash } from './router.js';
 import { createFilterService, parseFilterParams, filterParams, hasActiveFilters } from './filters.js';
 import { fetchCatalogSummary, fetchProducts } from './api.js';
@@ -67,18 +69,25 @@ const TILE_HOVER = 'transition duration-200 hover:scale-105 hover:shadow-card-lg
 /* Banners                                                             */
 /* ------------------------------------------------------------------ */
 
+/* Banner copy is UI vocabulary keyed by banner id (data.js keeps the English
+ * source text, which is the fallback when a key is missing). */
+function bannerText(b, field) {
+  const key = 'home.banner.' + b.id + '.' + field;
+  return has(key) ? t(key) : b[field];
+}
+
 function bannerHtml(b, i) {
   return '<article class="banner relative flex h-40 w-[86%] shrink-0 snap-center flex-col justify-between overflow-hidden rounded-2xl p-4 sm:h-48 sm:w-96 sm:p-5 lg:w-[26rem] '
     + BANNER_TONES[b.tone] + '" data-banner="' + b.id + '">'
     + '<span class="pointer-events-none absolute -right-6 -top-10 h-36 w-36 rounded-full bg-white/15"></span>'
     + '<span class="pointer-events-none absolute -bottom-14 right-16 h-28 w-28 rounded-full bg-white/10"></span>'
     + '<span class="pointer-events-none absolute bottom-2 right-3 opacity-25">' + icon(b.icon, 'h-20 w-20') + '</span>'
-    + '<span class="badge ' + (b.tone === 'slate' ? 'bg-white/15 text-white' : 'bg-white/20 text-white') + '">' + icon('gift', 'h-3 w-3') + 'Limited time</span>'
+    + '<span class="badge ' + (b.tone === 'slate' ? 'bg-white/15 text-white' : 'bg-white/20 text-white') + '">' + icon('gift', 'h-3 w-3') + esc(t('home.limitedTime')) + '</span>'
     + '<div class="relative max-w-[75%]">'
-    + '<h3 class="text-lg font-bold leading-tight sm:text-xl">' + b.title + '</h3>'
-    + '<p class="mt-1 text-xs leading-snug text-white/85 sm:text-sm">' + b.subtitle + '</p>'
+    + '<h3 class="text-lg font-bold leading-tight sm:text-xl">' + esc(bannerText(b, 'title')) + '</h3>'
+    + '<p class="mt-1 text-xs leading-snug text-white/85 sm:text-sm">' + esc(bannerText(b, 'subtitle')) + '</p>'
     + '</div>'
-    + '<div class="relative"><button type="button" data-banner-action="' + i + '" class="inline-flex h-8 items-center gap-1 rounded-full bg-white px-3.5 text-xs font-semibold text-zinc-900 transition-colors hover:bg-zinc-100">' + b.cta + icon('chevronRight', 'h-3.5 w-3.5') + '</button></div>'
+    + '<div class="relative"><button type="button" data-banner-action="' + i + '" class="inline-flex h-8 items-center gap-1 rounded-full bg-white px-3.5 text-xs font-semibold text-zinc-900 transition-colors hover:bg-zinc-100">' + esc(bannerText(b, 'cta')) + icon('chevronRight', 'h-3.5 w-3.5') + '</button></div>'
     + '</article>';
 }
 
@@ -94,11 +103,11 @@ function tileLink(name, t) {
 }
 
 function categoryTile(c) {
-  return tileLink(c.name, CATEGORY_TILES[c.id]);
+  return tileLink(esc(categoryName(c)), CATEGORY_TILES[c.id]);
 }
 
 function moreTile() {
-  return tileLink('More', CATEGORY_TILES.more);
+  return tileLink(esc(t('home.more')), CATEGORY_TILES.more);
 }
 
 /* ------------------------------------------------------------------ */
@@ -201,13 +210,29 @@ function productsForFilter() {
   return bundled.concat(deals);
 }
 
+/* Whether the Big deals results view is on screen (so a language change can
+ * redraw it in place). */
+let resultsOpen = false;
+
 function openResults() {
   closePanels();
+  resultsOpen = true;
+  renderResults();
+
+  // Swap the home sections for the results view.
+  ['promo', 'categories', 'flash', 'featured', 'trending', 'deals', 'recommended'].forEach((id) => {
+    const el = document.getElementById('section-' + id);
+    if (el) el.classList.add('hidden');
+  });
+  document.getElementById('results-section').classList.remove('hidden');
+  window.scrollTo({ top: 0 });
+}
+
+function renderResults() {
   const products = productsForFilter();
-  const section = document.getElementById('results-section');
-  document.getElementById('results-title').textContent = 'Big deals';
+  document.getElementById('results-title').textContent = t('home.bigDeals');
   const count = document.getElementById('results-count');
-  count.textContent = products.length + (products.length === 1 ? ' item' : ' items');
+  count.textContent = t('home.items', { count: products.length });
 
   const grid = document.getElementById('results-grid');
   const empty = document.getElementById('results-empty');
@@ -221,29 +246,22 @@ function openResults() {
     grid.classList.add('hidden');
     empty.classList.remove('hidden');
     const suggestions = TRENDING.slice(0, 4)
-      .map((t) => '<button type="button" data-search-suggest="' + t + '" class="badge-soft h-8 px-3 text-xs hover:bg-zinc-200">' + t + '</button>')
+      .map((term) => '<button type="button" data-search-suggest="' + esc(term) + '" class="badge-soft h-8 px-3 text-xs hover:bg-zinc-200">' + esc(term) + '</button>')
       .join('');
     empty.innerHTML = emptyState({
       icon: 'search',
-      title: 'No results found',
-      body: 'No discounted products right now. Try a trending search instead.',
-      actionLabel: 'Clear search',
+      title: esc(t('home.noResults')),
+      body: esc(t('home.noDeals')),
+      actionLabel: esc(t('home.clearSearch')),
       actionAttr: 'data-results-clear',
     })
       // Suggestion chips below the empty-state action.
       + '<div class="-mt-6 flex flex-wrap justify-center gap-2 pb-8">' + suggestions + '</div>';
   }
-
-  // Swap the home sections for the results view.
-  ['promo', 'categories', 'flash', 'featured', 'trending', 'deals', 'recommended'].forEach((id) => {
-    const el = document.getElementById('section-' + id);
-    if (el) el.classList.add('hidden');
-  });
-  section.classList.remove('hidden');
-  window.scrollTo({ top: 0 });
 }
 
 export function clearResults() {
+  resultsOpen = false;
   document.getElementById('results-section').classList.add('hidden');
   ['promo', 'categories', 'flash', 'featured', 'trending', 'deals', 'recommended'].forEach((id) => {
     const el = document.getElementById('section-' + id);
@@ -269,25 +287,25 @@ function panelRows(q) {
   const term = q.trim().toLowerCase();
   if (!term) {
     const recent = store.recent.length
-      ? '<div class="flex items-center justify-between px-1 pb-1"><span class="text-xs font-semibold uppercase tracking-wide text-zinc-400">Recent searches</span>'
-        + '<button type="button" data-recent-clear class="text-xs font-medium text-brand-700 hover:underline">Clear all</button></div>'
+      ? '<div class="flex items-center justify-between px-1 pb-1"><span class="text-xs font-semibold uppercase tracking-wide text-zinc-400">' + esc(t('home.recentSearches')) + '</span>'
+        + '<button type="button" data-recent-clear class="text-xs font-medium text-brand-700 hover:underline">' + esc(t('home.clearAll')) + '</button></div>'
         + '<div class="flex flex-wrap gap-2 pb-1">'
         + store.recent.map((r) => '<span class="inline-flex items-center gap-1 rounded-full bg-zinc-100 pl-3 pr-1.5 text-xs font-medium text-zinc-700">'
           + '<button type="button" data-recent="' + esc(r) + '" class="py-1.5 hover:text-zinc-900">' + esc(r) + '</button>'
-          + '<button type="button" data-recent-remove="' + esc(r) + '" aria-label="Remove ' + esc(r) + ' from recent searches" class="flex h-4 w-4 items-center justify-center rounded-full text-zinc-400 hover:bg-zinc-200 hover:text-zinc-600">' + icon('x', 'h-3 w-3') + '</button>'
+          + '<button type="button" data-recent-remove="' + esc(r) + '" aria-label="' + esc(t('home.removeRecent', { term: r })) + '" class="flex h-4 w-4 items-center justify-center rounded-full text-zinc-400 hover:bg-zinc-200 hover:text-zinc-600">' + icon('x', 'h-3 w-3') + '</button>'
           + '</span>').join('')
         + '</div>'
       : '';
-    const trending = '<div class="px-1 pb-1 pt-1 text-xs font-semibold uppercase tracking-wide text-zinc-400">Trending searches</div>'
+    const trending = '<div class="px-1 pb-1 pt-1 text-xs font-semibold uppercase tracking-wide text-zinc-400">' + esc(t('home.trendingSearches')) + '</div>'
       + '<div class="flex flex-wrap gap-2">'
-      + TRENDING.map((t) => '<button type="button" data-recent="' + t + '" class="inline-flex items-center gap-1.5 rounded-full bg-zinc-100 px-3 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-200">' + icon('search', 'h-3 w-3') + t + '</button>').join('')
+      + TRENDING.map((term) => '<button type="button" data-recent="' + esc(term) + '" class="inline-flex items-center gap-1.5 rounded-full bg-zinc-100 px-3 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-200">' + icon('search', 'h-3 w-3') + esc(term) + '</button>').join('')
       + '</div>';
-    if (!recent && !trending) return '<p class="p-2 text-sm text-zinc-400">Start typing to search.</p>';
+    if (!recent && !trending) return '<p class="p-2 text-sm text-zinc-400">' + esc(t('home.startTyping')) + '</p>';
     return recent + trending;
   }
   const matches = PRODUCTS.filter((p) => p.name.toLowerCase().includes(term)).slice(0, 6);
   if (!matches.length) {
-    return '<p class="p-2 text-sm text-zinc-500">No matches for "' + esc(q) + '". Press Enter to search anyway.</p>';
+    return '<p class="p-2 text-sm text-zinc-500">' + esc(t('home.noMatches', { q })) + '</p>';
   }
   return matches.map((p) => '<button type="button" data-suggest="' + p.name + '" class="flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-left text-sm text-zinc-700 hover:bg-zinc-50">'
     + '<span class="text-zinc-400">' + icon('search', 'h-4 w-4') + '</span>'
@@ -465,7 +483,7 @@ function renderRecommended() {
       const remaining = s.total - s.items.length;
       more.innerHTML = remaining > 0
         ? '<button type="button" id="recommended-more-btn" class="btn-outline btn-sm"'
-          + (s.loading ? ' disabled' : '') + '>Load more<span class="text-zinc-400">(' + remaining + ')</span></button>'
+          + (s.loading ? ' disabled' : '') + '>' + esc(t('home.loadMore')) + '<span class="text-zinc-400">(' + remaining + ')</span></button>'
         : '';
     }
   } else {
@@ -475,11 +493,9 @@ function renderRecommended() {
     if (empty) {
       empty.innerHTML = emptyState({
         icon: 'search',
-        title: 'No products found.',
-        body: hasActiveFilters(s.filters)
-          ? 'Try changing your filters.'
-          : 'Nothing to show here right now. Try again in a moment.',
-        actionLabel: hasActiveFilters(s.filters) ? 'Clear all' : '',
+        title: esc(t('home.noProducts')),
+        body: esc(hasActiveFilters(s.filters) ? t('home.tryFilters') : t('home.nothingNow')),
+        actionLabel: hasActiveFilters(s.filters) ? esc(t('home.clearAll')) : '',
         actionAttr: 'data-filter-clear',
       });
       empty.classList.remove('hidden');
@@ -525,7 +541,7 @@ const recommendedService = createFilterService({
   pushHash: (hash) => goToHash(hash),
   extraParams: () => ({}),
   limit: REC_PAGE,
-  onError: (msg) => toast(msg),
+  onError: (msg) => toast(msg || t('filters.loadError')),
 });
 
 /* ------------------------------------------------------------------ */
@@ -541,15 +557,26 @@ async function loadShelves() {
   const res = await fetchCatalogSummary();
   if (!res.ok || !res.data) return;
   shelvesData = res.data;
-  [['featured', res.data.featured], ['trending', res.data.trending], ['deals', res.data.deals]].forEach(([id, rows]) => {
+  renderShelves(true);
+}
+
+/* Draw the three shelf rows from the loaded summary. `reveal` un-hides a
+ * shelf the first time it has rows; a redraw (language change) keeps each
+ * row's horizontal scroll and leaves hidden shelves hidden. */
+function renderShelves(reveal) {
+  if (!shelvesData) return;
+  const data = shelvesData;
+  [['featured', data.featured], ['trending', data.trending], ['deals', data.deals]].forEach(([id, rows]) => {
     const section = document.getElementById('section-' + id);
     const row = document.getElementById(id + '-row');
     if (!section || !row || !rows.length) return;
     const list = rows.map((r) => productById(r.id) || r);
     registerProducts(list);
+    const left = row.scrollLeft;
     row.innerHTML = list.map((p) =>
       '<div class="w-40 shrink-0 snap-start sm:w-44">' + productCard(p, { compact: false }) + '</div>').join('');
-    section.classList.remove('hidden');
+    row.scrollLeft = left;
+    if (reveal) section.classList.remove('hidden');
   });
 }
 
@@ -557,11 +584,67 @@ async function loadShelves() {
 /* Boot                                                                */
 /* ------------------------------------------------------------------ */
 
+/* The banners, category tiles and Flash Sale row. Drawn once after the
+ * skeleton delay and again, in place, when the language changes. */
+let staticReady = false;
+
+function renderStaticSections() {
+  document.getElementById('promo-carousel').innerHTML = BANNERS.map(bannerHtml).join('');
+  document.getElementById('category-grid').innerHTML =
+    CATEGORIES.map(categoryTile).join('') + moreTile();
+  document.getElementById('flash-row').innerHTML =
+    PRODUCTS.filter((p) => p.flash).map((p) =>
+      '<div class="w-40 shrink-0 snap-start sm:w-44">' + productCard(p, { compact: true }) + '</div>').join('');
+}
+
+/* Language changed: redraw every language-dependent piece of the home page
+ * in place, keeping scroll positions, the filters (they live in the hash and
+ * the service) and whatever was typed in the search box. */
+function onLocaleChange() {
+  // Carousel dots (aria-labels only) exist from the first render.
+  document.querySelectorAll('#promo-dots [data-dot]').forEach((d) => {
+    d.setAttribute('aria-label', t('home.goToBanner', { n: Number(d.dataset.dot) + 1 }));
+  });
+
+  if (staticReady) {
+    const track = document.getElementById('promo-carousel');
+    const flash = document.getElementById('flash-row');
+    const trackLeft = track ? track.scrollLeft : 0;
+    const flashLeft = flash ? flash.scrollLeft : 0;
+    renderStaticSections();
+    if (track) track.scrollLeft = trackLeft;
+    if (flash) flash.scrollLeft = flashLeft;
+    updateFlashNav();
+  }
+  renderShelves(false);
+
+  // Filter toolbar (labels, sort menu), chips, count, grid and empty state.
+  const bar = document.getElementById('recommended-filterbar');
+  if (bar) {
+    const menuOpen = !!bar.querySelector('[data-sort-menu]:not(.hidden)');
+    bar.innerHTML = filterBarHtml(recommendedService.filters);
+    if (menuOpen) {
+      bar.querySelector('[data-sort-menu]').classList.remove('hidden');
+      bar.querySelector('[data-sort-toggle]').setAttribute('aria-expanded', 'true');
+    }
+  }
+  renderRecommended();
+
+  if (resultsOpen) renderResults();
+
+  // An open search panel: redraw its rows for the text already typed.
+  document.querySelectorAll('.search-box').forEach((box) => {
+    const input = box.querySelector('input');
+    const panel = box.querySelector('.search-panel');
+    if (input && panel && !panel.classList.contains('hidden')) panel.innerHTML = panelRows(input.value);
+  });
+}
+
 export function initHome() {
   // 1. Skeletons immediately, so the shell never shows an empty grid.
   document.getElementById('promo-carousel').innerHTML = skeletonBanner() + skeletonBanner() + skeletonBanner();
   document.getElementById('promo-dots').innerHTML = [0, 1, 2].map((i) =>
-    '<button type="button" data-dot="' + i + '" aria-label="Go to banner ' + (i + 1) + '" class="un-touch-target h-2 w-2 rounded-full bg-zinc-300 transition-all"></button>').join('');
+    '<button type="button" data-dot="' + i + '" aria-label="' + esc(t('home.goToBanner', { n: i + 1 })) + '" class="un-touch-target h-2 w-2 rounded-full bg-zinc-300 transition-all"></button>').join('');
   document.getElementById('category-grid').innerHTML = CATEGORIES.concat([{ id: 'more' }]).map(() => skeletonCategoryTile()).join('');
   document.getElementById('flash-row').innerHTML = Array.from({ length: 5 }, () =>
     '<div class="w-40 shrink-0 snap-start sm:w-44">' + skeletonCard(true) + '</div>').join('');
@@ -579,15 +662,13 @@ export function initHome() {
   // 3. Static home content shortly after. This is only long enough for the
   //    skeleton state to be visible (and testable).
   setTimeout(() => {
-    document.getElementById('promo-carousel').innerHTML = BANNERS.map(bannerHtml).join('');
-    document.getElementById('category-grid').innerHTML =
-      CATEGORIES.map(categoryTile).join('') + moreTile();
-    document.getElementById('flash-row').innerHTML =
-      PRODUCTS.filter((p) => p.flash).map((p) =>
-        '<div class="w-40 shrink-0 snap-start sm:w-44">' + productCard(p, { compact: true }) + '</div>').join('');
+    renderStaticSections();
+    staticReady = true;
     initCarousel();
     initFlashNav();
   }, 450);
+
+  window.addEventListener('localechange', onLocaleChange);
 
   loadShelves();
   startCountdown();

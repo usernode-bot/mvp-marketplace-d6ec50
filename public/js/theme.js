@@ -11,19 +11,21 @@
  * Purple Dream, so an unset data-theme attribute renders the default.
  */
 
+import { t } from './i18n.js';
+
 export const THEMES = [
-  { id: 'purple', name: 'Purple Dream' },
-  { id: 'ocean', name: 'Ocean Breeze' },
-  { id: 'sunset', name: 'Sunset Glow' },
-  { id: 'mint', name: 'Fresh Mint' },
-  { id: 'midnight', name: 'Midnight' },
+  { id: 'purple' },
+  { id: 'ocean' },
+  { id: 'sunset' },
+  { id: 'mint' },
+  { id: 'midnight' },
 ];
 
 const STORAGE_KEY = 'bazario:theme';
 const DEFAULT_THEME = 'purple';
 
 function isValid(id) {
-  return THEMES.some((t) => t.id === id);
+  return THEMES.some((th) => th.id === id);
 }
 
 export function getTheme() {
@@ -64,8 +66,12 @@ export function setTheme(id) {
 }
 
 export function themeName(id) {
-  const theme = THEMES.find((t) => t.id === id);
-  return theme ? theme.name : 'Purple Dream';
+  return t('theme.' + (THEMES.some((th) => th.id === id) ? id : DEFAULT_THEME));
+}
+
+/* Minimal attribute escape (theme.js stays free of ui.js imports). */
+function attr(v) {
+  return String(v).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
 }
 
 /* The swatch buttons themselves, shared by the header group (desktop) and
@@ -73,11 +79,12 @@ export function themeName(id) {
  * compiler sees them. */
 export function swatchButtons() {
   const current = getTheme();
-  return THEMES.map((t) =>
-    '<button type="button" class="theme-swatch theme-swatch-' + t.id + '" data-theme-swatch="' + t.id + '"'
-    + ' role="radio" aria-checked="' + (t.id === current) + '"'
-    + ' aria-label="Switch to ' + t.name + ' theme" title="' + t.name + '"></button>'
-  ).join('');
+  return THEMES.map((th) => {
+    const name = attr(themeName(th.id));
+    return '<button type="button" class="theme-swatch theme-swatch-' + th.id + '" data-theme-swatch="' + th.id + '"'
+      + ' role="radio" aria-checked="' + (th.id === current) + '"'
+      + ' aria-label="' + attr(t('theme.switchTo', { name: themeName(th.id) })) + '" title="' + name + '"></button>';
+  }).join('');
 }
 
 /* Boot: apply the saved theme (the inline head bootstrap has usually already
