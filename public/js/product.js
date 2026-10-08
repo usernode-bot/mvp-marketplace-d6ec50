@@ -105,14 +105,23 @@ function galleryHtml() {
     + creditHtml(view);
 }
 
-/* Pexels asks for the photographer to be credited. One line under the
- * gallery names the photographer of the photo on show. */
+/* Photographers are credited, as their licences ask. One line under the
+ * gallery names the author of the photo on show: Pexels photos link to
+ * Pexels, Wikimedia Commons photos name the author and licence and link to
+ * the file's page. A placeholder has no credit. */
 function creditHtml(view) {
   const c = p.generated && Array.isArray(p.imageCredits) ? p.imageCredits[view] : null;
-  if (!c || !c.photographer || !c.pexelsUrl) return '<p id="pdp-credit" class="mt-2 text-center text-[11px] text-zinc-400"></p>';
-  return '<p id="pdp-credit" class="mt-2 text-center text-[11px] text-zinc-400">' + esc(t('product.photoBy')) + ' '
-    + '<a href="' + esc(c.photographerUrl || c.pexelsUrl) + '" target="_blank" rel="noopener noreferrer" class="underline underline-offset-2">' + esc(c.photographer) + '</a>'
-    + ' ' + esc(t('product.photoOn')) + ' <a href="https://www.pexels.com" target="_blank" rel="noopener noreferrer" class="underline underline-offset-2">Pexels</a></p>';
+  const empty = '<p id="pdp-credit" class="mt-2 text-center text-[11px] text-zinc-400"></p>';
+  if (!c || !c.photographer) return empty;
+  const link = (href, text) => '<a href="' + esc(href) + '" target="_blank" rel="noopener noreferrer" class="underline underline-offset-2">' + esc(text) + '</a>';
+  const by = esc(t('product.photoBy')) + ' ', on = ' ' + esc(t('product.photoOn')) + ' ';
+  if (c.source === 'commons') {
+    return '<p id="pdp-credit" class="mt-2 text-center text-[11px] text-zinc-400">' + by + esc(c.photographer)
+      + ' (' + link(c.photographerUrl, c.license || 'licence') + ')' + on + link('https://commons.wikimedia.org', 'Wikimedia Commons') + '</p>';
+  }
+  if (!c.pexelsUrl) return empty;
+  return '<p id="pdp-credit" class="mt-2 text-center text-[11px] text-zinc-400">' + by
+    + link(c.photographerUrl || c.pexelsUrl, c.photographer) + on + link('https://www.pexels.com', 'Pexels') + '</p>';
 }
 
 /* Stock status. Generated products have a real count (p.stock); the bundled

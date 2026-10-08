@@ -436,7 +436,7 @@ function initCarousel() {
 
 /* Products added per "Load more" click. The list itself is paged by the
  * server; the grid renders one page and grows by one page. */
-const REC_PAGE = 12;
+const REC_PAGE = 24;
 
 let recommendedSection = null;
 

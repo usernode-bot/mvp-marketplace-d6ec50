@@ -191,3 +191,28 @@ soon" on those entry points rather than hiding them.
   the placed order so the Orders tab shows them again. Adding a courier or
   country is a data edit there, not a new rendering branch. Prices are
   integer cents.
+
+## Marketplace expansion catalog (500 products, `mx-` ids)
+
+- A second generated catalog of about 500 products (ids `mx-0001`...) with 4,300 customer reviews. It lives
+  in **data files**, not UI code: `data/marketplace/products.json`, `reviews.json` and `image-mapping.json`.
+  `src/marketplace.cjs` upserts them into `products` / `reviews` on **every boot in every environment** (it is
+  catalog content, not a staging fixture); edit the JSON (or re-run the steps) and the next boot applies it.
+- Build steps: `npm run mx:generate` (offline, deterministic: products and reviews), `npm run mx:images`
+  (searches Wikimedia Commons, no API key; cached under `.cache/commons`), `npm run mx:validate` (HEAD-checks every
+  photo URL, swaps a failed one for another photo of the same product type, and only as a last resort uses
+  `public/images/placeholders/<category>.svg`; writes `data/marketplace/image-report.json`), `npm run mx:verify`
+  (offline invariants: counts, unique names, discount 10-50%, ratings equal the review average, image rules).
+- A product's `rating` and `reviews` are the average (rounded half up to 0.1) and number of its reviews. Never
+  edit them by hand: `refreshMarketplaceRatings` recomputes them from `reviews` after seeding and after a shopper
+  adds, edits or removes a review of an `mx-` product.
+- Seeded reviews use fake reviewer ids (`seed:<product>:<n>`) and ids from 2,000,000 up. They never touch the
+  verified-purchase check (`order_items`) and never appear as the viewer's own review. `reviews` gained `title`,
+  `helpful`, `seller_reply`, `seller_reply_at`.
+- Photo rules (checked by `mx:verify`): 3-4 distinct photos per product, a photo on at most 2 products, never on two
+  categories. Photos are Wikimedia Commons thumbnails; the product page credits author and licence.
+- Seller cities are the 10 listed in `scripts/generate-marketplace.mjs`; Jakarta is one of the app's five Jakarta
+  districts because the location list has no plain "Jakarta".
+- The product page's rating breakdown is counted from the reviews for `mx-` products (`summary.exact` from
+  `GET /api/products/:id/reviews`); the bundled catalog keeps its own aggregate bars. Review sorting (Newest, Most
+  helpful, Highest rating, Lowest rating) is client-side over the loaded list. Home loads 24 products per batch.
