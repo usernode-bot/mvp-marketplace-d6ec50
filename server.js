@@ -1,10 +1,13 @@
 const express = require('express');
+const fs = require('fs');
 const path = require('path');
 const { EventEmitter } = require('events');
 const { Pool } = require('pg');
 const jwt = require('jsonwebtoken');
 const { ROWS, parseParams, buildWhere, orderBy, toProduct } =
   require('./src/products.cjs');
+const { BASE_COLUMNS, ALL_COLUMNS, ensureProductsTable, upsertRows } = require('./src/schema.cjs');
+const { toGeneratedRow } = require('./src/catalog-rows.cjs');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -36,7 +39,7 @@ const APP_AUDIENCE = process.env.USERNODE_APP_ID
 // without a spurious 401. The write routes below stay authenticated.
 // EventSource cannot set request headers, so the live reviews stream passes
 // the same identity token in the query string; the middleware above reads it.
-const PUBLIC_API_PATHS = new Set(['/health', '/api/profile', '/api/products', '/api/reviews/stream']);
+const PUBLIC_API_PATHS = new Set(['/health', '/api/profile', '/api/products', '/api/catalog/summary', '/api/reviews/stream']);
 
 // Public GET routes whose path carries a parameter (a product id, say), so an
 // exact-path Set cannot name them. Only GET is ever public: every write still
@@ -869,67 +872,61 @@ async function seedReviews() {
 /* keep the table truthful in every environment.                       */
 /* ------------------------------------------------------------------ */
 
-async function ensureProductsTable() {
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS products (
-      id TEXT PRIMARY KEY,
-      name TEXT NOT NULL,
-      cat TEXT NOT NULL,
-      sub TEXT NOT NULL DEFAULT '',
-      brand TEXT NOT NULL,
-      art TEXT NOT NULL DEFAULT '',
-      price INTEGER NOT NULL,
-      orig INTEGER,
-      discount INTEGER NOT NULL DEFAULT 0,
-      rating NUMERIC(2,1) NOT NULL,
-      reviews INTEGER NOT NULL DEFAULT 0,
-      sold INTEGER NOT NULL DEFAULT 0,
-      oos BOOLEAN NOT NULL DEFAULT FALSE,
-      age INTEGER NOT NULL DEFAULT 0,
-      province TEXT NOT NULL DEFAULT '',
-      city TEXT NOT NULL DEFAULT '',
-      kw TEXT NOT NULL DEFAULT '',
-      image TEXT,
-      images JSONB NOT NULL DEFAULT '[]'::jsonb,
-      specs JSONB NOT NULL DEFAULT '[]'::jsonb,
-      flash BOOLEAN NOT NULL DEFAULT FALSE,
-      pct INTEGER NOT NULL DEFAULT 0,
-      rank INTEGER NOT NULL DEFAULT 0,
-      search_text TEXT NOT NULL DEFAULT ''
-    )
-  `);
-  // Indexes for the filter and sort columns: price (the sort and range),
-  // city and province (the location filter), their pair (province + city
-  // together) and category (browse).
-  await pool.query('CREATE INDEX IF NOT EXISTS products_price_idx ON products (price)');
-  await pool.query('CREATE INDEX IF NOT EXISTS products_city_idx ON products (city)');
-  await pool.query('CREATE INDEX IF NOT EXISTS products_province_idx ON products (province)');
-  await pool.query('CREATE INDEX IF NOT EXISTS products_province_city_idx ON products (province, city)');
-  await pool.query('CREATE INDEX IF NOT EXISTS products_cat_idx ON products (cat)');
-  // Added after the table first shipped: the shared `images` array and the
-  // per-product `specs` rows the detail page renders. ADD COLUMN IF NOT EXISTS
-  // upgrades a staging copy whose table predates this change.
-  await pool.query("ALTER TABLE products ADD COLUMN IF NOT EXISTS images JSONB NOT NULL DEFAULT '[]'::jsonb");
-  await pool.query("ALTER TABLE products ADD COLUMN IF NOT EXISTS specs JSONB NOT NULL DEFAULT '[]'::jsonb");
+/* Idempotent upsert of the bundled catalog as a flat table, 100 rows a
+ * statement. Re-running on every boot refreshes rows edited in the catalog
+ * without duplicating them; it never deletes a row, so the generated
+ * marketplace products (inserted by `npm run seed:products`) are left alone. */
+async function seedCatalog(rows) {
+  for (let i = 0; i < rows.length; i += 100) {
+    await upsertRows(pool, rows.slice(i, i + 100), BASE_COLUMNS);
+  }
 }
 
-const PRODUCT_COLUMNS = [
-  'id', 'name', 'cat', 'sub', 'brand', 'art', 'price', 'orig', 'discount',
-  'rating', 'reviews', 'sold', 'oos', 'age', 'province', 'city', 'kw',
-  'image', 'images', 'specs', 'flash', 'pct', 'rank', 'search_text',
-];
+/* Staging-only demo rows. The marketplace catalog (`npm run seed:products`)
+ * is inserted into production by hand, so a staging preview of a fresh
+ * database has none of it. This inserts the 21-product sample (3 per
+ * category) so the product page, shelves and category counts can be reviewed.
+ * They are obviously fake: ids and names carry "staging-demo" / "Staging
+ * demo", and their photos are plain generated panels, not real pictures.
+ * ON CONFLICT DO NOTHING keeps the block idempotent across rebuilds. */
+const DEMO_HUES = {
+  electronics: '#6366f1', fashion: '#e11d48', beauty: '#a855f7', home: '#0d9488',
+  sports: '#ea580c', groceries: '#16a34a', accessories: '#64748b',
+};
 
-/* Idempotent upsert of the bundled catalog as a flat table. Re-running on
- * every boot refreshes rows edited in the catalog without duplicating them;
- * it never deletes a row, so a locally added product is left alone. */
-async function seedCatalog(rows) {
-  const placeholders = PRODUCT_COLUMNS.map((_, i) => '$' + (i + 1)).join(', ');
-  const updates = PRODUCT_COLUMNS.filter((c) => c !== 'id')
-    .map((c) => c + ' = EXCLUDED.' + c).join(', ');
-  const sql = 'INSERT INTO products (' + PRODUCT_COLUMNS.join(', ') + ') VALUES (' + placeholders + ')'
-    + ' ON CONFLICT (id) DO UPDATE SET ' + updates;
+function demoPhoto(cat, n) {
+  const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="800" height="800" viewBox="0 0 800 800">'
+    + '<rect width="800" height="800" fill="' + DEMO_HUES[cat] + '"/>'
+    + '<circle cx="' + (200 + n * 140) + '" cy="260" r="150" fill="#ffffff" opacity="0.18"/>'
+    + '<text x="400" y="420" font-family="system-ui,sans-serif" font-size="44" font-weight="700" fill="#ffffff" text-anchor="middle">Staging demo photo ' + (n + 1) + '</text></svg>';
+  return 'data:image/svg+xml,' + encodeURIComponent(svg);
+}
+
+async function seedStagingDemo() {
+  let sample;
+  try {
+    sample = JSON.parse(fs.readFileSync(path.join(__dirname, 'data', 'generated', 'sample-products.json'), 'utf8'));
+  } catch {
+    return; // no sample file in this build: nothing to seed
+  }
+  const rows = sample.map((p, i) => {
+    const credits = [0, 1, 2, 3].map((n) => ({
+      src: demoPhoto(p.cat, n), alt: 'Staging demo photo', photographer: 'Staging demo', photographerUrl: '', pexelsUrl: '',
+    }));
+    const demo = Object.assign({}, p, {
+      id: 'staging-demo-' + p.id,
+      name: 'Staging demo ' + p.name,
+      specs: p.specs.map((r) => (r.l === 'Product ID' ? { l: r.l, v: 'staging-demo-' + p.id } : r)),
+    });
+    // One fixed city (no location filter is declared for it), so these rows
+    // never change the counts of the city and province filters on Home.
+    return Object.assign(toGeneratedRow(demo, i, credits), { province: 'Sulawesi Selatan', city: 'Makassar' });
+  });
   for (const row of rows) {
-    await pool.query(sql, PRODUCT_COLUMNS.map((c) => row[c]));
+    const marks = ALL_COLUMNS.map((_, i) => '$' + (i + 1)).join(', ');
+    await pool.query(
+      'INSERT INTO products (' + ALL_COLUMNS.join(', ') + ') VALUES (' + marks + ') ON CONFLICT (id) DO NOTHING',
+      ALL_COLUMNS.map((c) => (row[c] === undefined ? null : row[c])));
   }
 }
 
@@ -956,6 +953,53 @@ app.get('/api/products', async (req, res) => {
   } catch (err) {
     console.error('[products] load failed:', err.message);
     return res.status(500).json({ error: 'Could not load products' });
+  }
+});
+
+/* One product by id, with the detail fields (description, key features,
+ * variants, stock, photo credits) the product page needs. */
+app.get('/api/products/:id', async (req, res) => {
+  try {
+    const { rows } = await pool.query('SELECT * FROM products WHERE id = $1', [req.params.id]);
+    if (!rows.length) return res.status(404).json({ error: 'Product not found' });
+    return res.json(toProduct(rows[0]));
+  } catch (err) {
+    console.error('[products] detail failed:', err.message);
+    return res.status(500).json({ error: 'Could not load product' });
+  }
+});
+
+/* Home-page aggregates computed from the table, never hand-listed: per
+ * category and subcategory counts, plus the Featured, Trending and Deals
+ * shelves. Featured = best rating weighted by review volume; Trending =
+ * sales per day since listing; Deals = deepest discounts. Sold-out rows are
+ * left out of the shelves. */
+const SHELF_SIZE = 12;
+async function shelf(orderSql, extraWhere) {
+  const { rows } = await pool.query(
+    'SELECT * FROM products WHERE NOT oos' + (extraWhere ? ' AND ' + extraWhere : '')
+    + ' ORDER BY ' + orderSql + ', id ASC LIMIT ' + SHELF_SIZE);
+  return rows.map(toProduct);
+}
+
+app.get('/api/catalog/summary', async (_req, res) => {
+  try {
+    const [cats, subs, featured, trending, deals] = await Promise.all([
+      pool.query('SELECT cat, COUNT(*)::int AS count FROM products GROUP BY cat'),
+      pool.query('SELECT cat, sub, COUNT(*)::int AS count FROM products GROUP BY cat, sub'),
+      shelf('rating * LN(reviews + 1) DESC'),
+      shelf('sold::float / GREATEST(age, 1) DESC'),
+      shelf('discount DESC, sold DESC', 'discount >= 30'),
+    ]);
+    return res.json({
+      categories: cats.rows,
+      subcategories: subs.rows,
+      total: cats.rows.reduce((n, r) => n + r.count, 0),
+      featured, trending, deals,
+    });
+  } catch (err) {
+    console.error('[catalog] summary failed:', err.message);
+    return res.status(500).json({ error: 'Could not load catalog summary' });
   }
 });
 
@@ -1015,8 +1059,9 @@ async function start() {
   // copy of production's rows; the upsert below also makes a fresh table
   // non-empty. Development/testing runs against a fresh local database, so
   // the same upsert is what fills it there.
-  await ensureProductsTable();
+  await ensureProductsTable(pool);
   await seedCatalog(ROWS);
+  if (IS_STAGING) await seedStagingDemo();
 
   // Reviews, their photos and the order mirror. Reviews/review_images are
   // public; orders/order_items are staging:private. The staging seed only

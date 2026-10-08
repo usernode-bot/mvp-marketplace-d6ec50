@@ -9,24 +9,27 @@
  */
 
 import { icon, productArtView, productPlaceholder } from './icons.js';
+import { fetchProduct, fetchProducts } from './api.js';
 import {
   SELLERS,
   discountPct,
   productById,
+  registerProducts,
   PRODUCTS,
   score,
   shippingFor,
   specsFor,
 } from './data.js';
 import { store } from './store.js';
-import { emptyState, esc, fmtCount, fmtPrice, productCard, starRow, toast } from './ui.js';
+import { emptyState, esc, fmtCount, fmtPrice, photoHtml, productCard, sizedImage, skeletonCard, starRow, toast } from './ui.js';
 import { goToHash } from './router.js';
 import { t } from './i18n.js';
 import { initReviews, mountReviews } from './reviews.js';
 
 
 let p = null;
-let st = { qty: 1, color: '', size: '', view: 0 };
+let st = { qty: 1, color: '', size: '', view: 0, zoom: false, opts: {} };
+let pendingId = null;
 
 /* ------------------------------------------------------------------ */
 /* Sections                                                             */
@@ -47,11 +50,20 @@ function galleryImages() {
  * itself (onerror). */
 function photoMain(src, i) {
   const fit = p.imageFit === 'contain' ? 'object-contain' : 'object-cover';
-  return '<div class="absolute inset-0 bg-zinc-100">'
+  // Generated marketplace products: shimmer while loading, placeholder only
+  // on failure (photoHtml). The photo is zoomable (see bindZoom).
+  if (p.generated) {
+    return '<div class="absolute inset-0 bg-zinc-100" data-zoom-area role="button" tabindex="0" aria-pressed="false" aria-label="Zoom photo" style="cursor:zoom-in">'
+      + (src
+        ? photoHtml(src, p.name + ' photo ' + (i + 1), { w: 900, eager: true, cls: 'pdp-zoom-img motion-safe:transition-transform motion-safe:duration-200' })
+        : productPlaceholder(p, 'absolute inset-0 h-full w-full text-zinc-300'))
+      + '</div>';
+  }
+  return '<div class="absolute inset-0 bg-zinc-100" data-zoom-area role="button" tabindex="0" aria-pressed="false" aria-label="Zoom photo" style="cursor:zoom-in">'
     + productPlaceholder(p, 'absolute inset-0 h-full w-full text-zinc-300')
     + (src
       ? '<img src="' + esc(src) + '" alt="' + esc(p.name + ' photo ' + (i + 1)) + '" data-product-image data-gallery-img'
-        + ' class="product-img absolute inset-0 h-full w-full bg-zinc-100 ' + fit + '" onerror="this.remove()">'
+        + ' class="product-img absolute inset-0 h-full w-full bg-zinc-100 ' + fit + ' pdp-zoom-img motion-safe:transition-transform motion-safe:duration-200" onerror="this.remove()">'
       : '')
     + '</div>';
 }
@@ -72,7 +84,7 @@ function galleryHtml() {
       '<button type="button" data-img-go="' + i + '" aria-label="Show photo ' + (i + 1) + ' of ' + n
       + '" class="h-16 w-16 shrink-0 overflow-hidden rounded-lg border-2 bg-zinc-100 ' + (i === view ? 'border-brand-600' : 'border-transparent') + '">'
       + (imgs[i]
-        ? '<img src="' + esc(imgs[i]) + '" alt="" class="product-img h-full w-full ' + (p.imageFit === 'contain' ? 'object-contain' : 'object-cover') + '" onerror="this.remove()">'
+        ? '<img src="' + esc(p.generated ? sizedImage(imgs[i], 160) : imgs[i]) + '" alt=""' + (p.generated ? ' loading="lazy" width="160" height="160"' : '') + ' class="product-img h-full w-full ' + (p.imageFit === 'contain' ? 'object-contain' : 'object-cover') + '" onerror="this.remove()">'
         : '')
       + '</button>').join('')
     : '';
@@ -88,7 +100,33 @@ function galleryHtml() {
     + (n > 1 ? '<button type="button" data-img-next aria-label="Next photo" class="absolute right-2 top-1/2 hidden h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-zinc-700 shadow-card md:flex">' + icon('chevronRight', 'h-4 w-4') + '</button>' : '')
     + '</div>'
     + (dots ? '<div class="mt-3 flex justify-center gap-1.5">' + dots + '</div>' : '')
-    + (thumbs ? '<div class="mt-3 hidden gap-2 md:flex">' + thumbs + '</div>' : '');
+    + (thumbs ? '<div class="mt-3 hidden gap-2 md:flex">' + thumbs + '</div>' : '')
+    + creditHtml(view);
+}
+
+/* Pexels asks for the photographer to be credited. One line under the
+ * gallery names the photographer of the photo on show. */
+function creditHtml(view) {
+  const c = p.generated && Array.isArray(p.imageCredits) ? p.imageCredits[view] : null;
+  if (!c || !c.photographer || !c.pexelsUrl) return '<p id="pdp-credit" class="mt-2 text-center text-[11px] text-zinc-400"></p>';
+  return '<p id="pdp-credit" class="mt-2 text-center text-[11px] text-zinc-400">Photo by '
+    + '<a href="' + esc(c.photographerUrl || c.pexelsUrl) + '" target="_blank" rel="noopener noreferrer" class="underline underline-offset-2">' + esc(c.photographer) + '</a>'
+    + ' on <a href="https://www.pexels.com" target="_blank" rel="noopener noreferrer" class="underline underline-offset-2">Pexels</a></p>';
+}
+
+/* Stock status. Generated products have a real count (p.stock); the bundled
+ * catalog only knows sold out or not. */
+function stockInfo() {
+  if (p.oos || p.stock === 0) return { tone: 'out', text: 'Sold out' };
+  if (typeof p.stock === 'number' && p.stock <= 9) return { tone: 'low', text: 'Only ' + p.stock + ' left in stock' };
+  return { tone: 'in', text: 'In stock' };
+}
+
+function stockHtml() {
+  const s = stockInfo();
+  const tone = s.tone === 'out' ? 'text-rose-600' : (s.tone === 'low' ? 'text-amber-600' : 'text-emerald-600');
+  return '<p data-stock-status="' + s.tone + '" class="mt-3 flex items-center gap-1.5 text-sm font-semibold ' + tone + '">'
+    + icon(s.tone === 'out' ? 'x' : 'check', 'h-4 w-4') + s.text + '</p>';
 }
 
 function infoHtml() {
@@ -106,6 +144,19 @@ function infoHtml() {
       + '</div></div>'
     : '';
 
+  // Generated products carry any number of named variant groups (Storage,
+  // Color, Pack, Shade ...), each a row of option chips.
+  const variantRows = (p.variants || []).map((g) =>
+    '<div class="mt-4"><h2 class="text-sm font-bold text-zinc-900">' + esc(g.name) + ': <span data-variant-label="' + esc(g.name)
+    + '" class="font-medium text-zinc-500">' + esc(st.opts[g.name] || '') + '</span></h2>'
+    + '<div class="mt-2 flex flex-wrap gap-2">'
+    + g.options.map((o) => {
+      const on = st.opts[g.name] === o;
+      return '<button type="button" data-variant-group="' + esc(g.name) + '" data-variant-opt="' + esc(o) + '" aria-pressed="' + on
+        + '" class="h-9 min-w-11 rounded-lg border px-3 text-sm font-semibold ' + (on ? 'border-brand-600 bg-brand-50 text-brand-700' : 'border-zinc-200 bg-white text-zinc-700') + '">' + esc(o) + '</button>';
+    }).join('')
+    + '</div></div>').join('');
+
   const sizeRow = sizes.length
     ? '<div class="mt-4"><h2 class="text-sm font-bold text-zinc-900">Size: <span id="pdp-size-label" class="font-medium text-zinc-500">' + st.size + '</span></h2>'
       + '<div class="mt-2 flex flex-wrap gap-2">'
@@ -115,7 +166,7 @@ function infoHtml() {
       + '</div></div>'
     : '';
 
-  return '<h1 class="text-lg font-bold leading-snug text-zinc-900 md:text-xl">' + p.name + '</h1>'
+  return '<h1 class="text-lg font-bold leading-snug text-zinc-900 md:text-xl">' + esc(p.name) + '</h1>'
     + '<div class="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1">'
     + starRow(p.rating)
     + '<span class="text-sm font-semibold text-zinc-700">' + p.rating.toFixed(1) + '</span>'
@@ -133,7 +184,8 @@ function infoHtml() {
     + '<span>' + (ship.fee === 0 ? '<span class="font-semibold text-zinc-800">Free shipping</span>' : 'Shipping ' + fmtPrice(ship.fee)) + ' · Arrives in ' + ship.eta + '</span></div>'
     + '<div class="flex items-start gap-2.5">' + icon('returns', 'h-4 w-4 mt-0.5 shrink-0 text-zinc-400') + '<span>' + ship.returns + '</span></div>'
     + '</div>'
-    + colorRow + sizeRow
+    + stockHtml()
+    + colorRow + sizeRow + variantRows
     + '<div class="mt-4 flex items-center gap-3">'
     + '<h2 class="text-sm font-bold text-zinc-900">Quantity</h2>'
     + '<div class="ml-auto flex items-center overflow-hidden rounded-lg border border-zinc-200">'
@@ -167,8 +219,11 @@ function specsHtml() {
   // Two columns on wide screens, one on phones. Every row is keyed for
   // translation; an empty value is dropped by specsFor, so a non-applicable
   // field is hidden rather than shown as "N/A".
-  const rows = specsFor(p).map((r) => {
-    const label = t(r.k) || r.l;
+  const source = p.generated && Array.isArray(p.specs)
+    ? p.specs.concat([{ l: 'Stock', v: stockInfo().text }])
+    : specsFor(p);
+  const rows = source.map((r) => {
+    const label = r.k ? (t(r.k) || r.l) : r.l;
     return '<div class="flex items-start gap-3 border-b border-zinc-100 px-3.5 py-2.5 text-sm">'
       + '<dt class="w-28 shrink-0 text-zinc-500 sm:w-36">' + esc(label) + '</dt>'
       + '<dd class="min-w-0 text-zinc-800">' + esc(r.v) + '</dd></div>';
@@ -179,8 +234,15 @@ function specsHtml() {
 }
 
 function descriptionHtml() {
+  const features = Array.isArray(p.features) && p.features.length
+    ? '<section class="mt-8"><h2 class="text-base font-bold text-zinc-900">Key features</h2>'
+      + '<ul class="mt-3 grid gap-2 sm:grid-cols-2">'
+      + p.features.map((f) => '<li class="flex items-start gap-2.5 text-sm text-zinc-700"><span class="mt-0.5 shrink-0 text-brand-600">' + icon('check', 'h-4 w-4') + '</span>' + esc(f) + '</li>').join('')
+      + '</ul></section>'
+    : '';
   return '<section class="mt-8"><h2 class="text-base font-bold text-zinc-900">Description</h2>'
-    + '<p class="mt-2 text-sm leading-relaxed text-zinc-600">' + p.desc + '</p></section>';
+    + '<p class="mt-2 text-sm leading-relaxed text-zinc-600">' + (p.generated ? esc(p.desc) : p.desc) + '</p></section>'
+    + features;
 }
 
 /* The reviews section is owned by reviews.js: it loads the real rows from
@@ -192,6 +254,13 @@ function reviewsHtml() {
 }
 
 function relatedHtml() {
+  // A server-only product has no bundled neighbours: its "You may also like"
+  // row is filled from GET /api/products once the page is up (loadRelated).
+  if (p.generated) {
+    return '<section id="pdp-related" class="mt-8"><h2 class="text-base font-bold text-zinc-900">You may also like</h2>'
+      + '<div id="pdp-related-grid" class="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">'
+      + Array.from({ length: 4 }, () => skeletonCard()).join('') + '</div></section>';
+  }
   const related = PRODUCTS
     .filter((x) => x.cat === p.cat && x.id !== p.id)
     .sort((a, b) => score(b) - score(a))
@@ -245,7 +314,10 @@ function syncGallery() {
   if (n) st.view = ((st.view % n) + n) % n;
   else st.view = 0;
   const img = document.getElementById('pdp-img');
+  st.zoom = false;
   if (img) img.innerHTML = photoMain(imgs[st.view], st.view);
+  const credit = document.getElementById('pdp-credit');
+  if (credit) credit.outerHTML = creditHtml(st.view);
   document.querySelectorAll('#view-product [data-img-go]').forEach((btn) => {
     const i = Number(btn.getAttribute('data-img-go'));
     const on = i === st.view;
@@ -280,16 +352,67 @@ function syncVariantButtons() {
     btn.classList.toggle('bg-white', !on);
     btn.classList.toggle('text-zinc-700', !on);
   });
+  document.querySelectorAll('#view-product [data-variant-opt]').forEach((btn) => {
+    const on = st.opts[btn.getAttribute('data-variant-group')] === btn.getAttribute('data-variant-opt');
+    btn.setAttribute('aria-pressed', String(on));
+    btn.classList.toggle('border-brand-600', on);
+    btn.classList.toggle('bg-brand-50', on);
+    btn.classList.toggle('text-brand-700', on);
+    btn.classList.toggle('border-zinc-200', !on);
+    btn.classList.toggle('bg-white', !on);
+    btn.classList.toggle('text-zinc-700', !on);
+  });
+  document.querySelectorAll('#view-product [data-variant-label]').forEach((el) => {
+    el.textContent = st.opts[el.getAttribute('data-variant-label')] || '';
+  });
   const colorLabel = document.getElementById('pdp-color-label');
   if (colorLabel) colorLabel.textContent = st.color;
   const sizeLabel = document.getElementById('pdp-size-label');
   if (sizeLabel) sizeLabel.textContent = st.size;
 }
 
+/* Zoom. Click or Enter toggles a 2x zoom of the main photo; while zoomed the
+ * photo follows the pointer so every corner can be inspected. The first zoom
+ * swaps in the 1800px version of a Pexels photo, so the zoom is sharp rather
+ * than an upscaled 900px image. */
+function applyZoom(e) {
+  const area = document.querySelector('#view-product [data-zoom-area]');
+  const img = area && area.querySelector('.pdp-zoom-img');
+  if (!area || !img) return;
+  area.setAttribute('aria-pressed', String(st.zoom));
+  area.style.cursor = st.zoom ? 'zoom-out' : 'zoom-in';
+  if (!st.zoom) {
+    img.style.transform = '';
+    return;
+  }
+  if (p.generated && !img.dataset.hires) {
+    img.dataset.hires = '1';
+    img.src = sizedImage(galleryImages()[st.view], 1800);
+  }
+  const r = area.getBoundingClientRect();
+  const x = e && e.clientX !== undefined ? ((e.clientX - r.left) / r.width) * 100 : 50;
+  const y = e && e.clientY !== undefined ? ((e.clientY - r.top) / r.height) * 100 : 50;
+  img.style.transformOrigin = Math.max(0, Math.min(100, x)) + '% ' + Math.max(0, Math.min(100, y)) + '%';
+  img.style.transform = 'scale(2)';
+}
+
+/* The variant values the cart line shows. Bundled products use colour and
+ * size; generated ones use their first two named groups (e.g. Storage and
+ * Color), which the cart joins as "128GB · Black". */
+function cartVariant() {
+  const groups = p.variants || [];
+  if (!groups.length) return { color: st.color, size: st.size };
+  return { color: st.opts[groups[0].name] || '', size: groups[1] ? (st.opts[groups[1].name] || '') : '' };
+}
+
+function maxQty() {
+  return typeof p.stock === 'number' && p.stock > 0 ? Math.min(99, p.stock) : 99;
+}
+
 function bindProductEvents() {
   const view = document.getElementById('view-product');
   view.addEventListener('click', (e) => {
-    const target = e.target.closest('[data-img-go], [data-img-prev], [data-img-next], [data-variant-color], [data-variant-size], [data-qty], [data-add-cart], [data-buy-now], [data-chat], [data-scroll-reviews]');
+    const target = e.target.closest('[data-img-go], [data-img-prev], [data-img-next], [data-variant-color], [data-variant-size], [data-variant-opt], [data-zoom-area], [data-qty], [data-add-cart], [data-buy-now], [data-chat], [data-scroll-reviews]');
     if (!target) return;
 
     if (target.hasAttribute('data-img-go')) {
@@ -303,6 +426,16 @@ function bindProductEvents() {
       const n = galleryImages().length || 1;
       st.view = (st.view + dir + n) % n;
       syncGallery();
+      return;
+    }
+    if (target.hasAttribute('data-zoom-area')) {
+      st.zoom = !st.zoom;
+      applyZoom(e);
+      return;
+    }
+    if (target.hasAttribute('data-variant-opt')) {
+      st.opts[target.getAttribute('data-variant-group')] = target.getAttribute('data-variant-opt');
+      syncVariantButtons();
       return;
     }
     const color = target.getAttribute('data-variant-color');
@@ -324,7 +457,7 @@ function bindProductEvents() {
     }
     const qty = target.getAttribute('data-qty');
     if (qty) {
-      st.qty = Math.min(99, Math.max(1, st.qty + Number(qty)));
+      st.qty = Math.min(maxQty(), Math.max(1, st.qty + Number(qty)));
       syncQty();
       return;
     }
@@ -342,22 +475,87 @@ function bindProductEvents() {
     if (p.oos) return; // both buy buttons are disabled; nothing to do
 
     if (target.hasAttribute('data-add-cart')) {
-      store.addToCart(p.id, { qty: st.qty, color: st.color, size: st.size });
+      store.addToCart(p.id, Object.assign({ qty: st.qty }, cartVariant()));
       toast('Added to cart');
       return;
     }
     if (target.hasAttribute('data-buy-now')) {
-      store.addToCart(p.id, { qty: st.qty, color: st.color, size: st.size });
+      store.addToCart(p.id, Object.assign({ qty: st.qty }, cartVariant()));
       goToHash('#/cart');
+    }
+  });
+
+  view.addEventListener('mousemove', (e) => {
+    if (st.zoom && e.target.closest('[data-zoom-area]')) applyZoom(e);
+  });
+  view.addEventListener('mouseout', (e) => {
+    if (st.zoom && e.target.closest('[data-zoom-area]') && !e.relatedTarget) {
+      st.zoom = false;
+      applyZoom();
+    }
+  });
+  view.addEventListener('keydown', (e) => {
+    if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('[data-zoom-area]')) {
+      e.preventDefault();
+      st.zoom = !st.zoom;
+      applyZoom();
     }
   });
 }
 
 let bound = false;
 
+/* A bundled product renders at once. A server-only one (the generated
+ * marketplace catalog) shows a skeleton while GET /api/products/:id answers. */
 export function renderProduct(id) {
+  pendingId = id;
+  const local = productById(id);
+  if (local) {
+    renderLoaded(local);
+    return;
+  }
   const view = document.getElementById('view-product');
-  p = productById(id);
+  document.title = 'Product · MVP Marketplace';
+  view.innerHTML = '<div class="mx-auto max-w-5xl px-4 pb-32 pt-3" aria-busy="true">'
+    + '<div class="md:grid md:grid-cols-2 md:gap-8"><div class="aspect-square animate-pulse rounded-2xl bg-zinc-100"></div>'
+    + '<div class="mt-5 space-y-3 md:mt-0"><div class="h-6 w-4/5 animate-pulse rounded bg-zinc-100"></div>'
+    + '<div class="h-4 w-1/3 animate-pulse rounded bg-zinc-100"></div><div class="h-8 w-1/2 animate-pulse rounded bg-zinc-100"></div></div></div></div>';
+  fetchProduct(id).then((res) => {
+    if (pendingId !== id) return; // the shopper already navigated elsewhere
+    if (res.ok && res.data && res.data.id === id) {
+      registerProducts([res.data]);
+      renderLoaded(res.data);
+    } else {
+      renderLoaded(null);
+    }
+  });
+}
+
+/* Fill "You may also like" for a server-only product: the best-rated items of
+ * its subcategory, then its category. */
+async function loadRelated(product) {
+  const grid = document.getElementById('pdp-related-grid');
+  if (!grid) return;
+  let items = [];
+  const sub = await fetchProducts({ cat: product.cat, sub: product.sub, sort: 'top_rated', limit: 9 });
+  if (sub.ok && sub.data) items = sub.data.items;
+  if (items.length < 5) {
+    const cat = await fetchProducts({ cat: product.cat, sort: 'top_rated', limit: 9 });
+    if (cat.ok && cat.data) items = items.concat(cat.data.items);
+  }
+  if (p !== product || !document.getElementById('pdp-related-grid')) return;
+  const seen = new Set([product.id]);
+  const list = items.filter((x) => !seen.has(x.id) && seen.add(x.id)).slice(0, 8)
+    .map((x) => productById(x.id) || x);
+  registerProducts(list);
+  const section = document.getElementById('pdp-related');
+  if (!list.length) { if (section) section.remove(); return; }
+  document.getElementById('pdp-related-grid').innerHTML = list.map((x) => productCard(x)).join('');
+}
+
+function renderLoaded(product) {
+  const view = document.getElementById('view-product');
+  p = product;
 
   if (!p) {
     document.title = 'Product not found · MVP Marketplace';
@@ -365,7 +563,9 @@ export function renderProduct(id) {
     return;
   }
 
-  st = { qty: 1, color: (p.colors && p.colors[0] && p.colors[0].name) || '', size: (p.sizes && p.sizes[0]) || '', view: 0 };
+  const opts = {};
+  (p.variants || []).forEach((g) => { opts[g.name] = g.options[0]; });
+  st = { qty: 1, color: (p.colors && p.colors[0] && p.colors[0].name) || '', size: (p.sizes && p.sizes[0]) || '', view: 0, zoom: false, opts };
   store.addRecentlyViewed(p.id);
   document.title = p.name + ' · MVP Marketplace';
 
@@ -393,4 +593,5 @@ export function renderProduct(id) {
   initReviews();
   const demo = new URLSearchParams(location.search).get('demo') === '1';
   mountReviews(document.getElementById('pdp-reviews'), p, { demo });
+  if (p.generated) loadRelated(p);
 }

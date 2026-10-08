@@ -121,3 +121,15 @@ export function openReviewStream(productId, { onEvent, onOpen, onError } = {}) {
   source.addEventListener('error', () => { if (onError) onError(); });
   return source;
 }
+
+/* One product by id, with the detail fields (description, key features,
+ * variants, stock, photo credits). 404 resolves { ok: false, status: 404 }. */
+export function fetchProduct(id) {
+  return apiFetch('/api/products/' + encodeURIComponent(id));
+}
+
+/* Category and subcategory counts plus the Featured, Trending and Deals
+ * shelves, all computed from the products table. */
+export function fetchCatalogSummary() {
+  return apiFetch('/api/catalog/summary');
+}

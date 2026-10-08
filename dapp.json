@@ -442,6 +442,14 @@
       "path": "/?demo=checkout#/checkout",
       "expectSelector": "[data-place-order]",
       "expectText": "Order summary"
-    }
+    },
+    {"id": "product.catalog-detail", "name": "A marketplace product page shows stock, variants, key features and a specifications table", "path": "/#/product/staging-demo-gx-0001", "expectSelector": "#view-product [data-stock-status] ~ div [data-variant-opt]", "expectText": "Key features", "visual": true, "impact": ["public/js/product.js", "public/js/ui.js", "public/js/api.js", "server.js", "src/products.cjs", "src/schema.cjs", "src/catalog-rows.cjs"]},
+    {"name": "Marketplace product page has a zoomable photo gallery with thumbnails", "path": "/#/product/staging-demo-gx-0041", "expectSelector": "#view-product [data-zoom-area] img[data-product-image]"},
+    {"name": "Marketplace product page lists its specifications table", "path": "/#/product/staging-demo-gx-0001", "expectSelector": "#view-product dl", "expectText": "Driver size"},
+    {"name": "Home shows Featured, Trending and Deals shelves computed from the catalog", "path": "/", "expectSelector": "#featured-row [data-product]", "expectText": "Trending now"},
+    {"name": "Categories tab shows category counts from the catalog table", "path": "/#/categories", "expectSelector": "[data-category-count='electronics']", "expectText": "products"},
+    {"name": "Category browse merges the marketplace catalog from the server", "path": "/#/category/electronics", "expectSelector": "#browse-grid [data-product^='staging-demo-']"},
+    {"name": "Search finds a marketplace product by brand name", "path": "/#/search?q=Primere", "expectSelector": "#browse-grid [data-product='staging-demo-gx-0001']"},
+    {"name": "Unknown product id shows the not-found state", "path": "/#/product/gx-does-not-exist", "expectText": "Product not found", "allowConsoleErrors": true}
   ]
 }

@@ -904,7 +904,21 @@ export function productPlaceholder(p, cls = 'absolute inset-0 h-full w-full text
 
 /* Generate the artwork SVG for a product. */
 export function productArt(p) {
+  // A generated marketplace product has no illustration: wherever the app
+  // shows a small thumbnail (cart, checkout, orders) it shows the product's
+  // real first photo, with the neutral placeholder if that photo fails.
+  if (!p.art && p.generated && p.images && p.images.length) {
+    return '<span class="relative block h-full w-full bg-zinc-100"><img src="' + attrEsc(sizedImage(p.images[0], 240))
+      + '" alt="" loading="lazy" width="240" height="240" class="h-full w-full object-cover" onerror="unImgFail(this)"></span>';
+  }
   return productArtView(p, 0);
+}
+
+/* Pexels' CDN resizes on request: ask for the width a surface shows. Any
+ * other URL (a committed photo, a data URI) is returned unchanged. */
+export function sizedImage(url, w) {
+  if (typeof url !== 'string' || !/^https:\/\/images\.pexels\.com\//.test(url)) return url;
+  return url.split('?')[0] + '?auto=compress&cs=tinysrgb&fit=crop&w=' + w + '&h=' + w;
 }
 
 /* ---------------------------------------------------------------------------
