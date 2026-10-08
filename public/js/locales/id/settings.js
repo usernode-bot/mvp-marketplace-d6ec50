@@ -17,6 +17,7 @@ export default {
   'settings.logoutMessage': 'MVP Marketplace menyimpan keranjang, wishlist, alamat, dan pengaturan Anda di perangkat ini. Keluar akan menghapusnya.',
   'settings.loggedOut': 'Anda telah keluar',
   'settings.languageSet': 'Bahasa diatur ke {language}',
+  'settings.selected': 'Dipilih',
   'settings.languageFallback': 'Gunakan pemilih bahasa di Pengaturan',
   'settings.themeInfo': 'Gunakan pilihan warna untuk mengganti tema (di header pada desktop, di halaman Profil pada ponsel)',
   'settings.editProfile': 'Ubah profil',
