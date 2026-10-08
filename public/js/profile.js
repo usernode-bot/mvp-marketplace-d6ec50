@@ -10,6 +10,7 @@
  */
 
 import { icon } from './icons.js';
+import { t } from './i18n.js';
 import { VOUCHERS, productById, voucherDescription } from './data.js';
 import { store } from './store.js';
 import { avatarHtml, emptyState, esc, productCard } from './ui.js';
@@ -88,9 +89,9 @@ export function displayName() {
 /* Sub-page header with a back affordance. backRoute is a data-route value. */
 function pageHeader(title, backRoute) {
   return '<div class="flex items-center gap-1">'
-    + '<button type="button" data-route="' + backRoute + '" class="icon-btn -ml-2" aria-label="Back">'
+    + '<button type="button" data-route="' + backRoute + '" class="icon-btn -ml-2" aria-label="' + esc(t('profile.back')) + '">'
     + icon('chevronLeft', 'h-5 w-5') + '</button>'
-    + '<h1 class="section-title">' + title + '</h1>'
+    + '<h1 class="section-title">' + esc(title) + '</h1>'
     + '</div>';
 }
 
@@ -113,13 +114,13 @@ function renderProfileHome() {
     '<button type="button" ' + attr + ' class="flex flex-col items-center gap-1 py-4 transition-colors hover:bg-zinc-50">'
     + '<span class="flex h-9 w-9 items-center justify-center rounded-full bg-brand-50 text-brand-600">' + icon(iconName, 'h-5 w-5') + '</span>'
     + '<span class="text-base font-bold leading-none tabular-nums text-zinc-900">' + count + '</span>'
-    + '<span class="text-xs text-zinc-500">' + label + '</span>'
+    + '<span class="text-xs text-zinc-500">' + esc(label) + '</span>'
     + '</button>';
 
   view.innerHTML =
-    '<h1 class="section-title">Profile</h1>'
+    '<h1 class="section-title">' + esc(t('profile.title')) + '</h1>'
     + '<div class="card mt-4 flex items-center gap-4 p-4">'
-    + '<button type="button" data-avatar-edit class="relative shrink-0 rounded-full" aria-label="Change profile photo">'
+    + '<button type="button" data-avatar-edit class="relative shrink-0 rounded-full" aria-label="' + esc(t('profile.changePhoto')) + '">'
     + avatarHtml({
       url: getAvatarState().url,
       name,
@@ -129,41 +130,41 @@ function renderProfileHome() {
     + '</button>'
     + '<input type="file" id="avatar-file-input" class="hidden" accept="image/jpeg,image/png,image/webp">'
     + '<div class="min-w-0 flex-1">'
-    + '<p class="truncate text-base font-semibold text-zinc-900">' + (name ? '@' + esc(name) : 'Guest shopper') + '</p>'
-    + '<p class="mt-0.5 truncate text-xs text-zinc-500">' + (email ? esc(email) : (name ? 'Signed in via Homeroom' : 'Sign in through Homeroom to sync your account')) + '</p>'
+    + '<p class="truncate text-base font-semibold text-zinc-900">' + (name ? '@' + esc(name) : esc(t('profile.guest'))) + '</p>'
+    + '<p class="mt-0.5 truncate text-xs text-zinc-500">' + (email ? esc(email) : esc(name ? t('profile.signedInVia') : t('profile.signInPrompt'))) + '</p>'
     + '</div>'
-    + '<button type="button" data-route="profile/edit" class="btn-outline btn-sm shrink-0">' + icon('pencil', 'h-3.5 w-3.5') + 'Edit Profile</button>'
+    + '<button type="button" data-route="profile/edit" class="btn-outline btn-sm shrink-0">' + icon('pencil', 'h-3.5 w-3.5') + esc(t('profile.edit')) + '</button>'
     + '</div>'
     + '<div class="card mt-4 grid grid-cols-3 divide-x divide-zinc-100 overflow-hidden">'
-    + statTile('Orders', countOrders(), 'data-nav="orders"', 'package')
-    + statTile('Wishlist', store.favoriteCount(), 'data-route="profile/wishlist"', 'heart')
-    + statTile('Coupons', VOUCHERS.length, 'data-route="profile/coupons"', 'ticket')
+    + statTile(t('profile.stat.orders'), countOrders(), 'data-nav="orders"', 'package')
+    + statTile(t('profile.stat.wishlist'), store.favoriteCount(), 'data-route="profile/wishlist"', 'heart')
+    + statTile(t('profile.stat.coupons'), VOUCHERS.length, 'data-route="profile/coupons"', 'ticket')
     + '</div>'
     + /* Color theme switcher (mobile; the desktop header hosts the same
        * swatches next to the bell, so this row hides there). */
       '<div class="card mt-4 flex items-center gap-3 p-4 lg:hidden">'
-    + '<span class="text-sm font-medium text-zinc-800">Color theme</span>'
-    + '<div class="ml-auto flex items-center gap-2" role="radiogroup" aria-label="Color theme">'
+    + '<span class="text-sm font-medium text-zinc-800">' + esc(t('profile.colorTheme')) + '</span>'
+    + '<div class="ml-auto flex items-center gap-2" role="radiogroup" aria-label="' + esc(t('profile.colorTheme')) + '">'
     + swatchButtons()
     + '</div>'
     + '</div>'
     + '<div class="card mt-4 divide-y divide-zinc-100 overflow-hidden">'
-    + menuRow('package', 'My Orders', 'data-nav="orders"')
-    + menuRow('heart', 'Wishlist', 'data-route="profile/wishlist"')
-    + menuRow('mapPin', 'Addresses', 'data-route="profile/addresses"')
+    + menuRow('package', t('profile.menu.orders'), 'data-nav="orders"')
+    + menuRow('heart', t('profile.menu.wishlist'), 'data-route="profile/wishlist"')
+    + menuRow('mapPin', t('profile.menu.addresses'), 'data-route="profile/addresses"')
     + '</div>'
     + '<div class="card mt-4 divide-y divide-zinc-100 overflow-hidden">'
-    + menuRow('creditCard', 'Payment methods', 'data-route="profile/payment"')
-    + menuRow('ticket', 'Coupons', 'data-route="profile/coupons"')
-    + menuRow('bell', 'Notifications', 'data-route="profile/notifications"')
+    + menuRow('creditCard', t('profile.menu.payment'), 'data-route="profile/payment"')
+    + menuRow('ticket', t('profile.menu.coupons'), 'data-route="profile/coupons"')
+    + menuRow('bell', t('profile.menu.notifications'), 'data-route="profile/notifications"')
     + '</div>'
     + '<div class="card mt-4 divide-y divide-zinc-100 overflow-hidden">'
-    + menuRow('help', 'Help Center', 'data-route="profile/help"')
-    + menuRow('settings', 'Settings', 'data-route="profile/settings"')
+    + menuRow('help', t('profile.menu.help'), 'data-route="profile/help"')
+    + menuRow('settings', t('profile.menu.settings'), 'data-route="profile/settings"')
     + '</div>'
     + '<div class="card mt-4 overflow-hidden">'
     + '<button type="button" data-logout class="menu-row justify-center text-rose-600 hover:bg-rose-50">'
-    + icon('logout', 'h-5 w-5') + 'Log out</button>'
+    + icon('logout', 'h-5 w-5') + esc(t('profile.logout')) + '</button>'
     + '</div>';
 }
 
@@ -182,16 +183,16 @@ function renderWishlist() {
       + items.map((p) => productCard(p)).join('') + '</div>'
     : '<div class="card mt-4">' + emptyState({
       icon: 'heart',
-      title: 'Your wishlist is empty',
-      body: 'Tap the heart on any product to save it here for later.',
-      actionLabel: 'Start shopping',
+      title: t('profile.wishlist.emptyTitle'),
+      body: t('profile.wishlist.emptyBody'),
+      actionLabel: t('profile.wishlist.startShopping'),
       actionAttr: 'data-nav="home"',
     }) + '</div>';
 
   view.innerHTML =
-    pageHeader('Wishlist', 'profile')
+    pageHeader(t('profile.menu.wishlist'), 'profile')
     + '<div class="mt-1 flex items-center gap-2"><span class="badge-soft">'
-    + items.length + (items.length === 1 ? ' item' : ' items') + '</span></div>'
+    + esc(t('profile.wishlist.count', { count: items.length })) + '</span></div>'
     + body;
 }
 
@@ -208,13 +209,13 @@ function renderCoupons() {
     + '<p class="text-sm font-semibold text-zinc-900">' + v.code + '</p>'
     + '<p class="mt-0.5 text-xs text-zinc-500">' + voucherDescription(v) + '</p>'
     + '</div>'
-    + '<button type="button" data-nav="cart" class="btn-ghost btn-sm shrink-0">Use in cart</button>'
+    + '<button type="button" data-nav="cart" class="btn-ghost btn-sm shrink-0">' + esc(t('profile.coupons.use')) + '</button>'
     + '</div>').join('');
 
   view.innerHTML =
-    pageHeader('Coupons', 'profile')
+    pageHeader(t('profile.menu.coupons'), 'profile')
     + '<div class="card mt-4 divide-y divide-zinc-100 overflow-hidden">' + rows + '</div>'
-    + '<p class="mt-3 px-1 text-xs text-zinc-400">Apply a code in your cart before checkout.</p>';
+    + '<p class="mt-3 px-1 text-xs text-zinc-400">' + esc(t('profile.coupons.hint')) + '</p>';
 }
 
 /* ------------------------------------------------------------------ */
@@ -224,13 +225,13 @@ function renderCoupons() {
 function renderNotifications() {
   const view = document.getElementById('view-profile');
   view.innerHTML =
-    pageHeader('Notifications', 'profile')
+    pageHeader(t('profile.menu.notifications'), 'profile')
     + '<div class="card mt-4">'
     + emptyState({
       icon: 'bell',
-      title: 'You are all caught up',
-      body: 'Order updates and promotions will appear here.',
-      actionLabel: 'Notification settings',
+      title: t('profile.notifications.emptyTitle'),
+      body: t('profile.notifications.emptyBody'),
+      actionLabel: t('profile.notifications.settings'),
       actionAttr: 'data-route="profile/settings"',
     })
     + '</div>';
@@ -240,24 +241,19 @@ function renderNotifications() {
 /* Help Center                                                         */
 /* ------------------------------------------------------------------ */
 
-const HELP_ENTRIES = [
-  ['Where is my order?', 'Open the order from My Orders and check its timeline. Tracking appears once it ships.'],
-  ['How long does delivery take?', 'Standard delivery takes 3-5 business days. Express arrives in 1-2 business days.'],
-  ['Can I cancel an order?', 'Yes, while it is To Pay or To Ship. Open the order and tap Cancel Order.'],
-  ['How do returns work?', 'Returns arrive in a later phase. Use Contact Seller on the order for help meanwhile.'],
-  ['Which payment methods can I use?', 'Bank transfer and virtual accounts, e-wallets, cards, QRIS and cash on delivery. Manage them under Profile > Payment methods.'],
-];
+/* Question/answer pairs live in the profile locale files (help.q1/a1 ...). */
+const HELP_COUNT = 5;
 
 function renderHelp() {
   const view = document.getElementById('view-profile');
-  const rows = HELP_ENTRIES.map(([q, a]) =>
+  const rows = Array.from({ length: HELP_COUNT }, (_, i) =>
     '<div class="px-4 py-3.5">'
-    + '<p class="text-sm font-semibold text-zinc-900">' + q + '</p>'
-    + '<p class="mt-1 text-sm leading-relaxed text-zinc-500">' + a + '</p>'
+    + '<p class="text-sm font-semibold text-zinc-900">' + esc(t('profile.help.q' + (i + 1))) + '</p>'
+    + '<p class="mt-1 text-sm leading-relaxed text-zinc-500">' + esc(t('profile.help.a' + (i + 1))) + '</p>'
     + '</div>').join('');
 
   view.innerHTML =
-    pageHeader('Help Center', 'profile')
+    pageHeader(t('profile.menu.help'), 'profile')
     + '<div class="card mt-4 divide-y divide-zinc-100 overflow-hidden">' + rows + '</div>';
 }
 

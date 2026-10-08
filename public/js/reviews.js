@@ -21,6 +21,7 @@ import {
   updateReview,
 } from './api.js';
 import { confirmDialog, esc, starRow, toast } from './ui.js';
+import { fmtNumber, intlLocale, t } from './i18n.js';
 
 const MAX_IMAGES = 5;
 const MAX_INPUT_BYTES = 5 * 1024 * 1024;
@@ -39,34 +40,26 @@ const SORTS = [
   { id: 'lowest', label: 'Lowest rating' },
 ];
 
-const COPY = {
-  title: 'Reviews',
-  write: 'Write a review',
-  editTitle: 'Edit your review',
-  rating: 'Your rating',
-  addPhotos: 'Add photos',
-  hint: 'Up to 5 photos. JPG, PNG or WebP, 5 MB each. We resize them for you.',
-  post: 'Post review',
-  save: 'Save changes',
-  cancel: 'Cancel',
-  deleteReview: 'Delete review',
-  verified: 'Verified purchase',
-  pending: 'Pending review',
-  emptyTitle: 'No reviews yet.',
-  emptyBody: 'Be the first to review this product.',
-  refusal: 'Only verified buyers can review this product.',
-  signIn: 'Sign in to review this product.',
-  loading: 'Loading reviews',
-  error: 'Could not load reviews.',
-  retry: 'Retry',
-  invalid: 'Choose a JPG, PNG or WEBP image.',
-  tooLarge: 'That image is too large. Try a smaller one.',
-  uploadFailed: 'Could not upload that photo. Try again.',
-  uploadUnavailable: 'Photo uploads are not available here.',
-  saveFailed: 'Could not save your review. Try again.',
-  deleteFailed: 'Could not delete your review. Try again.',
-  overLimit: 'You can attach up to 5 photos.',
-};
+/* Every piece of copy resolves through t() at render time, so a language
+ * change shows up on the next render. COPY.<name> reads reviews.<name>. */
+const COPY = new Proxy({}, { get: (_, name) => t('reviews.' + String(name)) });
+
+/* A failed write: map by HTTP status (and the few exact server strings) to a
+ * localized message; anything else falls back to the generic failure. */
+function errorMessage(res, fallback) {
+  const status = res && res.status;
+  const raw = res && res.data && res.data.error;
+  if (status === 401) return t('reviews.signIn');
+  if (status === 403) return raw === 'Not your review' ? t('reviews.notYours') : t('reviews.refusal');
+  if (status === 404) return t('reviews.notFound');
+  if (status === 429) return t('reviews.rateLimited');
+  if (status === 400) {
+    if (raw === 'Choose a rating from 1 to 5 stars.') return t('reviews.chooseRating');
+    if (raw === 'Review text is too long.') return t('reviews.textTooLong');
+    return t('reviews.invalidReview');
+  }
+  return fallback;
+}
 
 /* State. `items` is a Map keyed by string review id so the server response and
  * the SSE echo reconcile to exactly one card. `draft.images` entries carry a
@@ -131,9 +124,9 @@ function statsFor() {
 
 function photoAlt(image, review) {
   if (image.alt) return image.alt;
-  const author = review && review.author ? review.author : 'a shopper';
-  const product = state.product ? state.product.name : 'this product';
-  return 'Photo from ' + author + "'s review of " + product;
+  const author = review && review.author ? review.author : t('reviews.aShopper');
+  const product = state.product ? state.product.name : t('reviews.thisProduct');
+  return t('reviews.photoAlt', { author: author, product: product });
 }
 
 function avatarTint(name) {
@@ -151,13 +144,13 @@ function avatarTint(name) {
 }
 
 function whenLabel(iso) {
-  const t = Date.parse(iso);
-  if (!t) return '';
-  const days = Math.floor((Date.now() - t) / 86400000);
-  if (days <= 0) return 'Today';
-  if (days === 1) return 'Yesterday';
-  if (days < 30) return days + ' days ago';
-  return new Date(t).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  const ts = Date.parse(iso);
+  if (!ts) return '';
+  const days = Math.floor((Date.now() - ts) / 86400000);
+  if (days <= 0) return COPY.today;
+  if (days === 1) return COPY.yesterday;
+  if (days < 30) return t('reviews.daysAgo', { count: days });
+  return new Date(ts).toLocaleDateString(intlLocale(), { month: 'short', day: 'numeric' });
 }
 
 /* ------------------------------------------------------------------ */
@@ -171,9 +164,9 @@ function summaryHtml() {
   const count = stats ? stats.total : (p ? p.reviews : 0);
   return '<div class="card mt-3 p-4" data-review-summary><div class="flex items-center gap-5">'
     + '<div class="shrink-0 text-center">'
-    + '<div class="text-3xl font-bold tabular-nums text-zinc-900" data-review-average>' + rating.toFixed(1) + '</div>'
+    + '<div class="text-3xl font-bold tabular-nums text-zinc-900" data-review-average>' + fmtNumber(rating, { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + '</div>'
     + starRow(rating)
-    + '<div class="mt-1 text-xs text-zinc-500" data-review-count>' + fmtCountSafe(count) + ' reviews</div>'
+    + '<div class="mt-1 text-xs text-zinc-500" data-review-count>' + esc(t('reviews.count', { count, n: fmtCountSafe(count) })) + '</div>'
     + '</div>'
     + '<div class="flex-1 space-y-1.5" data-review-breakdown>' + (stats ? exactBarsHtml(stats) : barsHtml(p ? p.rating : 0)) + '</div>'
     + '</div></div>';
@@ -242,7 +235,7 @@ function distributionFor(rating) {
 function photoThumb(image, review, index, total) {
   const alt = photoAlt(image, review);
   const count = total > 1 ? '<span class="absolute right-1 top-1 rounded-full bg-zinc-900/70 px-1.5 text-[10px] font-semibold text-white">' + (index + 1) + '/' + total + '</span>' : '';
-  return '<button type="button" class="relative block h-20 w-20 shrink-0 overflow-hidden rounded-lg bg-zinc-100" data-review-photo="' + esc(review.id) + '" data-photo-index="' + index + '" aria-label="Open photo ' + (index + 1) + ' of ' + total + '">'
+  return '<button type="button" class="relative block h-20 w-20 shrink-0 overflow-hidden rounded-lg bg-zinc-100" data-review-photo="' + esc(review.id) + '" data-photo-index="' + index + '" aria-label="' + esc(t('reviews.openPhoto', { n: index + 1, total: total })) + '">'
     + '<span data-photo-skeleton class="absolute inset-0 animate-pulse bg-zinc-200"></span>'
     + '<img src="' + esc(image.url) + '" alt="' + esc(alt) + '" loading="lazy" decoding="async" data-review-photo-img class="relative h-full w-full object-cover" onload="this.previousElementSibling && this.previousElementSibling.remove()" onerror="this.remove()">'
     + count + '</button>';
@@ -255,15 +248,15 @@ function reviewCard(r) {
     ? '<div class="mt-2.5 flex flex-wrap gap-2">' + r.images.map((im, i) => photoThumb(im, r, i, r.images.length)).join('') + '</div>'
     : '';
   const verified = r.verified
-    ? '<span class="ml-auto inline-flex shrink-0 items-center gap-1 rounded-full bg-brand-50 px-2 py-0.5 text-[10px] font-semibold text-brand-700">' + icon('check', 'h-3 w-3') + COPY.verified + '</span>'
+    ? '<span class="ml-auto inline-flex shrink-0 items-center gap-1 rounded-full bg-brand-50 px-2 py-0.5 text-[10px] font-semibold text-brand-700">' + icon('check', 'h-3 w-3') + esc(COPY.verified) + '</span>'
     : '';
   const pending = r.status === 'pending'
-    ? '<span class="badge-soft ml-2" data-review-pending>' + COPY.pending + '</span>'
+    ? '<span class="badge-soft ml-2" data-review-pending>' + esc(COPY.pending) + '</span>'
     : '';
   const owner = r.mine
     ? '<div class="mt-3 flex items-center gap-2 border-t border-zinc-100 pt-3" data-review-owner>'
-      + '<button type="button" class="btn-outline btn-sm gap-1" data-review-edit="' + esc(r.id) + '">' + icon('pencil', 'h-3.5 w-3.5') + 'Edit</button>'
-      + '<button type="button" class="btn-outline btn-sm gap-1 text-rose-600" data-review-delete="' + esc(r.id) + '">' + icon('trash', 'h-3.5 w-3.5') + 'Delete</button>'
+      + '<button type="button" class="btn-outline btn-sm gap-1" data-review-edit="' + esc(r.id) + '">' + icon('pencil', 'h-3.5 w-3.5') + esc(COPY.edit) + '</button>'
+      + '<button type="button" class="btn-outline btn-sm gap-1 text-rose-600" data-review-delete="' + esc(r.id) + '">' + icon('trash', 'h-3.5 w-3.5') + esc(COPY.delete) + '</button>'
       + '</div>'
     : '';
   const optimistic = r.pending ? ' opacity-70' : '';
@@ -308,20 +301,20 @@ function skeletonCard() {
 
 function listBodyHtml() {
   if (state.loading) {
-    return '<div class="mt-3 space-y-3" data-reviews-loading aria-label="' + COPY.loading + '">'
+    return '<div class="mt-3 space-y-3" data-reviews-loading aria-label="' + esc(COPY.loading) + '">'
       + skeletonCard() + skeletonCard() + '</div>';
   }
   if (state.error) {
     return '<div class="mt-3">' + '<div class="card p-6 text-center">'
-      + '<p class="text-sm text-zinc-500">' + COPY.error + '</p>'
-      + '<button type="button" class="btn-outline btn-sm mt-3" data-reviews-retry>' + COPY.retry + '</button>'
+      + '<p class="text-sm text-zinc-500">' + esc(COPY.error) + '</p>'
+      + '<button type="button" class="btn-outline btn-sm mt-3" data-reviews-retry>' + esc(COPY.retry) + '</button>'
       + '</div></div>';
   }
   const items = sorted();
   if (!items.length) {
     return '<div class="mt-3"><div class="card p-6 text-center">'
-      + '<h3 class="text-sm font-semibold text-zinc-900">' + COPY.emptyTitle + '</h3>'
-      + '<p class="mt-1 text-sm text-zinc-500">' + COPY.emptyBody + '</p>'
+      + '<h3 class="text-sm font-semibold text-zinc-900">' + esc(COPY.emptyTitle) + '</h3>'
+      + '<p class="mt-1 text-sm text-zinc-500">' + esc(COPY.emptyBody) + '</p>'
       + '</div></div>';
   }
   return '<div class="mt-3 space-y-3" data-reviews-list>' + items.map(reviewCard).join('') + '</div>';
@@ -335,7 +328,7 @@ function composerHtml() {
   if (!composerOpen()) return '';
   const editing = !!state.editingId;
   const stars = Array.from({ length: 5 }, (_, i) =>
-    '<button type="button" data-review-star="' + (i + 1) + '" aria-label="' + (i + 1) + ' star' + (i ? 's' : '') + '" class="p-0.5 text-2xl leading-none ' + (i < state.rating ? 'text-amber-400' : 'text-zinc-300') + '">' + icon('star', 'h-7 w-7') + '</button>').join('');
+    '<button type="button" data-review-star="' + (i + 1) + '" aria-label="' + esc(t('reviews.starLabel', { count: i + 1 })) + '" class="p-0.5 text-2xl leading-none ' + (i < state.rating ? 'text-amber-400' : 'text-zinc-300') + '">' + icon('star', 'h-7 w-7') + '</button>').join('');
   const thumbs = state.images.map((im, i) =>
     '<div class="relative h-[72px] w-[72px] shrink-0" data-draft-photo="' + i + '">'
     + '<div class="relative h-[72px] w-[72px] overflow-hidden rounded-lg bg-zinc-100">'
@@ -343,33 +336,33 @@ function composerHtml() {
     + (im.status !== 'done' ? '<span class="absolute inset-0 flex items-center justify-center bg-zinc-900/45 text-white">' + icon('loader', 'h-4 w-4 animate-spin') + '</span>' : '')
     + '</div>'
     + (im.status === 'done' ? '' : '<div class="mt-1 h-1 w-[72px] overflow-hidden rounded-full bg-zinc-200"><div class="h-full w-1/2 animate-pulse rounded-full bg-brand-600"></div></div>')
-    + '<button type="button" data-draft-remove="' + i + '" aria-label="Remove photo" class="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-zinc-900 text-white">' + icon('x', 'h-3 w-3') + '</button>'
+    + '<button type="button" data-draft-remove="' + i + '" aria-label="' + esc(COPY.removePhoto) + '" class="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-zinc-900 text-white">' + icon('x', 'h-3 w-3') + '</button>'
     + '</div>').join('');
   const drop = '<label class="dropzone min-h-[72px] flex-1" data-review-drop>'
     + icon('imagePlus', 'h-5 w-5 text-zinc-400')
-    + '<span>Drag photos here or tap to choose</span>'
+    + '<span>' + esc(COPY.dropHint) + '</span>'
     + '<input type="file" data-review-file class="hidden" accept="' + ACCEPTED.join(',') + '" multiple>'
     + '</label>';
   const saveLabel = editing ? COPY.save : COPY.post;
   return '<div class="card mt-3 p-4" data-review-compose>'
     + '<div class="flex items-center justify-between gap-2">'
-    + '<h3 class="text-sm font-bold text-zinc-900">' + (editing ? COPY.editTitle : COPY.write) + '</h3>'
-    + '<button type="button" class="icon-btn" data-review-cancel aria-label="' + COPY.cancel + '">' + icon('x', 'h-5 w-5') + '</button>'
+    + '<h3 class="text-sm font-bold text-zinc-900">' + esc(editing ? COPY.editTitle : COPY.write) + '</h3>'
+    + '<button type="button" class="icon-btn" data-review-cancel aria-label="' + esc(COPY.cancel) + '">' + icon('x', 'h-5 w-5') + '</button>'
     + '</div>'
     + (state.product ? '<div class="mt-1 text-xs text-zinc-500">' + esc(state.product.name) + '</div>' : '')
-    + '<div class="mt-3 text-xs font-semibold text-zinc-500">' + COPY.rating + '</div>'
-    + '<div class="mt-1 flex items-center" role="radiogroup" aria-label="' + COPY.rating + '">' + stars + '</div>'
-    + '<textarea data-review-text rows="3" class="field mt-3 py-2" style="height:auto" placeholder="Share what you liked or did not" maxlength="2000">' + esc(state.text) + '</textarea>'
+    + '<div class="mt-3 text-xs font-semibold text-zinc-500">' + esc(COPY.rating) + '</div>'
+    + '<div class="mt-1 flex items-center" role="radiogroup" aria-label="' + esc(COPY.rating) + '">' + stars + '</div>'
+    + '<textarea data-review-text rows="3" class="field mt-3 py-2" style="height:auto" placeholder="' + esc(COPY.placeholder) + '" maxlength="2000">' + esc(state.text) + '</textarea>'
     + '<div class="mt-3 flex items-center gap-2">'
-    + '<span class="text-sm font-semibold text-zinc-900">' + COPY.addPhotos + '</span>'
-    + '<span class="ml-auto text-xs text-zinc-400">' + state.images.length + ' of ' + MAX_IMAGES + '</span>'
+    + '<span class="text-sm font-semibold text-zinc-900">' + esc(COPY.addPhotos) + '</span>'
+    + '<span class="ml-auto text-xs text-zinc-400">' + esc(t('reviews.photoCount', { n: state.images.length, max: MAX_IMAGES })) + '</span>'
     + '</div>'
     + '<div class="mt-2 flex flex-wrap items-stretch gap-3">' + thumbs + (state.images.length < MAX_IMAGES ? drop : '') + '</div>'
-    + '<p class="mt-2 text-xs text-zinc-400">' + COPY.hint + '</p>'
+    + '<p class="mt-2 text-xs text-zinc-400">' + esc(COPY.hint) + '</p>'
     + '<p data-review-error class="field-msg hidden" role="alert"></p>'
     + '<div class="mt-3 flex gap-2">'
-    + '<button type="button" class="btn-outline flex-1" data-review-cancel>' + COPY.cancel + '</button>'
-    + '<button type="button" class="btn-primary flex-1" data-review-save' + (state.saving ? ' disabled' : '') + '>' + (state.saving ? icon('loader', 'h-4 w-4 animate-spin') + '<span>Saving</span>' : esc(saveLabel)) + '</button>'
+    + '<button type="button" class="btn-outline flex-1" data-review-cancel>' + esc(COPY.cancel) + '</button>'
+    + '<button type="button" class="btn-primary flex-1" data-review-save' + (state.saving ? ' disabled' : '') + '>' + (state.saving ? icon('loader', 'h-4 w-4 animate-spin') + '<span>' + esc(COPY.saving) + '</span>' : esc(saveLabel)) + '</button>'
     + '</div></div>';
 }
 
@@ -380,27 +373,27 @@ function actionRowHtml() {
   // sign in, or the verified-buyer refusal) so a check can assert the state
   // without depending on which identity is signed in.
   if (!v || !v.signedIn) {
-    return '<div class="mt-3" data-review-cta><button type="button" class="btn-primary w-full sm:w-auto" data-review-ask>' + COPY.write + '</button>'
-      + '<p class="mt-2 text-xs text-zinc-400">' + COPY.signIn + '</p></div>';
+    return '<div class="mt-3" data-review-cta><button type="button" class="btn-primary w-full sm:w-auto" data-review-ask>' + esc(COPY.write) + '</button>'
+      + '<p class="mt-2 text-xs text-zinc-400">' + esc(COPY.signIn) + '</p></div>';
   }
   if (v.hasReviewed) {
-    return state.composing ? '' : '<div class="mt-3" data-review-cta><p class="text-xs text-zinc-400">You reviewed this product. Use Edit on your review below.</p></div>';
+    return state.composing ? '' : '<div class="mt-3" data-review-cta><p class="text-xs text-zinc-400">' + esc(COPY.reviewed) + '</p></div>';
   }
   if (!v.canReview) {
-    return '<div class="mt-3 rounded-lg bg-zinc-50 px-3 py-2 text-xs text-zinc-500" data-review-cta data-review-refusal>' + COPY.refusal + '</div>';
+    return '<div class="mt-3 rounded-lg bg-zinc-50 px-3 py-2 text-xs text-zinc-500" data-review-cta data-review-refusal>' + esc(COPY.refusal) + '</div>';
   }
-  return state.composing ? '' : '<div class="mt-3" data-review-cta><button type="button" class="btn-primary w-full sm:w-auto" data-review-start>' + COPY.write + '</button></div>';
+  return state.composing ? '' : '<div class="mt-3" data-review-cta><button type="button" class="btn-primary w-full sm:w-auto" data-review-start>' + esc(COPY.write) + '</button></div>';
 }
 
 function liveBadgeHtml() {
   return state.live
-    ? '<span class="ml-auto inline-flex items-center gap-1 text-[11px] font-medium text-emerald-600" data-reviews-live title="Live updates on"><span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>Live</span>'
+    ? '<span class="ml-auto inline-flex items-center gap-1 text-[11px] font-medium text-emerald-600" data-reviews-live title="' + esc(COPY.liveTitle) + '"><span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>' + esc(COPY.live) + '</span>'
     : '<span class="ml-auto" aria-hidden="true"></span>';
 }
 
 function sectionHtml() {
   return '<section id="pdp-reviews" class="mt-8 scroll-mt-20">'
-    + '<div class="flex items-center gap-2"><h2 class="text-base font-bold text-zinc-900">' + COPY.title + '</h2>' + liveBadgeHtml() + '</div>'
+    + '<div class="flex items-center gap-2"><h2 class="text-base font-bold text-zinc-900">' + esc(COPY.title) + '</h2>' + liveBadgeHtml() + '</div>'
     + summaryHtml()
     + sortBarHtml()
     + actionRowHtml()
@@ -760,13 +753,13 @@ function draftPayloadImages() {
 
 async function save() {
   if (state.saving) return;
-  if (state.uploading) { composerError('Wait for the photos to finish uploading.'); return; }
-  if (!state.rating) { composerError('Choose a rating from 1 to 5 stars.'); return; }
+  if (state.uploading) { composerError(COPY.waitUploads); return; }
+  if (!state.rating) { composerError(COPY.chooseRating); return; }
   state.saving = true;
   composerError('');
   render();
   const pendingImages = state.images.filter((im) => im.status !== 'done' && im.status !== 'error');
-  if (pendingImages.length) { state.saving = false; composerError('Wait for the photos to finish uploading.'); render(); return; }
+  if (pendingImages.length) { state.saving = false; composerError(COPY.waitUploads); render(); return; }
 
   const images = draftPayloadImages();
   const editing = state.editingId;
@@ -777,7 +770,7 @@ async function save() {
     const tempId = 'temp-' + (imgSeq += 1);
     state.items.set(tempId, {
       id: tempId,
-      author: 'You',
+      author: COPY.you,
       rating: state.rating,
       body: state.text,
       verified: true,
@@ -814,14 +807,14 @@ async function save() {
     state.rating = 0;
     revokeDraftImages();
     state.images = [];
-    toast(editing ? 'Review updated' : 'Review posted');
+    toast(editing ? COPY.updated : COPY.posted);
     render();
   } else {
     // Pull the optimistic card back out; the write did not happen.
     for (const [key, val] of state.items) {
       if (val.optimistic) state.items.delete(key);
     }
-    const msg = res.data && res.data.error ? res.data.error : COPY.saveFailed;
+    const msg = errorMessage(res, COPY.saveFailed);
     state.saving = false;
     render();
     if (editing) {
@@ -843,19 +836,19 @@ function cancelComposeButKeepCard() {
 
 async function removeReview(id) {
   const ok = await confirmDialog({
-    title: 'Delete this review?',
-    message: 'Your review and its photos will be removed.',
-    confirmLabel: 'Delete review',
+    title: COPY.deleteTitle,
+    message: COPY.deleteMessage,
+    confirmLabel: COPY.deleteReview,
   });
   if (!ok) return;
   const res = await deleteReview(id);
   if (res.ok) {
     state.items.delete(String(id));
     if (state.viewer) { state.viewer.hasReviewed = false; state.viewer.reviewId = null; }
-    toast('Review deleted');
+    toast(COPY.deleted);
     render();
   } else {
-    toast(COPY.deleteFailed);
+    toast(errorMessage(res, COPY.deleteFailed));
   }
 }
 
@@ -904,20 +897,20 @@ function renderLightbox() {
     ? '<div class="mt-3 flex justify-center gap-1.5">' + review.images.map((_, i) =>
       '<span class="h-1.5 rounded-full ' + (i === index ? 'w-5 bg-brand-400' : 'w-1.5 bg-white/40') + '"></span>').join('') + '</div>'
     : '';
-  const verified = review.verified ? ' <span class="text-brand-300">&#183; ' + COPY.verified + '</span>' : '';
+  const verified = review.verified ? ' <span class="text-brand-300">&#183; ' + esc(COPY.verified) + '</span>' : '';
   el.className = 'photo-lightbox';
   el.setAttribute('role', 'dialog');
   el.setAttribute('aria-modal', 'true');
-  el.setAttribute('aria-label', 'Review photo ' + (index + 1) + ' of ' + n);
+  el.setAttribute('aria-label', t('reviews.reviewPhoto', { n: index + 1, total: n }));
   el.innerHTML =
     '<div class="lb-strong flex items-center justify-between px-4 py-3 text-sm">'
-    + '<span>Photo ' + (index + 1) + ' of ' + n + '</span>'
-    + '<button type="button" class="photo-lightbox-btn" data-lightbox-close aria-label="Close">' + icon('x', 'h-5 w-5') + '</button>'
+    + '<span>' + esc(t('reviews.photoOf', { n: index + 1, total: n })) + '</span>'
+    + '<button type="button" class="photo-lightbox-btn" data-lightbox-close aria-label="' + esc(COPY.close) + '">' + icon('x', 'h-5 w-5') + '</button>'
     + '</div>'
     + '<div data-lightbox-track class="relative flex min-h-0 flex-1 touch-pan-y items-center justify-center px-2">'
-    + (n > 1 ? '<button type="button" class="photo-lightbox-btn absolute left-2" data-lightbox-prev aria-label="Previous photo">' + icon('chevronLeft', 'h-5 w-5') + '</button>' : '')
+    + (n > 1 ? '<button type="button" class="photo-lightbox-btn absolute left-2" data-lightbox-prev aria-label="' + esc(COPY.prevPhoto) + '">' + icon('chevronLeft', 'h-5 w-5') + '</button>' : '')
     + '<img src="' + esc(image.url) + '" alt="' + esc(photoAlt(image, review)) + '" class="max-h-full max-w-full object-contain" data-lightbox-img>'
-    + (n > 1 ? '<button type="button" class="photo-lightbox-btn absolute right-2" data-lightbox-next aria-label="Next photo">' + icon('chevronRight', 'h-5 w-5') + '</button>' : '')
+    + (n > 1 ? '<button type="button" class="photo-lightbox-btn absolute right-2" data-lightbox-next aria-label="' + esc(COPY.nextPhoto) + '">' + icon('chevronRight', 'h-5 w-5') + '</button>' : '')
     + '</div>'
     + '<div class="lb-strong px-4 pb-6 pt-3 text-sm">'
     + '<div>' + esc(review.author) + verified + '</div>'
@@ -983,7 +976,7 @@ export function initReviews() {
     if (rm !== null) { removeDraftImage(Number(rm)); return; }
     if (target.hasAttribute('data-review-ask')) {
       if (window.usernode && typeof window.usernode.askForAccount === 'function') {
-        window.usernode.askForAccount({ action: 'write a review' });
+        window.usernode.askForAccount({ action: COPY.askAction });
       }
       return;
     }

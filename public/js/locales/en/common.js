@@ -1,0 +1,15 @@
+export default {
+  'common.appName': 'MVP Marketplace',
+  'common.save': 'Save',
+  'common.cancel': 'Cancel',
+  'common.back': 'Back',
+  'common.close': 'Close',
+  'common.confirm': 'Confirm',
+  'common.delete': 'Delete',
+  'common.edit': 'Edit',
+  'common.done': 'Done',
+  'common.loading': 'Loading...',
+  'common.retry': 'Try again',
+  'common.ok': 'OK',
+  'common.comingSoon': 'Coming in a later phase',
+};

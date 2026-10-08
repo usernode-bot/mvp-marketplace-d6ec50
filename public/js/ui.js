@@ -7,6 +7,7 @@
 import { icon, productArt, productPlaceholder, sizedImage } from './icons.js';
 import { discountPct } from './data.js';
 import { store } from './store.js';
+import { t, has, intlLocale, fmtNumber, fmtMoney } from './i18n.js';
 
 /* ---------------------------------------------------------------------------
  * Product photos for the generated marketplace catalog.
@@ -24,7 +25,7 @@ export { sizedImage };
 window.unImgFail = function (img) {
   const holder = img.parentElement;
   if (!holder) return;
-  const alt = img.getAttribute('alt') || 'Product';
+  const alt = img.getAttribute('alt') || t('ui.product');
   img.remove();
   const shimmer = holder.querySelector('[data-img-shimmer]');
   if (shimmer) shimmer.remove();
@@ -52,25 +53,42 @@ export function photoHtml(url, alt, opts = {}) {
     + ' onload="unImgLoaded(this)" onerror="unImgFail(this)">';
 }
 
-/* $12.99 from integer cents. */
+/* "$12.99" from integer cents, formatted for the active language. */
 export function fmtPrice(cents) {
-  return '$' + (cents / 100).toFixed(2);
+  return fmtMoney(cents);
 }
 
 /* 12040 -> "12k", 980 -> "980". */
 export function fmtCount(n) {
   if (n >= 1000) {
     const k = n / 1000;
-    return (k >= 10 ? Math.round(k) : Math.round(k * 10) / 10) + 'k';
+    const v = k >= 10 ? Math.round(k) : Math.round(k * 10) / 10;
+    return t('ui.thousands', { n: fmtNumber(v, { maximumFractionDigits: 1 }) });
   }
-  return String(n);
+  return fmtNumber(n);
+}
+
+/* Localized display names for the fixed category / subcategory vocabulary
+ * (the data tables keep ids and English names; the shown name comes from
+ * the dictionary by id, falling back to the table's own name). */
+export function categoryName(c) {
+  if (!c) return '';
+  const key = 'ui.cat.' + c.id;
+  return has(key) ? t(key) : (c.name || '');
+}
+
+export function subcategoryLabel(s) {
+  if (!s) return '';
+  if (!s.id) return t('ui.sub.all');
+  const key = 'ui.sub.' + s.id;
+  return has(key) ? t(key) : (s.name || '');
 }
 
 /* "Oct 2" within the current year, "Oct 2, 2025" otherwise. */
 export function fmtDate(ts) {
   const d = new Date(ts);
   const sameYear = d.getFullYear() === new Date().getFullYear();
-  return d.toLocaleDateString('en-US', sameYear
+  return d.toLocaleDateString(intlLocale(), sameYear
     ? { month: 'short', day: 'numeric' }
     : { month: 'short', day: 'numeric', year: 'numeric' });
 }
@@ -89,13 +107,14 @@ export function esc(s) {
  * pattern as the cart's remove confirmation); falls back to window.confirm
  * in standalone local runs. Resolves true only when the destructive button
  * was pressed. */
-export function confirmDialog({ title, message, confirmLabel = 'Confirm' }) {
+export function confirmDialog({ title, message, confirmLabel }) {
+  if (confirmLabel === undefined) confirmLabel = t('ui.confirm');
   if (window.unNative && typeof window.unNative.alert === 'function') {
     return window.unNative.alert({
       title,
       message,
       buttons: [
-        { label: 'Cancel', style: 'cancel' },
+        { label: t('ui.cancel'), style: 'cancel' },
         { label: confirmLabel, style: 'destructive' },
       ],
     }).then((r) => !!(r && r.button && r.button.style === 'destructive'));
@@ -105,7 +124,7 @@ export function confirmDialog({ title, message, confirmLabel = 'Confirm' }) {
 
 /* "Tue, Oct 6" from a Date (used for checkout delivery estimates). */
 export function fmtEtaDate(d) {
-  return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  return d.toLocaleDateString(intlLocale(), { weekday: 'short', month: 'short', day: 'numeric' });
 }
 
 /* ---------------------------------------------------------------------------
@@ -123,7 +142,7 @@ export function avatarHtml({
   textSize = 'text-lg',
   badge = false,
   loading = false,
-  alt = 'Profile photo',
+  alt = t('ui.profilePhoto'),
 } = {}) {
   const initial = name ? String(name)[0].toUpperCase() : 'G';
   const fallback = '<span data-avatar-fallback class="flex h-full w-full items-center justify-center rounded-full bg-brand-100 font-bold text-brand-700 '
@@ -153,7 +172,7 @@ export function avatarHtml({
 export function starRow(rating, cls = 'h-3.5 w-3.5') {
   const five = Array.from({ length: 5 }, () => icon('star', cls)).join('');
   const pct = Math.max(0, Math.min(100, (rating / 5) * 100));
-  return '<span class="relative inline-flex shrink-0" role="img" aria-label="Rated ' + rating + ' out of 5">'
+  return '<span class="relative inline-flex shrink-0" role="img" aria-label="' + esc(t('ui.rated', { rating })) + '">'
     + '<span class="flex text-zinc-200">' + five + '</span>'
     + '<span class="absolute inset-0 flex overflow-hidden text-amber-400" style="width:' + pct + '%">' + five + '</span>'
     + '</span>';
@@ -197,8 +216,8 @@ export function productCard(p, opts = {}) {
 
   const soldBlock = opts.compact
     ? '<div class="mt-1.5"><div class="h-1.5 w-full overflow-hidden rounded-full bg-rose-100"><div class="h-full rounded-full bg-rose-500" style="width:' + (p.pct || 0) + '%"></div></div>'
-      + '<div class="mt-1 text-[11px] font-medium text-zinc-500">' + fmtCount(p.sold) + ' sold</div></div>'
-    : '<span class="text-xs text-zinc-500">' + fmtCount(p.sold) + ' sold</span>';
+      + '<div class="mt-1 text-[11px] font-medium text-zinc-500">' + esc(t('ui.sold', { n: fmtCount(p.sold) })) + '</div></div>'
+    : '<span class="text-xs text-zinc-500">' + esc(t('ui.sold', { n: fmtCount(p.sold) })) + '</span>';
 
   // Card art. A committed product photo (p.image) layers over the generated
   // illustration, which paints instantly behind it as the fallback: if the
@@ -236,15 +255,15 @@ export function productCard(p, opts = {}) {
     // product-page art stays full color.
     + art
     + (disc ? '<span class="badge-sale absolute left-2 top-2">-' + disc + '%</span>' : '')
-    + (p.oos ? '<span class="badge absolute bottom-2 left-2 bg-zinc-900/80 text-white">Sold out</span>' : '')
-    + '<button type="button" data-fav="' + p.id + '" aria-label="Toggle favorite" aria-pressed="' + fav
+    + (p.oos ? '<span class="badge absolute bottom-2 left-2 bg-zinc-900/80 text-white">' + esc(t('ui.soldOut')) + '</span>' : '')
+    + '<button type="button" data-fav="' + p.id + '" aria-label="' + esc(t('ui.toggleFavorite')) + '" aria-pressed="' + fav
     + '" class="fav-btn absolute right-2 top-2' + (fav ? ' fav-btn-on' : '') + '">' + heart + '</button>'
     + '</div>'
     + '<div class="flex flex-1 flex-col p-3">'
     + '<h3 class="line-clamp-2 text-sm font-medium leading-snug text-zinc-800">' + p.name + '</h3>'
     + '<div class="mt-1.5 flex items-center gap-1 text-xs text-zinc-500">'
     + '<span class="text-amber-400">' + icon('star', 'h-3.5 w-3.5') + '</span>'
-    + '<span class="font-semibold text-zinc-700">' + p.rating.toFixed(1) + '</span>'
+    + '<span class="font-semibold text-zinc-700">' + fmtNumber(p.rating, { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + '</span>'
     + '<span>(' + fmtCount(p.reviews) + ')</span>'
     + (opts.compact ? '' : soldBlock)
     + '</div>'
@@ -261,8 +280,8 @@ export function productCard(p, opts = {}) {
     + (p.orig ? '<div class="text-xs tabular-nums text-zinc-400 line-through">' + fmtPrice(p.orig) + '</div>' : '')
     + '</div>'
     + (p.oos
-      ? '<button type="button" disabled aria-label="Sold out" class="add-btn cursor-not-allowed bg-zinc-300">' + icon('x', 'h-4 w-4') + '</button>'
-      : '<button type="button" data-add="' + p.id + '" aria-label="Add to cart" class="add-btn">' + icon('plus', 'h-4 w-4') + '<span class="hidden lg:inline">Add</span></button>')
+      ? '<button type="button" disabled aria-label="' + esc(t('ui.soldOut')) + '" class="add-btn cursor-not-allowed bg-zinc-300">' + icon('x', 'h-4 w-4') + '</button>'
+      : '<button type="button" data-add="' + p.id + '" aria-label="' + esc(t('ui.addToCart')) + '" class="add-btn">' + icon('plus', 'h-4 w-4') + '<span class="hidden lg:inline">' + esc(t('ui.add')) + '</span></button>')
     + '</div>'
     + '</div>'
     + '</article>';
