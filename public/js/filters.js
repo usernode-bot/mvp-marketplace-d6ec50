@@ -16,6 +16,7 @@
  */
 
 import { SORT_OPTIONS, DEFAULT_SORT } from './sort-options.js';
+import { t } from './i18n.js';
 
 /* How long to wait after the last keystroke/number before asking the server.
  * The URL is updated immediately (so the address bar is truthful and a
@@ -59,18 +60,29 @@ export function filterChips(f) {
     const label = f.cities.length
       ? (f.cities.length === 1 ? f.cities[0] : f.cities[0] + ' +' + (f.cities.length - 1))
       : f.province;
-    chips.push({ key: 'location', label, title: f.province && f.cities.length ? f.province + ': ' + f.cities.join(', ') : label });
+    chips.push({
+      key: 'location',
+      label,
+      title: f.province && f.cities.length
+        ? t('filter.chip.locationTitle', { province: f.province, cities: f.cities.join(', ') })
+        : label,
+    });
   }
   if (f.min !== null && f.max !== null) {
-    chips.push({ key: 'price', label: fmtAmount(f.min) + ' - ' + fmtAmount(f.max), title: 'Price ' + fmtAmount(f.min) + ' to ' + fmtAmount(f.max) });
+    const min = fmtAmount(f.min);
+    const max = fmtAmount(f.max);
+    chips.push({ key: 'price', label: t('filter.chip.priceRange', { min, max }), title: t('filter.chip.priceTitle', { min, max }) });
   } else if (f.min !== null) {
-    chips.push({ key: 'price', label: 'From ' + fmtAmount(f.min), title: 'Price from ' + fmtAmount(f.min) });
+    const amount = fmtAmount(f.min);
+    chips.push({ key: 'price', label: t('filter.chip.priceFrom', { amount }), title: t('filter.chip.priceFromTitle', { amount }) });
   } else if (f.max !== null) {
-    chips.push({ key: 'price', label: 'Up to ' + fmtAmount(f.max), title: 'Price up to ' + fmtAmount(f.max) });
+    const amount = fmtAmount(f.max);
+    chips.push({ key: 'price', label: t('filter.chip.priceUpTo', { amount }), title: t('filter.chip.priceUpToTitle', { amount }) });
   }
   if (f.sort !== DEFAULT_SORT) {
     const opt = SORT_OPTIONS.find((o) => o.id === f.sort);
-    chips.push({ key: 'sort', label: opt ? opt.label : f.sort, title: 'Sort: ' + (opt ? opt.label : f.sort) });
+    const label = opt ? opt.label : f.sort;
+    chips.push({ key: 'sort', label, title: t('filter.chip.sortTitle', { label }) });
   }
   return chips;
 }
@@ -251,7 +263,7 @@ export function createFilterService(options = {}) {
     } else {
       state.loading = false;
       state.error = result ? result.status : 0;
-      onError('Could not load products. Pull to refresh or try again.');
+      onError(t('common.loadError'));
     }
     emit();
   }

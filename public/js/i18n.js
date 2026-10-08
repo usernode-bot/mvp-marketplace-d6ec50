@@ -1,167 +1,200 @@
-/* Translations for the app's shipped locales.
+/* Internationalization (i18n) core.
  *
- * `en` is the source: every other dictionary is a partial override, and a key
- * missing from a locale falls back to English (then to the caller's own
- * English label). Only the product detail page's Specifications vocabulary and
- * its section headings are translated so far; the rest of the app stays in
- * English, matching the Settings note that only English ships today.
+ * One tiny, dependency-free translator for the whole app. Modules import
+ * `t` (and `tc` for counts) and render translated strings; switching the
+ * locale re-renders the active view through onLocaleChange, so the entire
+ * interface follows the picker without a reload.
  *
- * The active locale is the stored preference (`store.prefs.locale`), seeded to
- * 'en'. `t(key)` is the only entry point; `locale()` exposes the current code.
+ * Resolution order for the FIRST visit (no saved choice yet):
+ *   1. the user's Homeroom platform locale (bridge getUserLocale), when set
+ *   2. the device language (navigator.language)
+ *   3. English
+ * Only an explicit in-app choice is persisted (bazario:locale), so the
+ * platform value stays a default the shopper can override, exactly as the
+ * platform conventions ask.
+ *
+ * Missing keys always fall back to English, then to the key itself, so a
+ * gap in a translation can never render as a blank or a crash.
  */
 
-import { store } from './store.js';
+import en from './i18n/en.js';
+import es from './i18n/es.js';
+import ptBR from './i18n/pt-BR.js';
+import id from './i18n/id.js';
 
-const EN = {
-  specifications: 'Specifications',
-  description: 'Description',
-  reviews: 'Reviews',
-  inStock: 'In stock',
-  soldOut: 'Sold out',
-  'spec.display': 'Display',
-  'spec.processor': 'Processor',
-  'spec.ram': 'RAM',
-  'spec.storage': 'Storage',
-  'spec.graphics': 'Graphics',
-  'spec.battery': 'Battery',
-  'spec.weight': 'Weight',
-  'spec.os': 'Operating System',
-  'spec.ports': 'Ports',
-  'spec.chipset': 'Chipset',
-  'spec.camera': 'Camera',
-  'spec.sim': 'SIM',
-  'spec.material': 'Material',
-  'spec.sizes': 'Size options',
-  'spec.fit': 'Fit',
-  'spec.care': 'Care instructions',
-  'spec.origin': 'Origin',
-  'spec.dimensions': 'Dimensions',
-  'spec.power': 'Power / Capacity',
-  'spec.brand': 'Brand',
-  'spec.model': 'Model',
-  'spec.sku': 'Product ID',
-  'spec.stock': 'Stock',
-  'spec.warranty': 'Warranty',
-};
+export const LOCALES = [
+  { code: 'en', label: 'English' },
+  { code: 'es', label: 'Español' },
+  { code: 'pt-BR', label: 'Português (Brasil)' },
+  { code: 'id', label: 'Bahasa Indonesia' },
+];
 
-const ES = {
-  specifications: 'Especificaciones',
-  description: 'Descripción',
-  reviews: 'Reseñas',
-  inStock: 'Disponible',
-  soldOut: 'Agotado',
-  'spec.display': 'Pantalla',
-  'spec.processor': 'Procesador',
-  'spec.ram': 'Memoria RAM',
-  'spec.storage': 'Almacenamiento',
-  'spec.graphics': 'Gráficos',
-  'spec.battery': 'Batería',
-  'spec.weight': 'Peso',
-  'spec.os': 'Sistema operativo',
-  'spec.ports': 'Puertos',
-  'spec.chipset': 'Chipset',
-  'spec.camera': 'Cámara',
-  'spec.sim': 'SIM',
-  'spec.material': 'Material',
-  'spec.sizes': 'Tallas',
-  'spec.fit': 'Corte',
-  'spec.care': 'Cuidados',
-  'spec.origin': 'Origen',
-  'spec.dimensions': 'Dimensiones',
-  'spec.power': 'Potencia / Capacidad',
-  'spec.brand': 'Marca',
-  'spec.model': 'Modelo',
-  'spec.sku': 'ID de producto',
-  'spec.stock': 'Disponibilidad',
-  'spec.warranty': 'Garantía',
-};
+export const DEFAULT_LOCALE = 'en';
 
-const PT_BR = {
-  specifications: 'Especificações',
-  description: 'Descrição',
-  reviews: 'Avaliações',
-  inStock: 'Em estoque',
-  soldOut: 'Esgotado',
-  'spec.display': 'Tela',
-  'spec.processor': 'Processador',
-  'spec.ram': 'Memória RAM',
-  'spec.storage': 'Armazenamento',
-  'spec.graphics': 'Gráficos',
-  'spec.battery': 'Bateria',
-  'spec.weight': 'Peso',
-  'spec.os': 'Sistema operacional',
-  'spec.ports': 'Portas',
-  'spec.chipset': 'Chipset',
-  'spec.camera': 'Câmera',
-  'spec.sim': 'SIM',
-  'spec.material': 'Material',
-  'spec.sizes': 'Tamanhos',
-  'spec.fit': 'Caimento',
-  'spec.care': 'Cuidados',
-  'spec.origin': 'Origem',
-  'spec.dimensions': 'Dimensões',
-  'spec.power': 'Potência / Capacidade',
-  'spec.brand': 'Marca',
-  'spec.model': 'Modelo',
-  'spec.sku': 'ID do produto',
-  'spec.stock': 'Disponibilidade',
-  'spec.warranty': 'Garantia',
-};
+const DICTIONARIES = { en, es, 'pt-BR': ptBR, id };
+const STORAGE_KEY = 'bazario:locale';
 
-const ID = {
-  specifications: 'Spesifikasi',
-  description: 'Deskripsi',
-  reviews: 'Ulasan',
-  inStock: 'Tersedia',
-  soldOut: 'Habis',
-  'spec.display': 'Layar',
-  'spec.processor': 'Prosesor',
-  'spec.ram': 'RAM',
-  'spec.storage': 'Penyimpanan',
-  'spec.graphics': 'Grafis',
-  'spec.battery': 'Baterai',
-  'spec.weight': 'Berat',
-  'spec.os': 'Sistem operasi',
-  'spec.ports': 'Port',
-  'spec.chipset': 'Chipset',
-  'spec.camera': 'Kamera',
-  'spec.sim': 'SIM',
-  'spec.material': 'Bahan',
-  'spec.sizes': 'Ukuran',
-  'spec.fit': 'Potongan',
-  'spec.care': 'Perawatan',
-  'spec.origin': 'Asal',
-  'spec.dimensions': 'Dimensi',
-  'spec.power': 'Daya / Kapasitas',
-  'spec.brand': 'Merek',
-  'spec.model': 'Model',
-  'spec.sku': 'ID produk',
-  'spec.stock': 'Stok',
-  'spec.warranty': 'Garansi',
-};
+let current = DEFAULT_LOCALE;
+const listeners = new Set();
+let started = false;
 
-const DICTS = { en: EN, es: ES, 'pt-BR': PT_BR, id: ID };
+/* Map an arbitrary BCP-47 tag onto the locales this app ships:
+ * 'pt' / 'pt-BR' / 'pt-PT' -> 'pt-BR'; 'es-419' -> 'es'; 'id-ID' -> 'id';
+ * 'en-GB' -> 'en'. Returns null when nothing matches. */
+export function matchLocale(tag) {
+  if (!tag || typeof tag !== 'string') return null;
+  const lower = tag.trim().toLowerCase();
+  if (!lower) return null;
+  if (lower === 'pt' || lower.startsWith('pt-')) return 'pt-BR';
+  const base = lower.split('-')[0];
+  return LOCALES.some((l) => l.code === base) ? base : null;
+}
 
-/* Map any stored tag onto a shipped dictionary (language-subtag match). */
-function normalize(code) {
-  if (!code || typeof code !== 'string') return 'en';
-  if (DICTS[code]) return code;
-  const base = code.toLowerCase().split('-')[0];
-  for (const key of Object.keys(DICTS)) {
-    if (key.toLowerCase().split('-')[0] === base) return key;
+export function getLocale() {
+  return current;
+}
+
+export function localeLabel(code = current) {
+  const found = LOCALES.find((l) => l.code === code);
+  return found ? found.label : LOCALES[0].label;
+}
+
+function loadStored() {
+  try {
+    return matchLocale(localStorage.getItem(STORAGE_KEY));
+  } catch {
+    return null;
   }
-  return 'en';
 }
 
-export function locale() {
-  const pref = store && store.prefs ? store.prefs.locale : 'en';
-  return normalize(pref);
+function persist(code) {
+  try {
+    localStorage.setItem(STORAGE_KEY, code);
+  } catch {
+    // Storage refused (private mode, cross-origin WebView): the choice just
+    // does not persist across reloads.
+  }
 }
 
-/* Look a key up; fall back to English, then to the key itself. */
-export function t(key) {
-  const dict = DICTS[locale()];
-  if (dict && dict[key] !== undefined) return dict[key];
-  if (EN[key] !== undefined) return EN[key];
-  return key;
+/* Translate `key`, filling {name} placeholders from `vars`. Falls back to
+ * English, then to the key itself. */
+export function t(key, vars) {
+  const dict = DICTIONARIES[current] || en;
+  let str = dict[key];
+  if (str === undefined) str = en[key];
+  if (str === undefined) return key;
+  if (vars) {
+    str = str.replace(/\{(\w+)\}/g, (m, name) => (
+      vars[name] === undefined || vars[name] === null ? m : String(vars[name])
+    ));
+  }
+  return str;
+}
+
+/* Count-aware translation: picks the _one / _many key for `count` and injects
+ * {count} unless the caller overrides it. Every shipped locale splits at one. */
+export function tc(keyOne, keyMany, count, vars) {
+  const n = Number(count) || 0;
+  return t(n === 1 ? keyOne : keyMany, Object.assign({ count: n }, vars));
+}
+
+export function onLocaleChange(fn) {
+  listeners.add(fn);
+  return () => listeners.delete(fn);
+}
+
+function applyLocale(code, notify) {
+  current = code;
+  try {
+    document.documentElement.setAttribute('lang', code);
+  } catch {
+    // element missing in a headless context: nothing to announce.
+  }
+  if (notify) {
+    listeners.forEach((fn) => {
+      try {
+        fn(code);
+      } catch (err) {
+        console.error('locale listener failed', err);
+      }
+    });
+  }
+}
+
+/* Set the active locale. `persist` is true for an explicit in-app choice;
+ * a platform/device seed passes false so it stays a default. */
+export function setLocale(code, { persist: shouldPersist = true } = {}) {
+  const resolved = matchLocale(code) || DEFAULT_LOCALE;
+  if (shouldPersist) persist(resolved);
+  const changed = resolved !== current;
+  applyLocale(resolved, changed);
+  return resolved;
+}
+
+async function platformLocale() {
+  try {
+    if (window.usernode && typeof window.usernode.getUserLocale === 'function') {
+      const r = await window.usernode.getUserLocale();
+      if (r && typeof r.locale === 'string') return r.locale;
+    }
+  } catch {
+    // No platform shell (standalone/local): treat as "no preference".
+  }
+  return null;
+}
+
+function deviceLocale() {
+  try {
+    return navigator.language || null;
+  } catch {
+    return null;
+  }
+}
+
+/* A `?lang=<tag>` deep link forces a locale for that view (a shared link in
+ * someone else's language). It outranks a saved choice but is not persisted,
+ * so the shopper's own pick still comes back on the next plain load. */
+function urlLocale() {
+  try {
+    return matchLocale(new URLSearchParams(window.location.search).get('lang'));
+  } catch {
+    return null;
+  }
+}
+
+/* Boot the translator. A saved choice is applied synchronously (no flash of
+ * English); otherwise the platform/device locale seeds it asynchronously. */
+export function initI18n() {
+  if (started) return;
+  started = true;
+
+  // Explicit deep-linked language wins for this view, without persisting.
+  const linked = urlLocale();
+  if (linked) {
+    applyLocale(linked, false);
+    return;
+  }
+
+  const stored = loadStored();
+  if (stored) {
+    applyLocale(stored, false);
+    return;
+  }
+
+  // Keep following the platform setting live, but only while the shopper has
+  // not made their own in-app choice (an app-level choice always wins).
+  try {
+    window.addEventListener('usernode:locale-changed', (e) => {
+      if (loadStored()) return;
+      const code = matchLocale(e && e.detail && e.detail.locale) || DEFAULT_LOCALE;
+      if (code !== current) applyLocale(code, true);
+    });
+  } catch {
+    // no window: nothing to listen on.
+  }
+
+  platformLocale().then((tag) => {
+    const seeded = matchLocale(tag) || matchLocale(deviceLocale()) || DEFAULT_LOCALE;
+    if (seeded !== current) applyLocale(seeded, true);
+  });
 }

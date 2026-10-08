@@ -1,8 +1,13 @@
 {
   "description": "A modern mobile-first marketplace: deals, categories and everyday essentials.",
-  "icon": { "image": "brand/icon.png" },
+  "icon": {
+    "image": "brand/icon.png"
+  },
   "permissions": [
-    { "capability": "geolocation", "reason": "Find products shipping from a city near you" }
+    {
+      "capability": "geolocation",
+      "reason": "Find products shipping from a city near you"
+    }
   ],
   "secrets": [],
   "tests": [
@@ -13,7 +18,17 @@
       "expectSelector": "#section-recommended [data-filter-toolbar] [data-filter-open]",
       "expectText": "Filters",
       "visual": true,
-      "impact": ["public/js/filter-ui.js", "public/js/filters.js", "public/js/home.js", "public/js/ui.js", "public/js/router.js", "public/index.html", "styles/tailwind-input.css", "src/products.cjs", "server.js"]
+      "impact": [
+        "public/js/filter-ui.js",
+        "public/js/filters.js",
+        "public/js/home.js",
+        "public/js/ui.js",
+        "public/js/router.js",
+        "public/index.html",
+        "styles/tailwind-input.css",
+        "src/products.cjs",
+        "server.js"
+      ]
     },
     {
       "id": "home.filter-city",
@@ -62,7 +77,11 @@
       "expectSelector": "[data-view='home'] .product-card",
       "expectText": "Flash Sale",
       "visual": true,
-      "impact": ["public/**", "styles/tailwind-input.css", "tailwind.config.js"]
+      "impact": [
+        "public/**",
+        "styles/tailwind-input.css",
+        "tailwind.config.js"
+      ]
     },
     {
       "id": "theme.swatches",
@@ -224,7 +243,12 @@
       "expectSelector": "#view-browse .product-card",
       "expectText": "Sort:",
       "visual": true,
-      "impact": ["public/js/browse.js", "public/js/router.js", "public/js/data.js", "public/index.html"]
+      "impact": [
+        "public/js/browse.js",
+        "public/js/router.js",
+        "public/js/data.js",
+        "public/index.html"
+      ]
     },
     {
       "id": "browse.search-results",
@@ -252,7 +276,13 @@
       "expectSelector": "#view-product .add-btn",
       "expectText": "Add to Cart",
       "visual": true,
-      "impact": ["public/js/product.js", "public/js/router.js", "public/js/data.js", "public/js/store.js", "public/index.html"]
+      "impact": [
+        "public/js/product.js",
+        "public/js/router.js",
+        "public/js/data.js",
+        "public/js/store.js",
+        "public/index.html"
+      ]
     },
     {
       "id": "checkout.default",
@@ -299,7 +329,11 @@
       "expectSelector": "[data-cart-row]",
       "expectText": "Order summary",
       "visual": true,
-      "impact": ["public/**", "styles/tailwind-input.css", "tailwind.config.js"]
+      "impact": [
+        "public/**",
+        "styles/tailwind-input.css",
+        "tailwind.config.js"
+      ]
     },
     {
       "id": "cart.vouchers",
@@ -314,7 +348,12 @@
       "expectSelector": "[data-order-card]",
       "expectText": "To Pay",
       "visual": true,
-      "impact": ["public/js/orders.js", "public/js/app.js", "public/index.html", "styles/tailwind-input.css"]
+      "impact": [
+        "public/js/orders.js",
+        "public/js/app.js",
+        "public/index.html",
+        "styles/tailwind-input.css"
+      ]
     },
     {
       "id": "orders.detail",
@@ -323,7 +362,10 @@
       "expectSelector": "[data-order-timeline]",
       "expectText": "Shipping address",
       "visual": true,
-      "impact": ["public/js/orders.js", "public/js/data.js"]
+      "impact": [
+        "public/js/orders.js",
+        "public/js/data.js"
+      ]
     },
     {
       "id": "profile.default",
@@ -374,6 +416,35 @@
       "name": "Settings renders notification, preference and privacy groups",
       "path": "/#/profile/settings",
       "expectText": "Notification settings"
+    },
+    {
+      "id": "profile.language-row",
+      "name": "Settings shows the language row with the active locale",
+      "path": "/#/profile/settings",
+      "expectSelector": "[data-lang-pick]",
+      "expectText": "Language",
+      "visual": true,
+      "impact": [
+        "public/js/i18n.js",
+        "public/js/i18n/",
+        "public/js/settings.js",
+        "public/js/app.js",
+        "public/index.html"
+      ]
+    },
+    {
+      "id": "profile.language-switch-id",
+      "name": "A ?lang deep link renders the settings screen in Indonesian",
+      "path": "/?lang=id#/profile/settings",
+      "expectSelector": "[data-lang-pick]",
+      "expectText": "Bahasa Indonesia"
+    },
+    {
+      "id": "home.language-switch-ptbr",
+      "name": "A ?lang deep link renders the home filter toolbar in Portuguese",
+      "path": "/?lang=pt-BR#/home",
+      "expectSelector": "#recommended-filterbar [data-filter-open]",
+      "expectText": "Filtros"
     },
     {
       "id": "profile.payment-default",

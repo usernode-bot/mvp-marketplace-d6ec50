@@ -7,6 +7,7 @@
 import { icon, productArt } from './icons.js';
 import { discountPct } from './data.js';
 import { store } from './store.js';
+import { getLocale, t } from './i18n.js';
 
 /* $12.99 from integer cents. */
 export function fmtPrice(cents) {
@@ -22,11 +23,12 @@ export function fmtCount(n) {
   return String(n);
 }
 
-/* "Oct 2" within the current year, "Oct 2, 2025" otherwise. */
+/* "Oct 2" within the current year, "Oct 2, 2025" otherwise. Formatted in the
+ * active locale, so a switch changes dates too. */
 export function fmtDate(ts) {
   const d = new Date(ts);
   const sameYear = d.getFullYear() === new Date().getFullYear();
-  return d.toLocaleDateString('en-US', sameYear
+  return d.toLocaleDateString(getLocale(), sameYear
     ? { month: 'short', day: 'numeric' }
     : { month: 'short', day: 'numeric', year: 'numeric' });
 }
@@ -51,7 +53,7 @@ export function confirmDialog({ title, message, confirmLabel = 'Confirm' }) {
       title,
       message,
       buttons: [
-        { label: 'Cancel', style: 'cancel' },
+        { label: t('common.cancel'), style: 'cancel' },
         { label: confirmLabel, style: 'destructive' },
       ],
     }).then((r) => !!(r && r.button && r.button.style === 'destructive'));
@@ -59,9 +61,10 @@ export function confirmDialog({ title, message, confirmLabel = 'Confirm' }) {
   return Promise.resolve(window.confirm(title + '\n\n' + message));
 }
 
-/* "Tue, Oct 6" from a Date (used for checkout delivery estimates). */
+/* "Tue, Oct 6" from a Date (used for checkout delivery estimates), in the
+ * active locale. */
 export function fmtEtaDate(d) {
-  return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  return d.toLocaleDateString(getLocale(), { weekday: 'short', month: 'short', day: 'numeric' });
 }
 
 /* ---------------------------------------------------------------------------
@@ -79,13 +82,14 @@ export function avatarHtml({
   textSize = 'text-lg',
   badge = false,
   loading = false,
-  alt = 'Profile photo',
+  alt = null,
 } = {}) {
   const initial = name ? String(name)[0].toUpperCase() : 'G';
+  const altText = alt || t('avatar.alt');
   const fallback = '<span data-avatar-fallback class="flex h-full w-full items-center justify-center rounded-full bg-brand-100 font-bold text-brand-700 '
     + textSize + '">' + esc(initial) + '</span>';
   const img = url
-    ? '<img data-avatar-img src="' + esc(url) + '" alt="' + esc(alt)
+    ? '<img data-avatar-img src="' + esc(url) + '" alt="' + esc(altText)
       + '" class="absolute inset-0 h-full w-full rounded-full object-cover" onerror="this.remove()">'
     : '';
   const spinner = loading
@@ -109,7 +113,7 @@ export function avatarHtml({
 export function starRow(rating, cls = 'h-3.5 w-3.5') {
   const five = Array.from({ length: 5 }, () => icon('star', cls)).join('');
   const pct = Math.max(0, Math.min(100, (rating / 5) * 100));
-  return '<span class="relative inline-flex shrink-0" role="img" aria-label="Rated ' + rating + ' out of 5">'
+  return '<span class="relative inline-flex shrink-0" role="img" aria-label="' + esc(t('common.ratedAria', { rating })) + '">'
     + '<span class="flex text-zinc-200">' + five + '</span>'
     + '<span class="absolute inset-0 flex overflow-hidden text-amber-400" style="width:' + pct + '%">' + five + '</span>'
     + '</span>';
@@ -153,8 +157,8 @@ export function productCard(p, opts = {}) {
 
   const soldBlock = opts.compact
     ? '<div class="mt-1.5"><div class="h-1.5 w-full overflow-hidden rounded-full bg-rose-100"><div class="h-full rounded-full bg-rose-500" style="width:' + (p.pct || 0) + '%"></div></div>'
-      + '<div class="mt-1 text-[11px] font-medium text-zinc-500">' + fmtCount(p.sold) + ' sold</div></div>'
-    : '<span class="text-xs text-zinc-500">' + fmtCount(p.sold) + ' sold</span>';
+      + '<div class="mt-1 text-[11px] font-medium text-zinc-500">' + esc(t('card.sold', { count: fmtCount(p.sold) })) + '</div></div>'
+    : '<span class="text-xs text-zinc-500">' + esc(t('card.sold', { count: fmtCount(p.sold) })) + '</span>';
 
   // Card art. A committed product photo (p.image) layers over the generated
   // illustration, which paints instantly behind it as the fallback: if the
@@ -185,8 +189,8 @@ export function productCard(p, opts = {}) {
     // product-page art stays full color.
     + art
     + (disc ? '<span class="badge-sale absolute left-2 top-2">-' + disc + '%</span>' : '')
-    + (p.oos ? '<span class="badge absolute bottom-2 left-2 bg-zinc-900/80 text-white">Sold out</span>' : '')
-    + '<button type="button" data-fav="' + p.id + '" aria-label="Toggle favorite" aria-pressed="' + fav
+    + (p.oos ? '<span class="badge absolute bottom-2 left-2 bg-zinc-900/80 text-white">' + esc(t('card.soldOut')) + '</span>' : '')
+    + '<button type="button" data-fav="' + p.id + '" aria-label="' + esc(t('card.toggleFav')) + '" aria-pressed="' + fav
     + '" class="fav-btn absolute right-2 top-2' + (fav ? ' fav-btn-on' : '') + '">' + heart + '</button>'
     + '</div>'
     + '<div class="flex flex-1 flex-col p-3">'
@@ -210,8 +214,8 @@ export function productCard(p, opts = {}) {
     + (p.orig ? '<div class="text-xs tabular-nums text-zinc-400 line-through">' + fmtPrice(p.orig) + '</div>' : '')
     + '</div>'
     + (p.oos
-      ? '<button type="button" disabled aria-label="Sold out" class="add-btn cursor-not-allowed bg-zinc-300">' + icon('x', 'h-4 w-4') + '</button>'
-      : '<button type="button" data-add="' + p.id + '" aria-label="Add to cart" class="add-btn">' + icon('plus', 'h-4 w-4') + '<span class="hidden lg:inline">Add</span></button>')
+      ? '<button type="button" disabled aria-label="' + esc(t('card.soldOut')) + '" class="add-btn cursor-not-allowed bg-zinc-300">' + icon('x', 'h-4 w-4') + '</button>'
+      : '<button type="button" data-add="' + p.id + '" aria-label="' + esc(t('card.addToCart')) + '" class="add-btn">' + icon('plus', 'h-4 w-4') + '<span class="hidden lg:inline">' + esc(t('card.add')) + '</span></button>')
     + '</div>'
     + '</div>'
     + '</article>';
