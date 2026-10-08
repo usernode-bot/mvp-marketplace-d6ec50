@@ -12,10 +12,10 @@
  */
 
 import { icon } from './icons.js';
+import { t } from './i18n.js';
 import { confirmDialog, emptyState, esc, toast } from './ui.js';
 import { apiFetch } from './api.js';
 import { renderProfileView } from './profile.js';
-import { t } from './i18n.js';
 
 const MAX_OUTPUT_BYTES = 1024 * 1024; // 1 MB
 const OUTPUT_EDGE = 512;
@@ -24,13 +24,12 @@ const MIN_ZOOM = 1;
 const MAX_ZOOM = 4;
 const ACCEPTED = ['image/jpeg', 'image/png', 'image/webp'];
 
-/* Dictionary keys; resolved through msg() at the point of use so the copy
- * follows the selected language. */
+/* Resolved at call time so the active language is used. */
 const MESSAGES = {
-  invalid: 'photo.invalid',
-  tooLarge: 'photo.tooLarge',
-  failed: 'photo.failed',
-  unavailable: 'photo.unavailable',
+  get invalid() { return t('profile.photo.err.invalid'); },
+  get tooLarge() { return t('profile.photo.err.tooLarge'); },
+  get failed() { return t('profile.photo.err.failed'); },
+  get unavailable() { return t('profile.photo.err.unavailable'); },
 };
 
 function msg(name) {
@@ -110,9 +109,9 @@ function removePhoto() {
   const hasPhoto = !!state.url;
   if (!hasPhoto) return;
   confirmDialog({
-    title: t('photo.removeTitle'),
-    message: t('photo.removeBody'),
-    confirmLabel: t('photo.removeConfirm'),
+    title: t('profile.photo.removeConfirm.title'),
+    message: t('profile.photo.removeConfirm.message'),
+    confirmLabel: t('profile.photo.remove'),
   }).then(async (ok) => {
     if (!ok) return;
     if (state.fileId && window.usernode && typeof window.usernode.deleteFile === 'function') {
@@ -129,7 +128,7 @@ function removePhoto() {
     if (res.ok) {
       state.url = null;
       state.fileId = null;
-      toast(t('photo.removed'));
+      toast(t('profile.photo.toast.removed'));
     } else {
       toast(msg('failed'));
     }
@@ -138,14 +137,14 @@ function removePhoto() {
 }
 
 function openPhotoMenu(anchorEl) {
-  const items = [{ label: t('photo.choose'), value: 'choose' }];
-  if (state.url) items.push({ label: t('photo.remove'), value: 'remove', destructive: true });
+  const items = [{ label: t('profile.photo.choose'), value: 'choose' }];
+  if (state.url) items.push({ label: t('profile.photo.remove'), value: 'remove', destructive: true });
 
   if (window.unNative && typeof window.unNative.menu === 'function') {
     window.unNative.menu({
       anchorEl,
-      title: t('photo.menuTitle'),
-      cancelLabel: t('common.cancel'),
+      title: t('profile.photo.menuTitle'),
+      cancelLabel: t('profile.photo.cancel'),
       items,
     }).then((picked) => {
       if (!picked) return;
@@ -239,9 +238,9 @@ async function decodeImage(file) {
 
 function cropMarkup() {
   return '<div class="flex items-center gap-1">'
-    + '<button type="button" data-route="profile" class="icon-btn -ml-2" aria-label="' + esc(t('aria.back')) + '">'
+    + '<button type="button" data-route="profile" class="icon-btn -ml-2" aria-label="' + esc(t('profile.back')) + '">'
     + icon('chevronLeft', 'h-5 w-5') + '</button>'
-    + '<h1 class="section-title">' + esc(t('photo.addTitle')) + '</h1>'
+    + '<h1 class="section-title">' + esc(t('profile.photo.addTitle')) + '</h1>'
     + '</div>'
     + '<div class="card mt-4 flex flex-col items-center gap-4 p-4">'
     + '<div data-crop-frame class="relative h-72 w-72 max-w-full touch-none select-none overflow-hidden rounded-xl bg-zinc-900">'
@@ -251,16 +250,16 @@ function cropMarkup() {
     + '</div>'
     + '</div>'
     + '<label class="flex w-full max-w-xs items-center gap-3">'
-    + '<span class="text-xs font-semibold text-zinc-500">' + esc(t('photo.zoom')) + '</span>'
-    + '<input type="range" data-crop-zoom min="1" max="4" step="0.01" value="1" class="w-full accent-brand-600" aria-label="' + esc(t('aria.zoom')) + '">'
+    + '<span class="text-xs font-semibold text-zinc-500">' + esc(t('profile.photo.zoom')) + '</span>'
+    + '<input type="range" data-crop-zoom min="1" max="4" step="0.01" value="1" class="w-full accent-brand-600" aria-label="' + esc(t('profile.photo.zoom')) + '">'
     + '</label>'
     + '<p data-crop-error class="field-msg hidden" role="alert"></p>'
     + '<div class="flex w-full max-w-xs gap-2">'
-    + '<button type="button" data-crop-cancel class="btn-outline flex-1">' + esc(t('photo.cancel')) + '</button>'
-    + '<button type="button" data-crop-save class="btn-primary flex-1">' + esc(t('photo.save')) + '</button>'
+    + '<button type="button" data-crop-cancel class="btn-outline flex-1">' + esc(t('profile.photo.cancel')) + '</button>'
+    + '<button type="button" data-crop-save class="btn-primary flex-1">' + esc(t('profile.photo.save')) + '</button>'
     + '</div>'
     + '</div>'
-    + '<p class="mt-3 px-1 text-xs text-zinc-400">' + esc(t('photo.cropHint')) + '</p>';
+    + '<p class="mt-3 px-1 text-xs text-zinc-400">' + esc(t('profile.photo.cropHint')) + '</p>';
 }
 
 /* Position the image inside the frame for the current zoom + offset. */
@@ -433,7 +432,7 @@ async function saveCrop() {
   setCropError('');
   if (saveBtn) {
     saveBtn.disabled = true;
-    saveBtn.innerHTML = icon('loader', 'h-4 w-4 animate-spin') + '<span>' + esc(t('photo.saving')) + '</span>';
+    saveBtn.innerHTML = icon('loader', 'h-4 w-4 animate-spin') + '<span>' + esc(t('profile.photo.saving')) + '</span>';
   }
   if (cancelBtn) cancelBtn.disabled = true;
 
@@ -441,15 +440,15 @@ async function saveCrop() {
   try {
     encoded = await encodeAvatar();
   } catch {
-    setCropError(msg('failed'));
-    if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = t('photo.save'); }
+    setCropError(MESSAGES.failed);
+    if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = t('profile.photo.save'); }
     if (cancelBtn) cancelBtn.disabled = false;
     return;
   }
 
   if (!window.usernode || typeof window.usernode.uploadFile !== 'function') {
-    setCropError(msg('unavailable'));
-    if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = t('photo.save'); }
+    setCropError(MESSAGES.unavailable);
+    if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = t('profile.photo.save'); }
     if (cancelBtn) cancelBtn.disabled = false;
     return;
   }
@@ -460,7 +459,7 @@ async function saveCrop() {
     stored = await window.usernode.uploadFile(file, { visibility: 'public' });
   } catch (err) {
     setCropError(uploadErrorMessage(err));
-    if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = t('photo.save'); }
+    if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = t('profile.photo.save'); }
     if (cancelBtn) cancelBtn.disabled = false;
     return;
   }
@@ -470,8 +469,8 @@ async function saveCrop() {
     body: JSON.stringify({ url: stored.url, fileId: stored.id }),
   });
   if (!res.ok) {
-    setCropError(msg('failed'));
-    if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = t('photo.save'); }
+    setCropError(MESSAGES.failed);
+    if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = t('profile.photo.save'); }
     if (cancelBtn) cancelBtn.disabled = false;
     return;
   }
@@ -479,7 +478,7 @@ async function saveCrop() {
   state.url = stored.url;
   state.fileId = stored.id;
   discardPending();
-  toast(t('photo.updated'));
+  toast(t('profile.photo.toast.updated'));
   location.hash = '/profile';
 }
 
@@ -511,15 +510,15 @@ export function renderCropView() {
   if (!pending) {
     view.innerHTML =
       '<div class="flex items-center gap-1">'
-      + '<button type="button" data-route="profile" class="icon-btn -ml-2" aria-label="' + esc(t('aria.back')) + '">'
+      + '<button type="button" data-route="profile" class="icon-btn -ml-2" aria-label="' + esc(t('profile.back')) + '">'
       + icon('chevronLeft', 'h-5 w-5') + '</button>'
-      + '<h1 class="section-title">' + esc(t('photo.addTitle')) + '</h1>'
+      + '<h1 class="section-title">' + esc(t('profile.photo.addTitle')) + '</h1>'
       + '</div>'
       + '<div class="card mt-4">' + emptyState({
         icon: 'camera',
-        title: esc(t('photo.noPhoto')),
-        body: esc(t('photo.noPhotoBody')),
-        actionLabel: esc(t('photo.choose')),
+        title: t('profile.photo.noneTitle'),
+        body: t('profile.photo.noneBody'),
+        actionLabel: t('profile.photo.choose'),
         actionAttr: 'data-avatar-choose',
       }) + '</div>';
     return;

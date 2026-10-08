@@ -21,41 +21,40 @@ import {
 } from './data.js';
 import { fetchProducts } from './api.js';
 import { store } from './store.js';
-import { emptyState, esc, productCard, skeletonCard } from './ui.js';
+import { categoryName, emptyState, esc, productCard, skeletonCard, subcategoryLabel } from './ui.js';
+import { t } from './i18n.js';
 import { goToHash } from './router.js';
-import { categoryName, plural, sortOptionLabel, t } from './i18n.js';
 
-/* Every label is a dictionary key resolved at render time, so switching
- * language re-labels the toolbar, sort menu, filter chips and empty states
- * without a reload. The ids are stable route/sort values. */
+/* Option tables keep ids/values; the visible name is looked up through t()
+ * at render time (labelKey), so a language change shows in the next render. */
 const SORT_OPTIONS = [
-  { id: 'recommended' },
-  { id: 'popular' },
-  { id: 'newest' },
-  { id: 'price-asc' },
-  { id: 'price-desc' },
+  { id: 'recommended', labelKey: 'browse.sort.recommended' },
+  { id: 'popular', labelKey: 'browse.sort.popular' },
+  { id: 'newest', labelKey: 'browse.sort.newest' },
+  { id: 'price-asc', labelKey: 'browse.sort.priceAsc' },
+  { id: 'price-desc', labelKey: 'browse.sort.priceDesc' },
 ];
 
 const PRICE_BUCKETS = [
-  { id: 'any', key: 'browse.priceAny', min: 0, max: Infinity },
-  { id: 'under-20', key: 'browse.priceUnder20', min: 0, max: 2000 },
-  { id: '20-100', key: 'browse.price20to100', min: 2000, max: 10000 },
-  { id: '100-300', key: 'browse.price100to300', min: 10000, max: 30000 },
-  { id: 'over-300', key: 'browse.priceOver300', min: 30000, max: Infinity },
+  { id: 'any', labelKey: 'browse.price.any', min: 0, max: Infinity },
+  { id: 'under-20', labelKey: 'browse.price.under20', min: 0, max: 2000 },
+  { id: '20-100', labelKey: 'browse.price.20to100', min: 2000, max: 10000 },
+  { id: '100-300', labelKey: 'browse.price.100to300', min: 10000, max: 30000 },
+  { id: 'over-300', labelKey: 'browse.price.over300', min: 30000, max: Infinity },
 ];
 
 const RATING_OPTIONS = [
-  { value: 0, key: 'browse.any' },
-  { value: 4.5, key: 'browse.rating45' },
-  { value: 4, key: 'browse.rating40' },
-  { value: 3.5, key: 'browse.rating35' },
+  { value: 0, labelKey: 'browse.rating.any' },
+  { value: 4.5, labelKey: 'browse.rating.45' },
+  { value: 4, labelKey: 'browse.rating.40' },
+  { value: 3.5, labelKey: 'browse.rating.35' },
 ];
 
 const DISCOUNT_OPTIONS = [
-  { value: 0, key: 'browse.any' },
-  { value: 10, key: 'browse.discount10' },
-  { value: 20, key: 'browse.discount20' },
-  { value: 30, key: 'browse.discount30' },
+  { value: 0, labelKey: 'browse.discount.any' },
+  { value: 10, labelKey: 'browse.discount.10' },
+  { value: 20, labelKey: 'browse.discount.20' },
+  { value: 30, labelKey: 'browse.discount.30' },
 ];
 
 const GRID_CLASS = 'grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6';
@@ -161,11 +160,11 @@ function activeFilterCount() {
 function chip(group, value, label, active) {
   return '<button type="button" data-filter-' + group + '="' + value + '" class="h-8 shrink-0 rounded-full px-3.5 text-xs font-semibold transition-colors '
     + (active ? 'bg-brand-600 text-white' : 'border border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50') + '">'
-    + label + '</button>';
+    + esc(label) + '</button>';
 }
 
 function sectionHeading(text) {
-  return '<h3 class="text-xs font-semibold uppercase tracking-wide text-zinc-400">' + text + '</h3>';
+  return '<h3 class="text-xs font-semibold uppercase tracking-wide text-zinc-400">' + esc(text) + '</h3>';
 }
 
 function toolbarHtml() {
@@ -176,9 +175,9 @@ function toolbarHtml() {
     + '<span id="filter-badge" class="flex h-4 min-w-4 items-center justify-center rounded-full bg-brand-600 px-1 text-[9px] font-bold leading-none text-white' + (n ? '' : ' hidden') + '">' + n + '</span>'
     + '</button>'
     + '<div class="relative">'
-    + '<button type="button" id="sort-btn" data-sort-toggle class="btn-outline btn-sm" aria-haspopup="menu">' + t('browse.sort', { label: '<span id="sort-label"></span>' }) + icon('chevronDown', 'h-3.5 w-3.5') + '</button>'
+    + '<button type="button" id="sort-btn" data-sort-toggle class="btn-outline btn-sm" aria-haspopup="menu">' + esc(t('browse.sortPrefix')) + ' <span id="sort-label"></span>' + icon('chevronDown', 'h-3.5 w-3.5') + '</button>'
     + '<div id="sort-menu" class="absolute right-0 top-full z-30 mt-1.5 hidden w-52 rounded-xl border border-zinc-100 bg-white p-1.5 shadow-card-lg" role="menu">'
-    + SORT_OPTIONS.map((o) => '<button type="button" data-sort-item="' + o.id + '" role="menuitem" class="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm text-zinc-700 hover:bg-zinc-50"><span class="check-slot w-4 shrink-0"></span>' + esc(sortOptionLabel(o.id)) + '</button>').join('')
+    + SORT_OPTIONS.map((o) => '<button type="button" data-sort-item="' + o.id + '" role="menuitem" class="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm text-zinc-700 hover:bg-zinc-50"><span class="check-slot w-4 shrink-0"></span>' + esc(t(o.labelKey)) + '</button>').join('')
     + '</div></div></div>';
 }
 
@@ -186,47 +185,47 @@ function filterOverlayHtml() {
   const f = state.filters;
   const brands = brandsInScope();
 
-  const price = sectionHeading(esc(t('browse.price')))
+  const price = sectionHeading(t('browse.priceHeading'))
     + '<div class="mt-2 flex flex-wrap gap-2">'
-    + PRICE_BUCKETS.map((b) => chip('price', b.id, esc(t(b.key)), f.price === b.id)).join('')
+    + PRICE_BUCKETS.map((b) => chip('price', b.id, t(b.labelKey), f.price === b.id)).join('')
     + '</div>';
 
-  const rating = sectionHeading(esc(t('browse.rating')))
+  const rating = sectionHeading(t('browse.rating'))
     + '<div class="mt-2 flex flex-wrap gap-2">'
-    + RATING_OPTIONS.map((o) => chip('rating', String(o.value), esc(t(o.key)), f.rating === o.value)).join('')
+    + RATING_OPTIONS.map((o) => chip('rating', String(o.value), t(o.labelKey), f.rating === o.value)).join('')
     + '</div>';
 
-  const brand = sectionHeading(esc(t('browse.brand')))
+  const brand = sectionHeading(t('browse.brand'))
     + '<div class="mt-1 divide-y divide-zinc-100">'
     + brands.map((b) => '<label class="flex cursor-pointer items-center gap-3 py-2.5 text-sm text-zinc-700">'
       + '<input type="checkbox" class="h-4 w-4 accent-brand-600" data-filter-brand="' + b.brand + '"' + (f.brands.includes(b.brand) ? ' checked' : '') + '>'
-      + '<span>' + b.brand + '</span>'
+      + '<span>' + esc(b.brand) + '</span>'
       + '<span class="ml-auto text-xs text-zinc-400">' + b.count + '</span>'
       + '</label>').join('')
     + '</div>';
 
-  const discount = sectionHeading(esc(t('browse.discount')))
+  const discount = sectionHeading(t('browse.discount'))
     + '<div class="mt-2 flex flex-wrap gap-2">'
-    + DISCOUNT_OPTIONS.map((o) => chip('discount', String(o.value), esc(t(o.key)), f.discount === o.value)).join('')
+    + DISCOUNT_OPTIONS.map((o) => chip('discount', String(o.value), t(o.labelKey), f.discount === o.value)).join('')
     + '</div>';
 
-  const availability = sectionHeading(esc(t('browse.availability')))
+  const availability = sectionHeading(t('browse.availability'))
     + '<label class="mt-1 flex cursor-pointer items-center justify-between py-2.5 text-sm text-zinc-700">'
-    + '<span>' + esc(t('browse.inStockOnly')) + '</span>'
-    + '<input type="checkbox" class="un-switch" data-filter-stock' + (f.inStock ? ' checked' : '') + ' aria-label="' + esc(t('browse.inStockOnly')) + '">'
+    + '<span>' + esc(t('browse.inStock')) + '</span>'
+    + '<input type="checkbox" class="un-switch" data-filter-stock' + (f.inStock ? ' checked' : '') + ' aria-label="' + esc(t('browse.inStock')) + '">'
     + '</label>';
 
   return '<div class="absolute inset-0 bg-zinc-900/40" data-filter-close></div>'
     + '<div class="absolute inset-x-0 bottom-0 mx-auto flex max-h-[85vh] w-full flex-col rounded-t-2xl bg-white shadow-card-lg md:inset-0 md:my-auto md:h-fit md:max-w-md md:rounded-2xl">'
     + '<div class="flex items-center justify-between border-b border-zinc-100 px-4 py-3">'
-    + '<h2 class="text-base font-bold text-zinc-900">' + esc(t('aria.filters')) + '</h2>'
-    + '<button type="button" data-filter-close class="icon-btn" aria-label="' + esc(t('aria.closeFilters')) + '">' + icon('x', 'h-5 w-5') + '</button>'
+    + '<h2 class="text-base font-bold text-zinc-900">' + esc(t('browse.filters')) + '</h2>'
+    + '<button type="button" data-filter-close class="icon-btn" aria-label="' + esc(t('browse.closeFilters')) + '">' + icon('x', 'h-5 w-5') + '</button>'
     + '</div>'
     + '<div class="flex-1 space-y-5 overflow-y-auto px-4 py-4">' + price + rating + brand + discount + availability + '</div>'
     + '<div class="border-t border-zinc-100 p-3" style="padding-bottom: calc(0.75rem + var(--un-safe-inset-bottom, 0px));">'
     + '<div class="flex gap-2">'
-    + '<button type="button" data-filter-reset class="btn-outline flex-1">' + esc(t('common.reset')) + '</button>'
-    + '<button type="button" data-filter-close class="btn-primary flex-1">' + t('browse.show', { count: '<span id="filter-show-count"></span>' }) + '</button>'
+    + '<button type="button" data-filter-reset class="btn-outline flex-1">' + esc(t('browse.reset')) + '</button>'
+    + '<button type="button" data-filter-close class="btn-primary flex-1">' + esc(t('browse.show')) + ' <span id="filter-show-count"></span></button>'
     + '</div></div></div>';
 }
 
@@ -234,9 +233,9 @@ function emptyResultsHtml() {
   if (state.mode === 'category') {
     return emptyState({
       icon: 'search',
-      title: esc(t('browse.noResults')),
-      body: esc(t('browse.noResultsCategoryBody')),
-      actionLabel: esc(t('browse.clearFilters')),
+      title: t('browse.noResults'),
+      body: t('browse.noResultsCategory'),
+      actionLabel: t('browse.clearSearchFilters'),
       actionAttr: 'data-browse-reset',
     });
   }
@@ -245,9 +244,9 @@ function emptyResultsHtml() {
     .join('');
   return emptyState({
     icon: 'search',
-    title: esc(t('browse.noResults')),
-    body: esc(t('browse.noResultsSearchBody', { q: state.q })),
-    actionLabel: esc(t('browse.clearSearch')),
+    title: t('browse.noResults'),
+    body: t('browse.noResultsQuery', { q: esc(state.q) }),
+    actionLabel: t('browse.clearSearch'),
     actionAttr: 'data-browse-clear-search',
   })
     + '<div class="-mt-6 flex flex-wrap justify-center gap-2 pb-8">' + suggestions + '</div>';
@@ -260,27 +259,27 @@ function emptyResultsHtml() {
 function searchInputHtml(id, placeholder, value) {
   return '<div class="relative">'
     + '<span class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400">' + icon('search', 'h-5 w-5') + '</span>'
-    + '<input type="search" id="' + id + '" class="input" placeholder="' + placeholder + '" value="' + esc(value) + '" autocomplete="off" aria-label="' + placeholder + '">'
+    + '<input type="search" id="' + id + '" class="input" placeholder="' + esc(placeholder) + '" value="' + esc(value) + '" autocomplete="off" aria-label="' + esc(placeholder) + '">'
     + '</div>';
 }
 
 function searchHomeShell() {
   const recent = store.recent.length
-    ? '<section class="mt-6" aria-label="' + esc(t('search.recent')) + '"><h2 class="text-sm font-semibold text-zinc-900">' + esc(t('search.recent')) + '</h2>'
+    ? '<section class="mt-6" aria-label="' + esc(t('browse.recentSearches')) + '"><h2 class="text-sm font-semibold text-zinc-900">' + esc(t('browse.recentSearches')) + '</h2>'
       + '<div class="mt-2.5 flex flex-wrap gap-2">'
       + store.recent.map((r) => '<button type="button" data-recent="' + esc(r) + '" class="inline-flex items-center gap-1.5 rounded-full bg-zinc-100 px-3 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-200">' + icon('clock', 'h-3.5 w-3.5') + esc(r) + '</button>').join('')
       + '</div></section>'
     : '';
-  const popular = '<section class="mt-6" aria-label="' + esc(t('search.popular')) + '"><h2 class="text-sm font-semibold text-zinc-900">' + esc(t('search.popular')) + '</h2>'
+  const popular = '<section class="mt-6" aria-label="' + esc(t('browse.popularSearches')) + '"><h2 class="text-sm font-semibold text-zinc-900">' + esc(t('browse.popularSearches')) + '</h2>'
     + '<div class="mt-2.5 flex flex-wrap gap-2">'
     + POPULAR_SEARCHES.map((s) => '<button type="button" data-search-suggest="' + s + '" class="inline-flex items-center gap-1.5 rounded-full bg-zinc-100 px-3 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-200">' + icon('flame', 'h-3.5 w-3.5') + s + '</button>').join('')
     + '</div></section>';
-  return '<h1 class="section-title">' + esc(t('search.title')) + '</h1>'
-    + '<div class="mt-3">' + searchInputHtml('search-page-input', t('search.placeholder'), '') + '</div>'
+  return '<h1 class="section-title">' + esc(t('browse.searchTitle')) + '</h1>'
+    + '<div class="mt-3">' + searchInputHtml('search-page-input', t('browse.searchPlaceholder'), '') + '</div>'
     + '<div class="card mt-4">' + emptyState({
       icon: 'search',
-      title: esc(t('search.heroTitle')),
-      body: esc(t('search.heroBody')),
+      title: t('browse.searchEmptyTitle'),
+      body: t('browse.searchEmptyBody'),
     }) + '</div>'
     + recent + popular;
 }
@@ -290,26 +289,26 @@ function categoryShell() {
   if (!category) {
     return emptyState({
       icon: 'grid',
-      title: esc(t('browse.categoryNotFound')),
-      body: esc(t('browse.categoryNotFoundBody')),
-      actionLabel: esc(t('browse.backToHome')),
+      title: t('browse.catNotFound'),
+      body: t('browse.catNotFoundBody'),
+      actionLabel: t('browse.backHome'),
       actionAttr: 'data-nav="home"',
     });
   }
   const subs = SUBCATEGORIES[category.id] || [];
-  const chips = [{ id: '', name: t('browse.all') }].concat(subs)
+  const chips = [{ id: '' }].concat(subs)
     .map((s) => '<button type="button" data-sub="' + s.id + '" aria-pressed="' + (state.sub === s.id)
       + '" class="h-8 shrink-0 rounded-full px-3.5 text-xs font-semibold transition-colors '
       + (state.sub === s.id ? 'bg-brand-600 text-white' : 'border border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50')
-      + '">' + s.name + '</button>')
+      + '">' + esc(subcategoryLabel(s)) + '</button>')
     .join('');
 
   return '<div class="flex items-center gap-1">'
-    + '<button type="button" data-back class="icon-btn -ml-2" aria-label="' + esc(t('aria.back')) + '">' + icon('chevronLeft', 'h-5 w-5') + '</button>'
-    + '<h1 class="section-title">' + esc(categoryName(category.id, category.name)) + '</h1>'
+    + '<button type="button" data-back class="icon-btn -ml-2" aria-label="' + esc(t('browse.back')) + '">' + icon('chevronLeft', 'h-5 w-5') + '</button>'
+    + '<h1 class="section-title">' + esc(categoryName(category)) + '</h1>'
     + '</div>'
     + '<div id="sub-chips" class="no-scrollbar -mx-4 mt-3 flex gap-2 overflow-x-auto px-4 pb-1">' + chips + '</div>'
-    + '<div class="mt-2">' + searchInputHtml('cat-search', t('browse.searchIn', { cat: categoryName(category.id, category.name) }), state.inCatQuery) + '</div>'
+    + '<div class="mt-2">' + searchInputHtml('cat-search', t('browse.searchIn', { name: categoryName(category) }), state.inCatQuery) + '</div>'
     + toolbarHtml()
     + '<div id="browse-grid" class="mt-3 ' + GRID_CLASS + '"></div>'
     + '<div id="browse-more" class="mt-4 flex justify-center"></div>'
@@ -319,10 +318,10 @@ function categoryShell() {
 
 function searchResultsShell() {
   return '<div class="flex min-w-0 items-center gap-2">'
-    + '<button type="button" data-back class="icon-btn -ml-2 shrink-0" aria-label="' + esc(t('aria.back')) + '">' + icon('chevronLeft', 'h-5 w-5') + '</button>'
-    + '<h1 class="section-title truncate">' + esc(t('search.resultsFor', { q: state.q })) + '</h1>'
+    + '<button type="button" data-back class="icon-btn -ml-2 shrink-0" aria-label="' + esc(t('browse.back')) + '">' + icon('chevronLeft', 'h-5 w-5') + '</button>'
+    + '<h1 class="section-title truncate">' + esc(t('browse.resultsFor', { q: state.q })) + '</h1>'
     + '</div>'
-    + '<div class="mt-2">' + searchInputHtml('search-page-input', t('search.placeholder'), state.q) + '</div>'
+    + '<div class="mt-2">' + searchInputHtml('search-page-input', t('browse.searchPlaceholder'), state.q) + '</div>'
     + toolbarHtml()
     + '<div id="browse-grid" class="mt-3 ' + GRID_CLASS + '"></div>'
     + '<div id="browse-more" class="mt-4 flex justify-center"></div>'
@@ -331,7 +330,7 @@ function searchResultsShell() {
 }
 
 function filterOverlay() {
-  return '<div id="filter-overlay" class="fixed inset-0 z-50 hidden" role="dialog" aria-modal="true" aria-label="' + esc(t('aria.filters')) + '"></div>';
+  return '<div id="filter-overlay" class="fixed inset-0 z-50 hidden" role="dialog" aria-modal="true" aria-label="' + esc(t('browse.filters')) + '"></div>';
 }
 
 function shellHtml() {
@@ -345,7 +344,7 @@ function shellHtml() {
 
 function syncSortMenu() {
   const label = document.getElementById('sort-label');
-  if (label) label.textContent = sortOptionLabel((SORT_OPTIONS.find((o) => o.id === state.sort) || SORT_OPTIONS[0]).id);
+  if (label) label.textContent = t((SORT_OPTIONS.find((o) => o.id === state.sort) || SORT_OPTIONS[0]).labelKey);
   document.querySelectorAll('#sort-menu [data-sort-item]').forEach((btn) => {
     btn.querySelector('.check-slot').innerHTML = btn.dataset.sortItem === state.sort ? icon('check', 'h-4 w-4 text-brand-600') : '';
   });
@@ -371,18 +370,18 @@ function renderGrid() {
   // the whole list.
   const lead = state.sort === 'recommended' ? list.filter((p) => !p.generated).length : 0;
   const visible = list.slice(0, lead + state.shown);
-  if (count) count.textContent = plural('count.items', list.length) + (state.loading ? ' ' + t('browse.soFar') : '');
+  if (count) count.textContent = t(state.loading ? 'browse.itemsSoFar' : 'browse.items', { count: list.length });
   if (badge) {
     const n = activeFilterCount();
     badge.textContent = String(n);
     badge.classList.toggle('hidden', n === 0);
   }
-  if (showCount) showCount.textContent = plural('count.products', list.length);
+  if (showCount) showCount.textContent = t('browse.products', { count: list.length });
   if (!grid || !empty) return;
 
   if (more) {
     more.innerHTML = list.length > visible.length
-      ? '<button type="button" data-browse-more class="btn-outline">Show more (' + (list.length - visible.length) + ' left)</button>'
+      ? '<button type="button" data-browse-more class="btn-outline">' + esc(t('browse.showMore', { n: list.length - visible.length })) + '</button>'
       : '';
   }
 
@@ -408,8 +407,8 @@ function renderShell() {
   view.innerHTML = shellHtml();
   const cat = state.mode === 'category' ? categoryById(state.id) : null;
   document.title = state.mode === 'category' && cat
-    ? t('product.docTitle', { name: categoryName(cat.id, cat.name) })
-    : t('search.docTitle');
+    ? t('browse.titleCategory', { name: categoryName(cat) })
+    : t('browse.titleSearch');
 
   // Sort menu + filter overlay reflect current state.
   syncSortMenu();

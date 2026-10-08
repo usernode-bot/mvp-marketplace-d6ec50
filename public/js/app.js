@@ -15,6 +15,7 @@ import { hydrateIcons, icon } from './icons.js';
 import { productById } from './data.js';
 import { store } from './store.js';
 import { toast } from './ui.js';
+import { initI18n, t } from './i18n.js';
 import { initTheme, setTheme } from './theme.js';
 import { clearResults, initHome, panelRows, runBannerAction, submitSearch, updateFlashNav } from './home.js';
 import { initOrders } from './orders.js';
@@ -25,7 +26,6 @@ import { initSettings } from './settings.js';
 import { initPayment } from './payment.js';
 import { applyVoucherCode, initCart, removeCartItem, renderCartView } from './cart.js';
 import { goToHash, parseRoute, renderRoute } from './router.js';
-import { applyLocale, hydrateStatic, onLocaleChange, resolveLocale, t } from './i18n.js';
 
 /* ------------------------------------------------------------------ */
 /* Header / nav badges                                                 */
@@ -64,7 +64,7 @@ function handleClick(e) {
   const favId = target.getAttribute('data-fav');
   if (favId) {
     const on = store.toggleFavorite(favId);
-    toast(on ? t('toast.addedToFavorites') : t('toast.removedFromFavorites'));
+    toast(t(on ? 'app.favoriteAdded' : 'app.favoriteRemoved'));
     document.querySelectorAll('[data-fav="' + favId + '"]').forEach((btn) => {
       btn.innerHTML = icon(on ? 'heartFilled' : 'heart', 'h-4 w-4');
       btn.classList.toggle('fav-btn-on', on);
@@ -78,14 +78,14 @@ function handleClick(e) {
   if (addId) {
     const product = productById(addId);
     if (product && product.oos) {
-      toast(t('toast.soldOut'));
+      toast(t('app.soldOutToast'));
       return;
     }
     store.addToCart(addId);
-    toast(t('toast.addedShort'));
+    toast(t('app.addedToCart'));
     // Brief "Added" confirmation on the button that was tapped.
     const original = target.innerHTML;
-    target.innerHTML = icon('check', 'h-4 w-4') + '<span class="hidden lg:inline">' + t('toast.addedShort') + '</span>';
+    target.innerHTML = icon('check', 'h-4 w-4') + '<span class="hidden lg:inline">' + t('app.added') + '</span>';
     target.disabled = true;
     setTimeout(() => {
       target.innerHTML = original;
@@ -158,7 +158,7 @@ function handleClick(e) {
   }
 
   if (target.hasAttribute('data-soon')) {
-    toast(t('toast.comingSoon'));
+    toast(t('common.comingSoon'));
     return;
   }
 
@@ -197,27 +197,27 @@ function handleClick(e) {
   const save = target.getAttribute('data-cart-save');
   if (save) {
     store.saveForLater(save);
-    toast(t('toast.savedForLater'));
+    toast(t('app.savedForLater'));
     return;
   }
 
   const move = target.getAttribute('data-saved-move');
   if (move) {
     store.moveToCart(move);
-    toast(t('toast.movedToCart'));
+    toast(t('app.movedToCart'));
     return;
   }
 
   const savedRemove = target.getAttribute('data-saved-remove');
   if (savedRemove) {
     store.removeSaved(savedRemove);
-    toast(t('toast.removedFromSaved'));
+    toast(t('app.removedSaved'));
     return;
   }
 
   if (target.hasAttribute('data-voucher-remove')) {
     store.clearVoucher();
-    toast(t('toast.voucherRemoved'));
+    toast(t('app.voucherRemoved'));
     return;
   }
 
@@ -247,8 +247,10 @@ function handleClick(e) {
 /* ------------------------------------------------------------------ */
 
 function boot() {
+  // Apply the saved language to the static markup before first paint of the
+  // routed view; i18n.js is the single owner of the active language.
+  initI18n();
   hydrateIcons();
-  document.title = t('doc.title');
 
   document.addEventListener('click', handleClick);
   initTheme();
@@ -266,26 +268,16 @@ function boot() {
     updateFlashNav();
   });
 
-  store.subscribe(updateBadges);
-  store.subscribe(() => {
-    if (parseRoute().view === 'cart') renderCartView();
-  });
-
-  // Language. The boot locale is resolved synchronously (URL override, then a
-  // saved choice, then the device language) and applied before the first
-  // render; the async platform preference may refine it a moment later. Every
-  // later change re-renders the current route in place, so the whole app
-  // switches language without a reload. The platform's own locale-changed
-  // event feeds the same path.
-  onLocaleChange(() => {
-    document.title = t('doc.title');
-    hydrateStatic();
+  // Changing the language (Settings, i18n.setLocale) re-renders whatever
+  // screen is showing; static markup was already retranslated by setLocale.
+  window.addEventListener('localechange', () => {
     renderRoute();
     updateFlashNav();
   });
-  window.addEventListener('usernode:locale-changed', (e) => {
-    const code = e && e.detail ? e.detail.locale : null;
-    if (code) applyLocale(code);
+
+  store.subscribe(updateBadges);
+  store.subscribe(() => {
+    if (parseRoute().view === 'cart') renderCartView();
   });
 
   // Demo seed for proposal checks and staging screenshots. ?demo=1 fills
@@ -304,9 +296,6 @@ function boot() {
   updateBadges();
 
   initHome();
-  // Apply the resolved language first so the very first render is already in
-  // the right language; the platform preference (usually null) refines it.
-  resolveLocale();
   renderRoute();
   // Hydrate the profile photo in the background; the letter fallback shows
   // until it lands, and the profile view re-renders when it does.

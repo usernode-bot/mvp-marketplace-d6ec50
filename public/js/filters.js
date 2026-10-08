@@ -10,13 +10,18 @@
  * params, the hook serializes them back, and a reload or a pasted link lands
  * on the same list.
  *
- * The hook is deliberately dependency-free (no imports) so it can be read
- * and tested without the DOM; the UI module (filter-ui.js) renders it and
+ * The hook has no DOM dependency (its only import is the i18n lookup); the UI module (filter-ui.js) renders it and
  * api.js fetches from it.
  */
 
 import { SORT_OPTIONS, DEFAULT_SORT } from './sort-options.js';
-import { intlLocale, sortOptionLabel, t } from './i18n.js';
+import { t, has } from './i18n.js';
+
+/* The translated name of a sort order, resolved at call time. */
+export function sortText(id) {
+  const row = SORT_OPTIONS.find((o) => o.id === id) || SORT_OPTIONS[0];
+  return has(row.labelKey) ? t(row.labelKey) : row.label;
+}
 
 /* How long to wait after the last keystroke/number before asking the server.
  * The URL is updated immediately (so the address bar is truthful and a
@@ -68,15 +73,16 @@ export function filterChips(f) {
     chips.push({ key: 'location', label, title: f.province && f.cities.length ? f.province + ': ' + f.cities.join(', ') : label });
   }
   if (f.min !== null && f.max !== null) {
-    chips.push({ key: 'price', label: fmtAmount(f.min) + ' - ' + fmtAmount(f.max), title: t('filter.chipPriceRange', { min: fmtAmount(f.min), max: fmtAmount(f.max) }) });
+    chips.push({ key: 'price', label: fmtAmount(f.min) + ' - ' + fmtAmount(f.max), title: t('filters.chip.priceRange', { min: fmtAmount(f.min), max: fmtAmount(f.max) }) });
   } else if (f.min !== null) {
-    chips.push({ key: 'price', label: t('filter.chipFrom', { min: fmtAmount(f.min) }), title: t('filter.chipFromTitle', { min: fmtAmount(f.min) }) });
+    chips.push({ key: 'price', label: t('filters.chip.from', { amount: fmtAmount(f.min) }), title: t('filters.chip.priceFrom', { amount: fmtAmount(f.min) }) });
   } else if (f.max !== null) {
-    chips.push({ key: 'price', label: t('filter.chipUpTo', { max: fmtAmount(f.max) }), title: t('filter.chipUpToTitle', { max: fmtAmount(f.max) }) });
+    chips.push({ key: 'price', label: t('filters.chip.upTo', { amount: fmtAmount(f.max) }), title: t('filters.chip.priceUpTo', { amount: fmtAmount(f.max) }) });
   }
   if (f.sort !== DEFAULT_SORT) {
-    const label = sortOptionLabel(f.sort);
-    chips.push({ key: 'sort', label, title: t('filter.chipSortTitle', { label }) });
+    const opt = SORT_OPTIONS.find((o) => o.id === f.sort);
+    const name = opt ? sortText(f.sort) : f.sort;
+    chips.push({ key: 'sort', label: name, title: t('filters.chip.sort', { name }) });
   }
   return chips;
 }
@@ -257,7 +263,7 @@ export function createFilterService(options = {}) {
     } else {
       state.loading = false;
       state.error = result ? result.status : 0;
-      if (typeof onError === 'function') onError();
+      onError(t('filters.loadError'));
     }
     emit();
   }

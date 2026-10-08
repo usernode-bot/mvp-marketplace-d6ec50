@@ -7,24 +7,7 @@
 import { icon, productArt, productPlaceholder, sizedImage } from './icons.js';
 import { discountPct } from './data.js';
 import { store } from './store.js';
-import { intlLocale, t } from './i18n.js';
-
-/* Cached Intl formatters, keyed by locale + options, so re-rendering a page
- * does not rebuild them per card. */
-const numberFormatters = new Map();
-function numberFormat(options) {
-  const key = intlLocale() + '|' + JSON.stringify(options);
-  let fmt = numberFormatters.get(key);
-  if (!fmt) {
-    try {
-      fmt = new Intl.NumberFormat(intlLocale(), options);
-    } catch {
-      fmt = new Intl.NumberFormat('en', options);
-    }
-    numberFormatters.set(key, fmt);
-  }
-  return fmt;
-}
+import { t, has, intlLocale } from './i18n.js';
 
 /* ---------------------------------------------------------------------------
  * Product photos for the generated marketplace catalog.
@@ -42,7 +25,7 @@ export { sizedImage };
 window.unImgFail = function (img) {
   const holder = img.parentElement;
   if (!holder) return;
-  const alt = img.getAttribute('alt') || 'Product';
+  const alt = img.getAttribute('alt') || t('ui.product');
   img.remove();
   const shimmer = holder.querySelector('[data-img-shimmer]');
   if (shimmer) shimmer.remove();
@@ -86,12 +69,31 @@ export function fmtPrice(cents) {
 export function fmtCount(n) {
   if (n >= 1000) {
     const k = n / 1000;
-    return (k >= 10 ? Math.round(k) : Math.round(k * 10) / 10) + 'k';
+    const v = k >= 10 ? Math.round(k) : Math.round(k * 10) / 10;
+    let text = String(v);
+    try { text = new Intl.NumberFormat(intlLocale(), { maximumFractionDigits: 1 }).format(v); } catch { /* keep plain */ }
+    return t('ui.thousands', { n: text });
   }
   return numberFormat({ useGrouping: true, maximumFractionDigits: 0 }).format(n);
 }
 
-/* "Oct 2" within the current year, "Oct 2, 2025" otherwise, in the locale. */
+/* Localized display names for the fixed category / subcategory vocabulary
+ * (the data tables keep ids and English names; the shown name comes from
+ * the dictionary by id, falling back to the table's own name). */
+export function categoryName(c) {
+  if (!c) return '';
+  const key = 'ui.cat.' + c.id;
+  return has(key) ? t(key) : (c.name || '');
+}
+
+export function subcategoryLabel(s) {
+  if (!s) return '';
+  if (!s.id) return t('ui.sub.all');
+  const key = 'ui.sub.' + s.id;
+  return has(key) ? t(key) : (s.name || '');
+}
+
+/* "Oct 2" within the current year, "Oct 2, 2025" otherwise. */
 export function fmtDate(ts) {
   const d = new Date(ts);
   const sameYear = d.getFullYear() === new Date().getFullYear();
@@ -114,13 +116,14 @@ export function esc(s) {
  * pattern as the cart's remove confirmation); falls back to window.confirm
  * in standalone local runs. Resolves true only when the destructive button
  * was pressed. */
-export function confirmDialog({ title, message, confirmLabel = t('common.default') }) {
+export function confirmDialog({ title, message, confirmLabel }) {
+  if (confirmLabel === undefined) confirmLabel = t('ui.confirm');
   if (window.unNative && typeof window.unNative.alert === 'function') {
     return window.unNative.alert({
       title,
       message,
       buttons: [
-        { label: t('common.cancel'), style: 'cancel' },
+        { label: t('ui.cancel'), style: 'cancel' },
         { label: confirmLabel, style: 'destructive' },
       ],
     }).then((r) => !!(r && r.button && r.button.style === 'destructive'));
@@ -148,7 +151,7 @@ export function avatarHtml({
   textSize = 'text-lg',
   badge = false,
   loading = false,
-  alt = t('settings.photo'),
+  alt = t('ui.profilePhoto'),
 } = {}) {
   const initial = name ? String(name)[0].toUpperCase() : 'G';
   const fallback = '<span data-avatar-fallback class="flex h-full w-full items-center justify-center rounded-full bg-brand-100 font-bold text-brand-700 '
@@ -178,7 +181,7 @@ export function avatarHtml({
 export function starRow(rating, cls = 'h-3.5 w-3.5') {
   const five = Array.from({ length: 5 }, () => icon('star', cls)).join('');
   const pct = Math.max(0, Math.min(100, (rating / 5) * 100));
-  return '<span class="relative inline-flex shrink-0" role="img" aria-label="' + esc(t('aria.ratedOutOf', { rating, max: 5 })) + '">'
+  return '<span class="relative inline-flex shrink-0" role="img" aria-label="' + esc(t('ui.rated', { rating })) + '">'
     + '<span class="flex text-zinc-200">' + five + '</span>'
     + '<span class="absolute inset-0 flex overflow-hidden text-amber-400" style="width:' + pct + '%">' + five + '</span>'
     + '</span>';
@@ -222,8 +225,8 @@ export function productCard(p, opts = {}) {
 
   const soldBlock = opts.compact
     ? '<div class="mt-1.5"><div class="h-1.5 w-full overflow-hidden rounded-full bg-rose-100"><div class="h-full rounded-full bg-rose-500" style="width:' + (p.pct || 0) + '%"></div></div>'
-      + '<div class="mt-1 text-[11px] font-medium text-zinc-500">' + esc(t('count.sold', { n: fmtCount(p.sold) })) + '</div></div>'
-    : '<span class="text-xs text-zinc-500">' + esc(t('count.sold', { n: fmtCount(p.sold) })) + '</span>';
+      + '<div class="mt-1 text-[11px] font-medium text-zinc-500">' + esc(t('ui.sold', { n: fmtCount(p.sold) })) + '</div></div>'
+    : '<span class="text-xs text-zinc-500">' + esc(t('ui.sold', { n: fmtCount(p.sold) })) + '</span>';
 
   // Card art. A committed product photo (p.image) layers over the generated
   // illustration, which paints instantly behind it as the fallback: if the
@@ -261,8 +264,8 @@ export function productCard(p, opts = {}) {
     // product-page art stays full color.
     + art
     + (disc ? '<span class="badge-sale absolute left-2 top-2">-' + disc + '%</span>' : '')
-    + (p.oos ? '<span class="badge absolute bottom-2 left-2 bg-zinc-900/80 text-white">' + esc(t('product.soldOut')) + '</span>' : '')
-    + '<button type="button" data-fav="' + p.id + '" aria-label="' + esc(t('aria.toggleFavorite')) + '" aria-pressed="' + fav
+    + (p.oos ? '<span class="badge absolute bottom-2 left-2 bg-zinc-900/80 text-white">' + esc(t('ui.soldOut')) + '</span>' : '')
+    + '<button type="button" data-fav="' + p.id + '" aria-label="' + esc(t('ui.toggleFavorite')) + '" aria-pressed="' + fav
     + '" class="fav-btn absolute right-2 top-2' + (fav ? ' fav-btn-on' : '') + '">' + heart + '</button>'
     + '</div>'
     + '<div class="flex flex-1 flex-col p-3">'
@@ -286,8 +289,8 @@ export function productCard(p, opts = {}) {
     + (p.orig ? '<div class="text-xs tabular-nums text-zinc-400 line-through">' + fmtPrice(p.orig) + '</div>' : '')
     + '</div>'
     + (p.oos
-      ? '<button type="button" disabled aria-label="' + esc(t('aria.soldOut')) + '" class="add-btn cursor-not-allowed bg-zinc-300">' + icon('x', 'h-4 w-4') + '</button>'
-      : '<button type="button" data-add="' + p.id + '" aria-label="' + esc(t('aria.addToCart')) + '" class="add-btn">' + icon('plus', 'h-4 w-4') + '<span class="hidden lg:inline">' + esc(t('common.add')) + '</span></button>')
+      ? '<button type="button" disabled aria-label="' + esc(t('ui.soldOut')) + '" class="add-btn cursor-not-allowed bg-zinc-300">' + icon('x', 'h-4 w-4') + '</button>'
+      : '<button type="button" data-add="' + p.id + '" aria-label="' + esc(t('ui.addToCart')) + '" class="add-btn">' + icon('plus', 'h-4 w-4') + '<span class="hidden lg:inline">' + esc(t('ui.add')) + '</span></button>')
     + '</div>'
     + '</div>'
     + '</article>';
