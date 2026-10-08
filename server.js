@@ -263,13 +263,15 @@ const RATE_DAY_MS = 24 * 60 * 60 * 1000;
 const RATE_DAY_MAX = 20;
 const RATE_IMAGE_DAY_MAX = 20;
 
-// Optional image moderation. It is off unless the platform's LLM proxy token
-// is present (it never is in staging), so the hook degrades to "publish now"
-// and the feature flag is simply the presence of that env var. The user-facing
-// interface (a "Pending review" chip) is in place either way.
-const LLM_PROXY_URL = (process.env.USERNODE_LLM_PROXY_URL || '').replace(/\/+$/, '');
-const LLM_PROXY_TOKEN = process.env.USERNODE_LLM_PROXY_TOKEN || '';
-const MODERATION_ON = !!(LLM_PROXY_URL && LLM_PROXY_TOKEN);
+// Image moderation: OFF by default, with the interface in place. A pending
+// review (status = 'pending' + the "Pending review" chip) already renders,
+// but nothing is sent to the proxy yet. Enabling it means calling
+// POST `${USERNODE_LLM_PROXY_URL}/v1/messages` with `x-usernode-app-token`
+// and the reviewer's forwarded `x-usernode-token`, keeping the row pending on
+// a refusal, and failing open to published (with a log) on any proxy error.
+// Left off so no review is billed to a user's budget before that path is
+// reviewed and tested; the platform proxy is absent in staging either way.
+const MODERATION_ON = false;
 
 const rateState = new Map();
 

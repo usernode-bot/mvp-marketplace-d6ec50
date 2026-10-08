@@ -166,9 +166,12 @@ soon" on those entry points rather than hiding them.
   over SSE (`GET /api/reviews/stream`). It assumes a single container; the
   client opens the stream only after the page has settled, because a pending
   EventSource otherwise stops a headless page from ever reaching
-  network-idle. Image moderation is a documented hook keyed on
-  `USERNODE_LLM_PROXY_URL`/`_TOKEN`; it is off (publish immediately) when
-  those are absent, which is always in staging.
+  network-idle. Image moderation is a documented hook, off by default: the
+  "Pending review" chip and the `status = 'pending'` path are in place, but
+  no image is sent to the platform LLM proxy yet. Turning it on means
+  calling `POST ${USERNODE_LLM_PROXY_URL}/v1/messages` with the app token
+  and the reviewer's forwarded iframe token, keeping a refusal pending, and
+  failing open to published on any proxy error.
 - Shipping/expedition options live in `public/js/shipping.js`: a typed
   `COUNTRIES` config where every country offers at least three couriers
   (`{ id, name, service, eta, etaDays, price }`) and names a

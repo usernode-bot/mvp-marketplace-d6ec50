@@ -113,9 +113,9 @@ The product page's Reviews section is driven by real data
   works offline); the server write is best-effort and idempotent. Both
   tables are `staging:private`, and the reviews tables never carry a
   foreign key into them.
-- Image moderation is a documented hook, off unless the platform LLM proxy
-  is configured (it never is in staging), with a "Pending review" chip in
-  the UI for a pending row.
+- Image moderation is a documented hook, off by default: the "Pending
+  review" chip and the pending-row path are in place, but no photo is sent
+  to the platform LLM proxy yet.
 
 ## Run locally
 
