@@ -10,9 +10,10 @@
  */
 
 import { icon, productArt } from './icons.js';
-import { VOUCHERS, voucherByCode, voucherDescription, discountPct } from './data.js';
+import { VOUCHERS, voucherByCode, discountPct } from './data.js';
 import { store } from './store.js';
 import { fmtPrice, emptyState, toast } from './ui.js';
+import { plural, t, voucherLabel } from './i18n.js';
 
 /* Shipping estimate: free over $50, otherwise a flat $3.99. */
 const FREE_SHIPPING_AT = 5000;
@@ -102,7 +103,7 @@ function cartRow(entry) {
 
   return '<div class="card flex gap-3 p-3" data-cart-row="' + item.key + '">'
     + '<input type="checkbox" data-cart-select="' + item.key + '"' + (item.selected ? ' checked' : '')
-    + ' class="mt-1 h-4 w-4 shrink-0 accent-brand-600" aria-label="Select ' + p.name + '">'
+    + ' class="mt-1 h-4 w-4 shrink-0 accent-brand-600" aria-label="' + esc(t('aria.selectProduct', { name: p.name })) + '">'
     + '<div class="h-20 w-20 shrink-0 overflow-hidden rounded-lg">' + productArt(p) + '</div>'
     + '<div class="min-w-0 flex-1">'
     + '<div class="flex items-start gap-2">'
@@ -115,20 +116,20 @@ function cartRow(entry) {
     + (p.orig ? '<span class="text-xs tabular-nums text-zinc-400 line-through">' + fmtPrice(p.orig) + '</span>' : '')
     + '</div>'
     + '<div class="mt-2 flex items-center gap-2">'
-    + '<button type="button" data-cart-minus="' + item.key + '" aria-label="Decrease quantity"'
+    + '<button type="button" data-cart-minus="' + item.key + '" aria-label="' + esc(t('aria.decreaseQty')) + '"'
     + (item.qty <= 1 ? ' disabled' : '')
     + ' class="flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-200 text-zinc-600 transition-colors hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-40">' + icon('minus', 'h-3.5 w-3.5') + '</button>'
     + '<span class="min-w-6 text-center text-sm font-semibold tabular-nums">' + item.qty + '</span>'
-    + '<button type="button" data-cart-plus="' + item.key + '" aria-label="Increase quantity" class="flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-200 text-zinc-600 transition-colors hover:bg-zinc-50">' + icon('plus', 'h-3.5 w-3.5') + '</button>'
+    + '<button type="button" data-cart-plus="' + item.key + '" aria-label="' + esc(t('aria.increaseQty')) + '" class="flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-200 text-zinc-600 transition-colors hover:bg-zinc-50">' + icon('plus', 'h-3.5 w-3.5') + '</button>'
     + (item.qty > 1
-      ? '<span class="ml-1 text-xs text-zinc-500">Line total <span class="font-semibold tabular-nums text-zinc-700">' + fmtPrice(p.price * item.qty) + '</span></span>'
+      ? '<span class="ml-1 text-xs text-zinc-500">' + esc(t('cart.lineTotal')) + ' <span class="font-semibold tabular-nums text-zinc-700">' + fmtPrice(p.price * item.qty) + '</span></span>'
       : '')
     + '</div>'
     + '<div class="mt-2 flex items-center gap-0.5">'
-    + '<button type="button" data-fav="' + p.id + '" aria-label="Toggle favorite" aria-pressed="' + fav
+    + '<button type="button" data-fav="' + p.id + '" aria-label="' + esc(t('aria.toggleFavorite')) + '" aria-pressed="' + fav
     + '" class="' + ghostBtn + (fav ? 'text-rose-500 hover:bg-rose-50' : 'hover:bg-zinc-100 hover:text-zinc-600') + '">' + icon(fav ? 'heartFilled' : 'heart', 'h-4 w-4') + '</button>'
-    + '<button type="button" data-cart-save="' + item.key + '" aria-label="Save for later" class="' + ghostBtn + 'hover:bg-zinc-100 hover:text-zinc-600">' + icon('bookmark', 'h-4 w-4') + '</button>'
-    + '<button type="button" data-cart-remove="' + item.key + '" aria-label="Remove from cart" class="' + ghostBtn + 'hover:bg-rose-50 hover:text-rose-600">' + icon('trash', 'h-4 w-4') + '</button>'
+    + '<button type="button" data-cart-save="' + item.key + '" aria-label="' + esc(t('aria.saveForLater')) + '" class="' + ghostBtn + 'hover:bg-zinc-100 hover:text-zinc-600">' + icon('bookmark', 'h-4 w-4') + '</button>'
+    + '<button type="button" data-cart-remove="' + item.key + '" aria-label="' + esc(t('aria.removeFromCart')) + '" class="' + ghostBtn + 'hover:bg-rose-50 hover:text-rose-600">' + icon('trash', 'h-4 w-4') + '</button>'
     + '</div>'
     + '</div>'
     + '</div>';
@@ -144,9 +145,9 @@ function selectionBar(entries) {
   return '<div class="card flex items-center gap-3 px-4 py-3">'
     + '<label class="flex cursor-pointer items-center gap-2 text-sm font-medium text-zinc-700">'
     + '<input type="checkbox" data-cart-select-all' + (allSelected ? ' checked' : '')
-    + ' class="h-4 w-4 accent-brand-600" aria-label="Select all items">'
-    + '<span>' + (allSelected ? 'Deselect all' : 'Select all') + '</span></label>'
-    + '<span class="badge-soft ml-auto">' + selectedCount + ' of ' + entries.length + ' selected</span>'
+    + ' class="h-4 w-4 accent-brand-600" aria-label="' + esc(t('aria.selectAllItems')) + '">'
+    + '<span>' + (allSelected ? esc(t('cart.deselectAll')) : esc(t('cart.selectAll'))) + '</span></label>'
+    + '<span class="badge-soft ml-auto">' + esc(t('common.selectedOf', { selected: selectedCount, total: entries.length })) + '</span>'
     + '</div>';
 }
 
@@ -158,14 +159,14 @@ function savedRow(p) {
     + (p.variant ? '<p class="mt-0.5 truncate text-xs text-zinc-500">' + p.variant + '</p>' : '')
     + '<span class="text-sm font-bold tabular-nums text-zinc-900">' + fmtPrice(p.price) + '</span>'
     + '</div>'
-    + '<button type="button" data-saved-move="' + p.id + '" class="btn-outline btn-sm shrink-0">Move to cart</button>'
-    + '<button type="button" data-saved-remove="' + p.id + '" aria-label="Remove saved item" class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-zinc-400 transition-colors hover:bg-rose-50 hover:text-rose-600">' + icon('trash', 'h-4 w-4') + '</button>'
+    + '<button type="button" data-saved-move="' + p.id + '" class="btn-outline btn-sm shrink-0">' + esc(t('cart.moveToCart')) + '</button>'
+    + '<button type="button" data-saved-remove="' + p.id + '" aria-label="' + esc(t('aria.removeSavedItem')) + '" class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-zinc-400 transition-colors hover:bg-rose-50 hover:text-rose-600">' + icon('trash', 'h-4 w-4') + '</button>'
     + '</div>';
 }
 
 function savedSection(saved) {
-  return '<section class="mt-6" aria-label="Saved for later">'
-    + '<div class="flex items-center gap-2"><h2 class="section-title">Saved for later</h2><span class="badge-soft">' + saved.length + '</span></div>'
+  return '<section class="mt-6" aria-label="' + esc(t('cart.savedForLater')) + '">'
+    + '<div class="flex items-center gap-2"><h2 class="section-title">' + esc(t('cart.savedForLater')) + '</h2><span class="badge-soft">' + saved.length + '</span></div>'
     + '<div class="mt-3 flex flex-col gap-3">' + saved.map(savedRow).join('') + '</div>'
     + '</section>';
 }
@@ -183,20 +184,20 @@ function voucherBlock(totals) {
     const box = active ? 'border-brand-100 bg-brand-50' : 'border-zinc-200 bg-zinc-50';
     const fg = active ? 'text-brand-700' : 'text-zinc-500';
     const effect = active
-      ? (applied.type === 'ship' ? 'Free' : '-' + fmtPrice(totals.voucherDiscount))
+      ? (applied.type === 'ship' ? esc(t('common.free')) : '-' + fmtPrice(totals.voucherDiscount))
       : '$0.00';
     appliedHtml =
       '<div class="mt-3 flex items-start gap-2.5 rounded-lg border p-3 ' + box + '">'
       + '<span class="mt-0.5 shrink-0 ' + fg + '">' + icon('ticket', 'h-4 w-4') + '</span>'
       + '<div class="min-w-0 flex-1">'
       + '<div class="flex items-center gap-2"><span class="text-sm font-semibold ' + fg + '">' + applied.code + '</span>'
-      + (active ? '<span class="badge-brand">Applied</span>' : '')
+      + (active ? '<span class="badge-brand">' + esc(t('cart.applied')) + '</span>' : '')
       + '</div>'
-      + '<p class="mt-0.5 text-xs ' + fg + '">' + voucherDescription(applied) + '</p>'
-      + (active ? '' : '<p class="mt-1 text-xs text-zinc-500">Your order is under the minimum, so it is not applied yet.</p>')
+      + '<p class="mt-0.5 text-xs ' + fg + '">' + esc(voucherLabel(applied)) + '</p>'
+      + (active ? '' : '<p class="mt-1 text-xs text-zinc-500">' + esc(t('cart.voucherUnderMin')) + '</p>')
       + '</div>'
       + '<span class="shrink-0 text-sm font-semibold tabular-nums ' + fg + '">' + effect + '</span>'
-      + '<button type="button" data-voucher-remove aria-label="Remove voucher" class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-zinc-400 transition-colors hover:bg-zinc-200 hover:text-zinc-600">' + icon('x', 'h-3.5 w-3.5') + '</button>'
+      + '<button type="button" data-voucher-remove aria-label="' + esc(t('aria.removeVoucher')) + '" class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-zinc-400 transition-colors hover:bg-zinc-200 hover:text-zinc-600">' + icon('x', 'h-3.5 w-3.5') + '</button>'
       + '</div>';
   }
 
@@ -206,27 +207,27 @@ function voucherBlock(totals) {
       + '<span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-50 text-brand-600">' + icon('ticket', 'h-4 w-4') + '</span>'
       + '<div class="min-w-0 flex-1">'
       + '<p class="text-sm font-semibold text-zinc-900">' + v.code + '</p>'
-      + '<p class="text-xs text-zinc-500">' + voucherDescription(v) + '</p>'
+      + '<p class="text-xs text-zinc-500">' + esc(voucherLabel(v)) + '</p>'
       + '</div>'
       + (isApplied
-        ? '<span class="badge-brand shrink-0">Applied</span>'
-        : '<button type="button" data-voucher-pick="' + v.code + '" class="btn-ghost btn-sm shrink-0">Apply</button>')
+        ? '<span class="badge-brand shrink-0">' + esc(t('cart.applied')) + '</span>'
+        : '<button type="button" data-voucher-pick="' + v.code + '" class="btn-ghost btn-sm shrink-0">' + esc(t('cart.apply')) + '</button>')
       + '</div>';
   }).join('');
 
   return '<div class="mt-4 border-t border-zinc-100 pt-3">'
-    + '<h3 class="text-sm font-semibold text-zinc-900">Vouchers</h3>'
+    + '<h3 class="text-sm font-semibold text-zinc-900">' + esc(t('cart.vouchers')) + '</h3>'
     + appliedHtml
     + '<form data-voucher-form class="mt-3 flex gap-2">'
     + '<div class="relative flex-1">'
     + '<span class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400">' + icon('ticket', 'h-4 w-4') + '</span>'
-    + '<input name="code" type="text" value="' + esc(voucherDraft) + '" placeholder="Enter voucher code" autocomplete="off" aria-label="Voucher code"'
+    + '<input name="code" type="text" value="' + esc(voucherDraft) + '" placeholder="' + esc(t('cart.voucherPlaceholder')) + '" autocomplete="off" aria-label="' + esc(t('aria.voucherCode')) + '"'
     + ' class="input' + (voucherError ? ' border-rose-300 focus:border-rose-400 focus:ring-rose-100' : '') + '">'
     + '</div>'
-    + '<button type="submit" class="btn-outline">Apply</button>'
+    + '<button type="submit" class="btn-outline">' + esc(t('cart.apply')) + '</button>'
     + '</form>'
-    + (voucherError ? '<p class="mt-1.5 text-xs font-medium text-rose-600">' + voucherError + '</p>' : '')
-    + '<p class="mt-3 text-xs font-medium text-zinc-400">Available vouchers</p>'
+    + (voucherError ? '<p class="mt-1.5 text-xs font-medium text-rose-600">' + esc(voucherError) + '</p>' : '')
+    + '<p class="mt-3 text-xs font-medium text-zinc-400">' + esc(t('cart.availableVouchers')) + '</p>'
     + '<div class="mt-2 space-y-2">' + list + '</div>'
     + '</div>';
 }
@@ -241,28 +242,28 @@ function summaryRow(label, value, cls = 'text-zinc-900') {
 }
 
 function summaryBlock(totals) {
-  const items = totals.itemCount + (totals.itemCount === 1 ? ' item' : ' items');
+  const items = plural('count.items', totals.itemCount);
   const shippingRow = !totals.selected.length
-    ? summaryRow('Shipping', '—', 'text-zinc-400')
+    ? summaryRow(esc(t('cart.shipping')), '-', 'text-zinc-400')
     : totals.shipping === 0
-      ? summaryRow('Estimated shipping', 'Free', 'text-brand-700')
-      : summaryRow('Estimated shipping', fmtPrice(totals.shipping));
+      ? summaryRow(esc(t('cart.estimatedShipping')), esc(t('common.free')), 'text-brand-700')
+      : summaryRow(esc(t('cart.estimatedShipping')), fmtPrice(totals.shipping));
   const voucherRow = totals.voucherActive && totals.voucher.type !== 'ship'
-    ? summaryRow('Voucher (' + totals.voucher.code + ')', '-' + fmtPrice(totals.voucherDiscount), 'text-brand-700')
+    ? summaryRow(esc(t('cart.voucherRow', { code: totals.voucher.code })), '-' + fmtPrice(totals.voucherDiscount), 'text-brand-700')
     : '';
 
   return '<div class="card p-4 lg:sticky lg:top-24">'
-    + '<h2 class="text-sm font-semibold text-zinc-900">Order summary</h2>'
+    + '<h2 class="text-sm font-semibold text-zinc-900">' + esc(t('cart.orderSummary')) + '</h2>'
     + '<div class="mt-3 space-y-1.5 text-sm">'
-    + summaryRow('Subtotal (' + items + ')', fmtPrice(totals.subtotal))
-    + (totals.productDiscounts ? summaryRow('Product discounts', '-' + fmtPrice(totals.productDiscounts), 'text-brand-700') : '')
+    + summaryRow(esc(t('cart.subtotal', { items })), fmtPrice(totals.subtotal))
+    + (totals.productDiscounts ? summaryRow(esc(t('cart.productDiscounts')), '-' + fmtPrice(totals.productDiscounts), 'text-brand-700') : '')
     + shippingRow
     + voucherRow
     + '</div>'
     + voucherBlock(totals)
-    + '<div class="mt-4 flex justify-between border-t border-zinc-100 pt-3 text-base font-bold text-zinc-900"><span>Total</span><span class="tabular-nums">' + fmtPrice(totals.total) + '</span></div>'
-    + '<button type="button" data-soon class="btn-primary mt-4 w-full">Checkout</button>'
-    + '<p class="mt-2 text-center text-xs text-zinc-400">Checkout and payment arrive in a later phase.</p>'
+    + '<div class="mt-4 flex justify-between border-t border-zinc-100 pt-3 text-base font-bold text-zinc-900"><span>' + esc(t('cart.total')) + '</span><span class="tabular-nums">' + fmtPrice(totals.total) + '</span></div>'
+    + '<button type="button" data-soon class="btn-primary mt-4 w-full">' + esc(t('cart.checkout')) + '</button>'
+    + '<p class="mt-2 text-center text-xs text-zinc-400">' + esc(t('cart.checkoutLater')) + '</p>'
     + '</div>';
 }
 
@@ -270,14 +271,14 @@ function summaryBlock(totals) {
  * the actual nav height (which includes the safe-area inset) so it never
  * floats or overlaps. */
 function mobileBar(totals) {
-  const items = totals.itemCount + (totals.itemCount === 1 ? ' item' : ' items');
+  const items = plural('count.items', totals.itemCount);
   return '<div id="cart-checkout-bar" class="fixed inset-x-0 z-30 border-t border-zinc-100 bg-white/95 px-4 py-2.5 backdrop-blur md:hidden">'
     + '<div class="mx-auto flex max-w-lg items-center gap-3">'
     + '<div class="min-w-0">'
-    + '<p class="text-[11px] text-zinc-500">Total (' + items + ')</p>'
+    + '<p class="text-[11px] text-zinc-500">' + esc(t('cart.totalItems', { items })) + '</p>'
     + '<p class="text-base font-bold leading-tight tabular-nums text-zinc-900">' + fmtPrice(totals.total) + '</p>'
     + '</div>'
-    + '<button type="button" data-soon class="btn-primary ml-auto shrink-0">Checkout</button>'
+    + '<button type="button" data-soon class="btn-primary ml-auto shrink-0">' + esc(t('cart.checkout')) + '</button>'
     + '</div>'
     + '</div>';
 }
@@ -296,11 +297,11 @@ function positionBar() {
 function confirmRemove(message) {
   if (window.unNative && typeof window.unNative.alert === 'function') {
     return window.unNative.alert({
-      title: 'Remove item?',
+      title: t('cart.confirmTitle'),
       message,
       buttons: [
-        { label: 'Cancel', style: 'cancel' },
-        { label: 'Remove', style: 'destructive' },
+        { label: t('common.cancel'), style: 'cancel' },
+        { label: t('common.remove'), style: 'destructive' },
       ],
     }).then((r) => !!(r && r.button && r.button.style === 'destructive'));
   }
@@ -309,11 +310,11 @@ function confirmRemove(message) {
 
 export function removeCartItem(key) {
   const entry = store.cartItems().find((e) => e.item.key === key);
-  const name = entry ? entry.product.name : 'This item';
-  confirmRemove(name + ' will be removed from your cart.').then((ok) => {
+  const name = entry ? entry.product.name : t('cart.title');
+  confirmRemove(t('cart.confirmBody', { name })).then((ok) => {
     if (!ok) return;
     store.removeFromCart(key);
-    toast('Removed from cart');
+    toast(t('cart.removed'));
   });
 }
 
@@ -329,21 +330,21 @@ export function applyVoucherCode(raw) {
   const v = code ? voucherByCode(code) : null;
   if (!v) {
     voucherError = code
-      ? '"' + code + '" is not a valid voucher code. Check the spelling and try again.'
-      : 'Enter a voucher code first.';
+      ? t('cart.voucherNotValid', { code })
+      : t('cart.voucherEnter');
     renderCartView();
     return false;
   }
 
   const subtotal = computeTotals(store.cartItems()).subtotal;
   if (subtotal < v.min) {
-    voucherError = '"' + v.code + '" needs a ' + fmtPrice(v.min) + ' subtotal. Add ' + fmtPrice(v.min - subtotal) + ' more to use it.';
+    voucherError = t('cart.voucherMin', { code: v.code, min: fmtPrice(v.min), more: fmtPrice(v.min - subtotal) });
     renderCartView();
     return false;
   }
 
   store.setVoucher(v.code);
-  toast('Voucher ' + v.code + ' applied');
+  toast(t('cart.voucherApplied', { code: v.code }));
   return true;
 }
 
@@ -361,12 +362,12 @@ export function renderCartView() {
 
   if (!entries.length) {
     view.innerHTML =
-      '<h1 class="section-title">Cart</h1>'
+      '<h1 class="section-title">' + esc(t('cart.title')) + '</h1>'
       + '<div class="card mt-4">' + emptyState({
         icon: 'cart',
-        title: 'Your cart is empty',
-        body: 'Browse the catalog and add something you like.',
-        actionLabel: 'Start shopping',
+        title: esc(t('cart.empty')),
+        body: esc(t('cart.emptyBody')),
+        actionLabel: esc(t('cart.startShopping')),
         actionAttr: 'data-nav="home"',
       }) + '</div>'
       + (saved.length ? savedSection(saved) : '');
@@ -376,8 +377,8 @@ export function renderCartView() {
   const totals = computeTotals(entries);
 
   view.innerHTML =
-    '<div class="flex items-center gap-2"><h1 class="section-title">Cart</h1><span class="badge-soft">'
-    + entries.length + (entries.length === 1 ? ' item' : ' items') + '</span></div>'
+    '<div class="flex items-center gap-2"><h1 class="section-title">' + esc(t('cart.title')) + '</h1><span class="badge-soft">'
+    + esc(plural('count.items', entries.length)) + '</span></div>'
     + '<div class="mt-4 grid items-start gap-6 lg:grid-cols-3">'
     + '<div class="flex flex-col gap-3 lg:col-span-2">'
     + selectionBar(entries)

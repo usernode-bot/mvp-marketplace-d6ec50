@@ -89,6 +89,28 @@
     } catch (e) {}
   })();
   </script>
+  <script>
+  // Locale bootstrap: set <html lang> before first paint from ?lang= or the
+  // saved choice, mirroring the resolver in public/js/i18n.js. The full
+  // dictionary loads with app.js; this only fixes the document language (and
+  // avoids a wrong-lang first paint) without a network round-trip.
+  (function () {
+    try {
+      var tag = new URLSearchParams(location.search).get('lang');
+      if (!tag) {
+        var raw = localStorage.getItem('bazario:prefs');
+        var pref = raw ? JSON.parse(raw) : null;
+        tag = pref && pref.locale ? pref.locale : null;
+      }
+      var supported = { en: 'en', es: 'es', 'pt-BR': 'pt-BR', id: 'id' };
+      if (tag) {
+        var key = supported[tag] || (String(tag).toLowerCase().split('-')[0] === 'pt' ? 'pt-BR'
+          : String(tag).toLowerCase().split('-')[0]);
+        if (supported[key]) document.documentElement.lang = key;
+      }
+    } catch (e) {}
+  })();
+  </script>
   <!-- The platform's native-feel UI kit (opt-in). Provides automatic pressed
        states on buttons and `unNative.toast()` for add-to-cart feedback.
        Centrally hosted by RELATIVE path, like the bridge: never vendor it,
@@ -114,7 +136,7 @@
       <div class="flex h-14 items-center gap-2 md:h-16 md:gap-4">
 
         <!-- Logo -->
-        <button data-nav="home" class="flex shrink-0 items-center gap-2 rounded-lg py-1 pr-2 text-left" aria-label="MVP Marketplace home">
+        <button data-nav="home" class="flex shrink-0 items-center gap-2 rounded-lg py-1 pr-2 text-left" data-i18n-attr="aria-label:aria.home">
           <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-600 text-white shadow-card">
             <span data-icon="bag" data-cls="h-5 w-5"></span>
           </span>
@@ -122,23 +144,23 @@
         </button>
 
         <!-- Desktop navigation (bottom nav covers mobile) -->
-        <nav class="hidden items-center gap-1 lg:flex" aria-label="Primary">
-          <button class="nav-link nav-link-active" data-nav="home"><span data-icon="home" data-cls="h-4 w-4"></span>Home</button>
-          <button class="nav-link" data-nav="categories"><span data-icon="grid" data-cls="h-4 w-4"></span>Categories</button>
+        <nav class="hidden items-center gap-1 lg:flex" data-i18n-attr="aria-label:aria.primaryNav">
+          <button class="nav-link nav-link-active" data-nav="home"><span data-icon="home" data-cls="h-4 w-4"></span><span data-i18n="nav.home">Home</span></button>
+          <button class="nav-link" data-nav="categories"><span data-icon="grid" data-cls="h-4 w-4"></span><span data-i18n="nav.categories">Categories</span></button>
           <button class="nav-link" data-nav="cart">
             <span class="relative">
               <span data-icon="cart" data-cls="h-4 w-4"></span>
               <span data-cart-badge class="absolute -right-2 -top-1.5 hidden h-4 min-w-4 rounded-full bg-rose-600 px-1 text-center text-[9px] font-bold leading-4 text-white">0</span>
-            </span>Cart</button>
-          <button class="nav-link" data-nav="orders"><span data-icon="package" data-cls="h-4 w-4"></span>Orders</button>
-          <button class="nav-link" data-nav="profile"><span data-icon="user" data-cls="h-4 w-4"></span>Profile</button>
+            </span><span data-i18n="nav.cart">Cart</span></button>
+          <button class="nav-link" data-nav="orders"><span data-icon="package" data-cls="h-4 w-4"></span><span data-i18n="nav.orders">Orders</span></button>
+          <button class="nav-link" data-nav="profile"><span data-icon="user" data-cls="h-4 w-4"></span><span data-i18n="nav.profile">Profile</span></button>
         </nav>
 
         <!-- Desktop search -->
         <div class="search-box relative ml-2 hidden max-w-md flex-1 lg:block">
           <div class="relative">
             <span class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400"><span data-icon="search" data-cls="h-5 w-5"></span></span>
-            <input type="search" class="input" placeholder="Search products, brands, and more" autocomplete="off" aria-label="Search products">
+            <input type="search" class="input" placeholder="Search products, brands, and more" autocomplete="off" data-i18n-attr="placeholder:search.placeholder;aria-label:search.aria">
           </div>
           <div class="search-panel absolute inset-x-0 top-full z-30 mt-2 hidden rounded-xl border border-zinc-100 bg-white p-3 shadow-card-lg"></div>
         </div>
@@ -148,12 +170,12 @@
           <!-- Color theme switcher (desktop; the Profile page hosts the
                swatches on mobile, where this header has no room). Filled by
                theme.js at boot. -->
-          <div id="theme-swatches" class="hidden items-center gap-1.5 lg:flex" role="radiogroup" aria-label="Color theme"></div>
-          <button class="icon-btn" id="bell-btn" aria-label="Notifications">
+          <div id="theme-swatches" class="hidden items-center gap-1.5 lg:flex" role="radiogroup" data-i18n-attr="aria-label:aria.colorTheme"></div>
+          <button class="icon-btn" id="bell-btn" data-i18n-attr="aria-label:aria.notifications">
             <span data-icon="bell" data-cls="h-5 w-5"></span>
             <span aria-hidden="true" class="absolute right-2 top-2 h-2 w-2 rounded-full bg-rose-500"></span>
           </button>
-          <button class="icon-btn" data-nav="cart" aria-label="Cart">
+          <button class="icon-btn" data-nav="cart" data-i18n-attr="aria-label:aria.cart">
             <span class="relative">
               <span data-icon="cart" data-cls="h-5 w-5"></span>
               <span data-cart-badge class="absolute -right-1.5 -top-1 hidden h-4 min-w-4 rounded-full bg-rose-600 px-1 text-center text-[9px] font-bold leading-4 text-white">0</span>
@@ -167,7 +189,7 @@
         <div class="search-box relative">
           <div class="relative">
             <span class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400"><span data-icon="search" data-cls="h-5 w-5"></span></span>
-            <input type="search" class="input" placeholder="Search products, brands, and more" autocomplete="off" aria-label="Search products">
+            <input type="search" class="input" placeholder="Search products, brands, and more" autocomplete="off" data-i18n-attr="placeholder:search.placeholder;aria-label:search.aria">
           </div>
           <div class="search-panel absolute inset-x-0 top-full z-30 mt-2 hidden rounded-xl border border-zinc-100 bg-white p-3 shadow-card-lg"></div>
         </div>
@@ -178,46 +200,46 @@
   <main class="mx-auto max-w-7xl px-4 pb-28 pt-4 lg:pb-12">
     <div id="view-home" data-view="home" class="home-canvas">
       <!-- Promotional carousel -->
-      <section id="section-promo" aria-label="Promotions">
+      <section id="section-promo" data-i18n-attr="aria-label:aria.promotions">
         <div id="promo-carousel" class="no-scrollbar flex snap-x snap-mandatory gap-3 overflow-x-auto rounded-2xl"></div>
         <div id="promo-dots" class="mt-3 flex justify-center gap-1.5"></div>
       </section>
 
       <!-- Categories -->
-      <section id="section-categories" class="panel mt-6 p-4 sm:p-5" aria-label="Categories">
+      <section id="section-categories" class="panel mt-6 p-4 sm:p-5" data-i18n-attr="aria-label:aria.categories">
         <div class="section-head">
           <span class="accent-bar"></span>
-          <h2 class="section-title">Categories</h2>
+          <h2 class="section-title" data-i18n="home.categories">Categories</h2>
         </div>
         <div id="category-grid" class="mt-3 grid grid-cols-4 gap-2 sm:grid-cols-6 lg:grid-cols-8"></div>
       </section>
 
       <!-- Flash Sale -->
-      <section id="section-flash" class="panel panel-flash mt-7 p-4 sm:p-5" aria-label="Flash Sale">
+      <section id="section-flash" class="panel panel-flash mt-7 p-4 sm:p-5" data-i18n-attr="aria-label:aria.flashSale">
         <div class="section-head">
           <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-sale-50 text-sale-600"><span data-icon="flame" data-cls="h-5 w-5"></span></span>
-          <h2 class="section-title">Flash Sale</h2>
+          <h2 class="section-title" data-i18n="home.flashSale">Flash Sale</h2>
           <div class="ml-auto flex items-center gap-1.5">
-            <span class="text-xs text-zinc-500">Ends in</span>
+            <span class="text-xs text-zinc-500" data-i18n="home.endsIn">Ends in</span>
             <div id="flash-timer" class="flex items-center gap-1" aria-live="off"></div>
           </div>
         </div>
         <div class="relative mt-3">
           <div id="flash-row" class="no-scrollbar flex snap-x snap-mandatory gap-3 overflow-x-auto pb-1"></div>
-          <button type="button" id="flash-prev" data-flash-prev aria-label="Scroll left" class="flash-nav flash-nav-prev hidden">
+          <button type="button" id="flash-prev" data-flash-prev data-i18n-attr="aria-label:aria.scrollLeft" class="flash-nav flash-nav-prev hidden">
             <span data-icon="chevronLeft" data-cls="h-5 w-5"></span>
           </button>
-          <button type="button" id="flash-next" data-flash-next aria-label="Scroll right" class="flash-nav flash-nav-next hidden">
+          <button type="button" id="flash-next" data-flash-next data-i18n-attr="aria-label:aria.scrollRight" class="flash-nav flash-nav-next hidden">
             <span data-icon="chevronRight" data-cls="h-5 w-5"></span>
           </button>
         </div>
       </section>
 
       <!-- Recommended -->
-      <section id="section-recommended" class="panel mt-7 p-4 sm:p-5" aria-label="Recommended products">
+      <section id="section-recommended" class="panel mt-7 p-4 sm:p-5" data-i18n-attr="aria-label:aria.recommended">
         <div class="section-head">
           <span class="accent-bar"></span>
-          <h2 class="section-title">Recommended for you</h2>
+          <h2 class="section-title" data-i18n="home.recommended">Recommended for you</h2>
         </div>
         <!-- Filter + sort toolbar, the removable active-filter chips and the
              result count. Filled by home.js from the shared filter service;
@@ -228,13 +250,13 @@
         <div id="recommended-empty" class="hidden"></div>
         <div id="recommended-more" class="mt-4 flex justify-center"></div>
         <!-- Filter sheet / desktop modal (filters, price, sort). -->
-        <div id="recommended-filter-overlay" data-filter-overlay class="fixed inset-0 z-50 hidden" role="dialog" aria-modal="true" aria-label="Filters"></div>
+        <div id="recommended-filter-overlay" data-filter-overlay class="fixed inset-0 z-50 hidden" role="dialog" aria-modal="true" data-i18n-attr="aria-label:aria.filters"></div>
       </section>
 
       <!-- Search / filter results (hidden until a search or category tap) -->
-      <section id="results-section" class="hidden" aria-label="Results">
+      <section id="results-section" class="hidden" data-i18n-attr="aria-label:aria.results">
         <div class="flex items-center gap-2">
-          <button id="results-clear" data-results-clear class="icon-btn -ml-2" aria-label="Back to home"><span data-icon="chevronLeft" data-cls="h-5 w-5"></span></button>
+          <button id="results-clear" data-results-clear class="icon-btn -ml-2" data-i18n-attr="aria-label:aria.backToHome"><span data-icon="chevronLeft" data-cls="h-5 w-5"></span></button>
           <h2 id="results-title" class="section-title truncate"></h2>
           <span id="results-count" class="badge-soft ml-1"></span>
         </div>
@@ -255,17 +277,17 @@
   </main>
 
   <!-- Bottom navigation (mobile) -->
-  <nav id="bottom-nav" class="fixed inset-x-0 bottom-0 z-40 border-t border-zinc-100 bg-white lg:hidden" aria-label="Primary" style="padding-bottom: var(--un-safe-inset-bottom, env(safe-area-inset-bottom, 0px));">
+  <nav id="bottom-nav" class="fixed inset-x-0 bottom-0 z-40 border-t border-zinc-100 bg-white lg:hidden" data-i18n-attr="aria-label:aria.primaryNav" style="padding-bottom: var(--un-safe-inset-bottom, env(safe-area-inset-bottom, 0px));">
     <div class="mx-auto flex max-w-lg">
-      <button class="nav-item nav-item-active" data-nav="home"><span data-icon="home" data-cls="h-5 w-5"></span>Home</button>
-      <button class="nav-item" data-nav="categories"><span data-icon="grid" data-cls="h-5 w-5"></span>Categories</button>
+      <button class="nav-item nav-item-active" data-nav="home"><span data-icon="home" data-cls="h-5 w-5"></span><span data-i18n="nav.home">Home</span></button>
+      <button class="nav-item" data-nav="categories"><span data-icon="grid" data-cls="h-5 w-5"></span><span data-i18n="nav.categories">Categories</span></button>
       <button class="nav-item" data-nav="cart">
         <span class="relative">
           <span data-icon="cart" data-cls="h-5 w-5"></span>
           <span data-cart-badge class="absolute -right-1.5 -top-1 hidden h-4 min-w-4 rounded-full bg-rose-600 px-1 text-center text-[9px] font-bold leading-4 text-white">0</span>
-        </span>Cart</button>
-      <button class="nav-item" data-nav="orders"><span data-icon="package" data-cls="h-5 w-5"></span>Orders</button>
-      <button class="nav-item" data-nav="profile"><span data-icon="user" data-cls="h-5 w-5"></span>Profile</button>
+        </span><span data-i18n="nav.cart">Cart</span></button>
+      <button class="nav-item" data-nav="orders"><span data-icon="package" data-cls="h-5 w-5"></span><span data-i18n="nav.orders">Orders</span></button>
+      <button class="nav-item" data-nav="profile"><span data-icon="user" data-cls="h-5 w-5"></span><span data-i18n="nav.profile">Profile</span></button>
     </div>
   </nav>
 

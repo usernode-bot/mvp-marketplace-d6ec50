@@ -16,6 +16,7 @@
 import { icon } from './icons.js';
 import { store } from './store.js';
 import { confirmDialog, emptyState, esc, toast } from './ui.js';
+import { t } from './i18n.js';
 
 /* ------------------------------------------------------------------ */
 /* Config                                                              */
@@ -75,6 +76,47 @@ export function methodById(id) {
   return null;
 }
 
+/* The config above is shared data (checkout.js reads it too), so its labels
+ * are localized here at the render site. Proper nouns (BCA, DANA, QRIS) stay
+ * as they are; only the descriptive group titles, subtitles and generic
+ * method names are translated. */
+const GROUP_KEYS = {
+  bank: 'payment.groupBank',
+  ewallet: 'payment.groupEwallet',
+  card: 'payment.groupCard',
+  other: 'payment.groupOther',
+};
+
+const SUBTITLE_KEYS = {
+  'Virtual Account': 'payment.subVirtualAccount',
+  'E-Wallet': 'payment.subEwallet',
+  'Visa, Mastercard, JCB': 'payment.subCard',
+  'Scan to pay': 'payment.subScan',
+  'Pay the courier on arrival': 'payment.subCod',
+  'Indomaret, Alfamart': 'payment.subStores',
+};
+
+const NAME_KEYS = {
+  card: 'payment.nameCard',
+  cod: 'payment.nameCod',
+  cvs: 'payment.nameStores',
+};
+
+function groupTitle(group) {
+  const key = GROUP_KEYS[group.id];
+  return key ? t(key) : group.title;
+}
+
+function methodName(m) {
+  const key = NAME_KEYS[m.id];
+  return key ? t(key) : m.name;
+}
+
+function methodSubtitle(m) {
+  const key = SUBTITLE_KEYS[m.subtitle];
+  return key ? t(key) : m.subtitle;
+}
+
 /* ------------------------------------------------------------------ */
 /* Field helpers                                                       */
 /* ------------------------------------------------------------------ */
@@ -115,10 +157,10 @@ function methodRow(m) {
 
   let actions;
   if (!linked) {
-    actions = '<button type="button" data-pay-link="' + m.id + '" class="btn-ghost btn-sm shrink-0">Add</button>';
+    actions = '<button type="button" data-pay-link="' + m.id + '" class="btn-ghost btn-sm shrink-0">' + esc(t('payment.linkShort')) + '</button>';
   } else {
-    actions = (isDefault ? '' : '<button type="button" data-pay-default="' + m.id + '" class="btn-ghost btn-sm shrink-0">Set as default</button>')
-      + '<button type="button" data-pay-unlink="' + m.id + '" aria-label="Remove ' + esc(m.name) + '"'
+    actions = (isDefault ? '' : '<button type="button" data-pay-default="' + m.id + '" class="btn-ghost btn-sm shrink-0">' + esc(t('payment.setDefault')) + '</button>')
+      + '<button type="button" data-pay-unlink="' + m.id + '" aria-label="' + esc(t('aria.removeItem', { name: methodName(m) })) + '"'
       + ' class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-zinc-400 transition-colors hover:bg-rose-50 hover:text-rose-600">'
       + icon('x', 'h-4 w-4') + '</button>';
   }
@@ -127,11 +169,11 @@ function methodRow(m) {
     + badgeEl(m)
     + '<div class="min-w-0 flex-1">'
     + '<div class="flex items-center gap-2">'
-    + '<p class="truncate text-sm font-semibold text-zinc-900">' + esc(m.name) + '</p>'
-    + (isDefault ? '<span class="badge-brand shrink-0">Default</span>' : '')
-    + (linked && !isDefault ? '<span class="badge-soft shrink-0">Saved</span>' : '')
+    + '<p class="truncate text-sm font-semibold text-zinc-900">' + esc(methodName(m)) + '</p>'
+    + (isDefault ? '<span class="badge-brand shrink-0">' + esc(t('common.default')) + '</span>' : '')
+    + (linked && !isDefault ? '<span class="badge-soft shrink-0">' + esc(t('common.saved')) + '</span>' : '')
     + '</div>'
-    + '<p class="mt-0.5 truncate text-xs text-zinc-500">' + esc(m.subtitle) + '</p>'
+    + '<p class="mt-0.5 truncate text-xs text-zinc-500">' + esc(methodSubtitle(m)) + '</p>'
     + (meta ? '<p class="mt-0.5 truncate text-xs text-zinc-400">' + meta + '</p>' : '')
     + '</div>'
     + '<div class="flex shrink-0 items-center gap-1">' + actions + '</div>'
@@ -141,7 +183,7 @@ function methodRow(m) {
 function groupSection(group) {
   const rows = group.methods.filter((m) => m.enabled).map(methodRow).join('');
   if (!rows) return '';
-  return '<h2 class="mb-2 mt-6 px-1 text-xs font-semibold uppercase tracking-wide text-zinc-400 first:mt-0">' + esc(group.title) + '</h2>'
+  return '<h2 class="mb-2 mt-6 px-1 text-xs font-semibold uppercase tracking-wide text-zinc-400 first:mt-0">' + esc(groupTitle(group)) + '</h2>'
     + '<div class="card divide-y divide-zinc-100 overflow-hidden">' + rows + '</div>';
 }
 
@@ -154,25 +196,25 @@ export function renderPaymentView() {
   const linkedCount = store.payments.length;
 
   const header = '<div class="flex items-center gap-1">'
-    + '<button type="button" data-route="profile" class="icon-btn -ml-2" aria-label="Back">'
+    + '<button type="button" data-route="profile" class="icon-btn -ml-2" aria-label="' + esc(t('aria.back')) + '">'
     + icon('chevronLeft', 'h-5 w-5') + '</button>'
-    + '<h1 class="section-title">Payment methods</h1>'
+    + '<h1 class="section-title">' + esc(t('payment.title')) + '</h1>'
     + '</div>';
 
   const empty = linkedCount
     ? ''
     : '<div class="card mt-4">' + emptyState({
       icon: 'creditCard',
-      title: 'No payment methods saved',
-      body: 'Add a bank account, e-wallet or card to check out faster next time.',
-      actionLabel: 'Add payment method',
+      title: esc(t('payment.empty')),
+      body: esc(t('payment.emptyBody')),
+      actionLabel: esc(t('payment.add')),
       actionAttr: 'data-pay-add',
     }) + '</div>';
 
   const groups = PAYMENT_GROUPS.map(groupSection).join('');
 
   const addButton = linkedCount
-    ? '<button type="button" data-pay-add class="btn-primary mt-4 w-full">' + icon('plus', 'h-4 w-4') + 'Add payment method</button>'
+    ? '<button type="button" data-pay-add class="btn-primary mt-4 w-full">' + icon('plus', 'h-4 w-4') + esc(t('payment.add')) + '</button>'
     : '';
 
   view.innerHTML = header + empty + groups + addButton;
@@ -205,7 +247,7 @@ function sheetShell(title, bodyHtml) {
     + '<div class="relative flex max-h-[85vh] w-full flex-col rounded-t-2xl bg-white shadow-card-lg sm:max-w-md sm:rounded-2xl">'
     + '<div class="flex shrink-0 items-center justify-between border-b border-zinc-100 px-4 py-3">'
     + '<h2 class="text-sm font-semibold text-zinc-900">' + esc(title) + '</h2>'
-    + '<button type="button" class="icon-btn h-8 w-8" data-pay-sheet-close aria-label="Close">' + icon('x', 'h-4 w-4') + '</button>'
+    + '<button type="button" class="icon-btn h-8 w-8" data-pay-sheet-close aria-label="' + esc(t('common.close')) + '">' + icon('x', 'h-4 w-4') + '</button>'
     + '</div>'
     + '<div class="min-h-0 flex-1 overflow-y-auto p-3">' + bodyHtml + '</div>'
     + '<div class="hidden h-2 shrink-0 sm:block"></div>'
@@ -221,7 +263,7 @@ function openSheet() {
   sheetEl.id = 'pay-sheet';
   sheetEl.setAttribute('role', 'dialog');
   sheetEl.setAttribute('aria-modal', 'true');
-  sheetEl.setAttribute('aria-label', 'Add payment method');
+  sheetEl.setAttribute('aria-label', t('payment.add'));
   sheetEl.className = 'fixed inset-0 z-50 flex items-end justify-center sm:items-center';
   document.body.appendChild(sheetEl);
   document.body.style.overflow = 'hidden';
@@ -235,15 +277,15 @@ function paintSheet() {
     const m = methodById(sheetMethodId);
     sheetEl.innerHTML = m ? sheetShell(sheetTitle(m), sheetForm(m)) : '';
   } else {
-    sheetEl.innerHTML = sheetShell('Add payment method', sheetList());
+    sheetEl.innerHTML = sheetShell(t('payment.add'), sheetList());
   }
 }
 
 function sheetTitle(m) {
-  if (m.requires === 'bank') return 'Add ' + m.name + ' account';
-  if (m.requires === 'phone') return 'Link ' + m.name;
-  if (m.requires === 'card') return 'Add a card';
-  return m.name;
+  if (m.requires === 'bank') return t('payment.addAccount', { name: methodName(m) });
+  if (m.requires === 'phone') return t('payment.link', { name: methodName(m) });
+  if (m.requires === 'card') return t('payment.addCard');
+  return methodName(m);
 }
 
 function sheetList() {
@@ -256,17 +298,17 @@ function sheetList() {
         + ' class="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition-colors ' + (linked ? 'opacity-60' : 'hover:bg-zinc-50') + '">'
         + badgeEl(m)
         + '<span class="min-w-0 flex-1">'
-        + '<span class="block truncate text-sm font-semibold text-zinc-900">' + esc(m.name) + '</span>'
-        + '<span class="block truncate text-xs text-zinc-500">' + esc(m.subtitle) + '</span>'
+        + '<span class="block truncate text-sm font-semibold text-zinc-900">' + esc(methodName(m)) + '</span>'
+        + '<span class="block truncate text-xs text-zinc-500">' + esc(methodSubtitle(m)) + '</span>'
         + '</span>'
         + (isDefault
-          ? '<span class="badge-brand shrink-0">Default</span>'
+          ? '<span class="badge-brand shrink-0">' + esc(t('common.default')) + '</span>'
           : linked
             ? '<span class="shrink-0 text-brand-600">' + icon('check', 'h-5 w-5') + '</span>'
             : '<span class="shrink-0 text-zinc-300">' + icon('plus', 'h-5 w-5') + '</span>')
         + '</button>';
     }).join('');
-    return '<h3 class="mb-1 mt-4 px-1 text-xs font-semibold uppercase tracking-wide text-zinc-400 first:mt-0">' + esc(group.title) + '</h3>'
+    return '<h3 class="mb-1 mt-4 px-1 text-xs font-semibold uppercase tracking-wide text-zinc-400 first:mt-0">' + esc(groupTitle(group)) + '</h3>'
       + '<div class="flex flex-col">' + rows + '</div>';
   }).join('');
 }
@@ -281,29 +323,29 @@ function fieldRow(label, inputHtml) {
 function sheetForm(m) {
   let fields = '';
   if (m.requires === 'bank') {
-    fields = fieldRow('Account number', '<input name="account" inputmode="numeric" autocomplete="off" maxlength="26" class="field" placeholder="Bank account number">')
-      + fieldRow('Account holder name', '<input name="holder" maxlength="60" autocomplete="name" class="field" placeholder="Name on the account">');
+    fields = fieldRow(esc(t('payment.accountNumber')), '<input name="account" inputmode="numeric" autocomplete="off" maxlength="26" class="field" placeholder="' + esc(t('payment.phAccountNumber')) + '">')
+      + fieldRow(esc(t('payment.accountHolder')), '<input name="holder" maxlength="60" autocomplete="name" class="field" placeholder="' + esc(t('payment.phAccountHolder')) + '">');
   } else if (m.requires === 'phone') {
-    fields = fieldRow('Phone number', '<input name="phone" type="tel" autocomplete="tel" maxlength="20" class="field" placeholder="Registered mobile number">');
+    fields = fieldRow(esc(t('payment.phoneNumber')), '<input name="phone" type="tel" autocomplete="tel" maxlength="20" class="field" placeholder="' + esc(t('payment.phPhoneNumber')) + '">');
   } else if (m.requires === 'card') {
-    fields = fieldRow('Card number', '<input name="cardNumber" inputmode="numeric" autocomplete="cc-number" maxlength="23" class="field" placeholder="1234 5678 9012 3456">')
-      + fieldRow('Name on card', '<input name="holder" maxlength="60" autocomplete="cc-name" class="field" placeholder="Name as printed on the card">')
+    fields = fieldRow(esc(t('payment.cardNumber')), '<input name="cardNumber" inputmode="numeric" autocomplete="cc-number" maxlength="23" class="field" placeholder="' + esc(t('payment.phCardNumber')) + '">')
+      + fieldRow(esc(t('payment.nameOnCard')), '<input name="holder" maxlength="60" autocomplete="cc-name" class="field" placeholder="' + esc(t('payment.phNameOnCard')) + '">')
       + '<div class="grid grid-cols-2 gap-3">'
-      + fieldRow('Expiry', '<input name="expiry" inputmode="numeric" autocomplete="cc-exp" maxlength="5" class="field" placeholder="MM/YY">')
-      + fieldRow('CVV', '<input name="cvv" inputmode="numeric" autocomplete="cc-csc" maxlength="4" class="field" placeholder="123">')
+      + fieldRow(esc(t('payment.expiry')), '<input name="expiry" inputmode="numeric" autocomplete="cc-exp" maxlength="5" class="field" placeholder="' + esc(t('payment.phExpiry')) + '">')
+      + fieldRow(esc(t('payment.cvv')), '<input name="cvv" inputmode="numeric" autocomplete="cc-csc" maxlength="4" class="field" placeholder="' + esc(t('payment.phCvv')) + '">')
       + '</div>';
   }
 
   const note = m.requires === 'card'
-    ? '<p class="mt-3 text-xs text-zinc-400">Only the last four digits are saved (' + '\u2022\u2022\u2022\u2022 4242). No full card number is stored.</p>'
+    ? '<p class="mt-3 text-xs text-zinc-400">' + esc(t('payment.cardNote')) + '</p>'
     : '';
 
   return '<form data-pay-form data-pay-form-method="' + m.id + '" class="space-y-4">'
     + '<p class="field-msg hidden" data-pay-form-msg></p>'
     + fields
     + note
-    + '<button type="submit" class="btn-primary w-full">' + sheetTitle(m) + '</button>'
-    + '<button type="button" data-pay-back class="btn-ghost w-full">Back</button>'
+    + '<button type="submit" class="btn-primary w-full">' + esc(sheetTitle(m)) + '</button>'
+    + '<button type="button" data-pay-back class="btn-ghost w-full">' + esc(t('payment.back')) + '</button>'
     + '</form>';
 }
 
@@ -333,17 +375,17 @@ function validateForm(m, values) {
   const errors = {};
   if (m.requires === 'phone') {
     const digits = (values.phone.match(/\d/g) || []).length;
-    if (digits < 9 || digits > 15) errors.phone = 'Enter a valid mobile number (9 to 15 digits)';
+    if (digits < 9 || digits > 15) errors.phone = t('payment.errPhone');
   } else if (m.requires === 'bank') {
     const digits = (values.account.match(/\d/g) || []).length;
-    if (digits < 6 || digits > 20) errors.account = 'Enter a valid account number (6 to 20 digits)';
-    if (values.holder.trim().length < 2) errors.holder = 'Enter the account holder name';
+    if (digits < 6 || digits > 20) errors.account = t('payment.errAccount');
+    if (values.holder.trim().length < 2) errors.holder = t('payment.errHolder');
   } else if (m.requires === 'card') {
     const digits = (values.cardNumber.match(/\d/g) || []).length;
-    if (digits < 13 || digits > 19) errors.cardNumber = 'Enter a valid card number';
-    if (values.holder.trim().length < 2) errors.holder = 'Enter the name on the card';
-    if (!/^(0[1-9]|1[0-2])\/\d{2}$/.test(values.expiry.trim())) errors.expiry = 'Use MM/YY';
-    if (!/^\d{3,4}$/.test(values.cvv.trim())) errors.cvv = 'Enter the 3 or 4 digit code';
+    if (digits < 13 || digits > 19) errors.cardNumber = t('payment.errCard');
+    if (values.holder.trim().length < 2) errors.holder = t('payment.errCardHolder');
+    if (!/^(0[1-9]|1[0-2])\/\d{2}$/.test(values.expiry.trim())) errors.expiry = t('payment.errExpiry');
+    if (!/^\d{3,4}$/.test(values.cvv.trim())) errors.cvv = t('payment.errCvv');
   }
   return errors;
 }
@@ -363,7 +405,7 @@ function startLink(id) {
   }
   store.linkPayment(id);
   closeSheet();
-  toast(m.name + ' added');
+  toast(t('payment.added', { name: methodName(m) }));
   renderPaymentView();
 }
 
@@ -393,7 +435,7 @@ function submitForm(form) {
     store.linkPaymentDetails(id, { phone: values.phone });
   }
   closeSheet();
-  toast(m.name + ' added');
+  toast(t('payment.added', { name: methodName(m) }));
   renderPaymentView();
 }
 
@@ -403,13 +445,13 @@ function unlink(id) {
   if (!m || !p) return;
   const detail = m.requires === 'bank' ? maskAccount(p.account) : (m.requires === 'card' ? p.masked : (m.requires === 'phone' ? p.phone : ''));
   confirmDialog({
-    title: 'Remove ' + m.name + '?',
-    message: 'This removes the saved payment method' + (detail ? ' (' + detail + ')' : '') + ' from your account.',
-    confirmLabel: 'Remove',
+    title: t('payment.removeTitle', { name: methodName(m) }),
+    message: t('payment.removeBody', { detail: detail ? t('payment.removeDetail', { detail }) : '' }),
+    confirmLabel: t('common.remove'),
   }).then((ok) => {
     if (!ok) return;
     store.unlinkPayment(id);
-    toast(m.name + ' removed');
+    toast(t('payment.removed', { name: methodName(m) }));
     renderPaymentView();
   });
 }
@@ -449,7 +491,7 @@ export function initPayment() {
       const id = def.getAttribute('data-pay-default');
       const m = methodById(id);
       store.setDefaultPayment(id);
-      toast((m ? m.name : 'Method') + ' set as default');
+      toast(m ? t('payment.setDefaultToast', { name: methodName(m) }) : t('payment.defaultToast'));
       renderPaymentView();
       return;
     }

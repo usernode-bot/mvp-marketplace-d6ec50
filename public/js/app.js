@@ -25,6 +25,7 @@ import { initSettings } from './settings.js';
 import { initPayment } from './payment.js';
 import { applyVoucherCode, initCart, removeCartItem, renderCartView } from './cart.js';
 import { goToHash, parseRoute, renderRoute } from './router.js';
+import { applyLocale, hydrateStatic, onLocaleChange, resolveLocale, t } from './i18n.js';
 
 /* ------------------------------------------------------------------ */
 /* Header / nav badges                                                 */
@@ -63,7 +64,7 @@ function handleClick(e) {
   const favId = target.getAttribute('data-fav');
   if (favId) {
     const on = store.toggleFavorite(favId);
-    toast(on ? 'Added to favorites' : 'Removed from favorites');
+    toast(on ? t('toast.addedToFavorites') : t('toast.removedFromFavorites'));
     document.querySelectorAll('[data-fav="' + favId + '"]').forEach((btn) => {
       btn.innerHTML = icon(on ? 'heartFilled' : 'heart', 'h-4 w-4');
       btn.classList.toggle('fav-btn-on', on);
@@ -77,14 +78,14 @@ function handleClick(e) {
   if (addId) {
     const product = productById(addId);
     if (product && product.oos) {
-      toast('This item is sold out');
+      toast(t('toast.soldOut'));
       return;
     }
     store.addToCart(addId);
-    toast('Added to cart');
+    toast(t('toast.addedShort'));
     // Brief "Added" confirmation on the button that was tapped.
     const original = target.innerHTML;
-    target.innerHTML = icon('check', 'h-4 w-4') + '<span class="hidden lg:inline">Added</span>';
+    target.innerHTML = icon('check', 'h-4 w-4') + '<span class="hidden lg:inline">' + t('toast.addedShort') + '</span>';
     target.disabled = true;
     setTimeout(() => {
       target.innerHTML = original;
@@ -157,7 +158,7 @@ function handleClick(e) {
   }
 
   if (target.hasAttribute('data-soon')) {
-    toast('Coming in a later phase');
+    toast(t('toast.comingSoon'));
     return;
   }
 
@@ -196,27 +197,27 @@ function handleClick(e) {
   const save = target.getAttribute('data-cart-save');
   if (save) {
     store.saveForLater(save);
-    toast('Saved for later');
+    toast(t('toast.savedForLater'));
     return;
   }
 
   const move = target.getAttribute('data-saved-move');
   if (move) {
     store.moveToCart(move);
-    toast('Moved to cart');
+    toast(t('toast.movedToCart'));
     return;
   }
 
   const savedRemove = target.getAttribute('data-saved-remove');
   if (savedRemove) {
     store.removeSaved(savedRemove);
-    toast('Removed from saved items');
+    toast(t('toast.removedFromSaved'));
     return;
   }
 
   if (target.hasAttribute('data-voucher-remove')) {
     store.clearVoucher();
-    toast('Voucher removed');
+    toast(t('toast.voucherRemoved'));
     return;
   }
 
@@ -247,6 +248,7 @@ function handleClick(e) {
 
 function boot() {
   hydrateIcons();
+  document.title = t('doc.title');
 
   document.addEventListener('click', handleClick);
   initTheme();
@@ -269,6 +271,23 @@ function boot() {
     if (parseRoute().view === 'cart') renderCartView();
   });
 
+  // Language. The boot locale is resolved synchronously (URL override, then a
+  // saved choice, then the device language) and applied before the first
+  // render; the async platform preference may refine it a moment later. Every
+  // later change re-renders the current route in place, so the whole app
+  // switches language without a reload. The platform's own locale-changed
+  // event feeds the same path.
+  onLocaleChange(() => {
+    document.title = t('doc.title');
+    hydrateStatic();
+    renderRoute();
+    updateFlashNav();
+  });
+  window.addEventListener('usernode:locale-changed', (e) => {
+    const code = e && e.detail ? e.detail.locale : null;
+    if (code) applyLocale(code);
+  });
+
   // Demo seed for proposal checks and staging screenshots. ?demo=1 fills
   // the account (wishlist, addresses, payment methods); ?demo=checkout also
   // fills the cart with a few mock items, in memory only (they persist only
@@ -285,6 +304,9 @@ function boot() {
   updateBadges();
 
   initHome();
+  // Apply the resolved language first so the very first render is already in
+  // the right language; the platform preference (usually null) refines it.
+  resolveLocale();
   renderRoute();
   // Hydrate the profile photo in the background; the letter fallback shows
   // until it lands, and the profile view re-renders when it does.

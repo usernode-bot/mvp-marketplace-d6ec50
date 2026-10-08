@@ -15,6 +15,7 @@ import { icon } from './icons.js';
 import { confirmDialog, emptyState, esc, toast } from './ui.js';
 import { apiFetch } from './api.js';
 import { renderProfileView } from './profile.js';
+import { t } from './i18n.js';
 
 const MAX_OUTPUT_BYTES = 1024 * 1024; // 1 MB
 const OUTPUT_EDGE = 512;
@@ -23,12 +24,18 @@ const MIN_ZOOM = 1;
 const MAX_ZOOM = 4;
 const ACCEPTED = ['image/jpeg', 'image/png', 'image/webp'];
 
+/* Dictionary keys; resolved through msg() at the point of use so the copy
+ * follows the selected language. */
 const MESSAGES = {
-  invalid: 'Choose a JPG, PNG or WEBP image.',
-  tooLarge: 'That image is too large. Try a smaller one.',
-  failed: 'Could not upload your photo. Try again.',
-  unavailable: 'Photo uploads are not available here.',
+  invalid: 'photo.invalid',
+  tooLarge: 'photo.tooLarge',
+  failed: 'photo.failed',
+  unavailable: 'photo.unavailable',
 };
+
+function msg(name) {
+  return t(MESSAGES[name]);
+}
 
 /* In-memory photo state. `url` is the platform file URL (or the staging demo
  * data URI); `loading` drives the avatar spinner. */
@@ -103,9 +110,9 @@ function removePhoto() {
   const hasPhoto = !!state.url;
   if (!hasPhoto) return;
   confirmDialog({
-    title: 'Remove profile photo?',
-    message: 'Your avatar will go back to the letter placeholder.',
-    confirmLabel: 'Remove Photo',
+    title: t('photo.removeTitle'),
+    message: t('photo.removeBody'),
+    confirmLabel: t('photo.removeConfirm'),
   }).then(async (ok) => {
     if (!ok) return;
     if (state.fileId && window.usernode && typeof window.usernode.deleteFile === 'function') {
@@ -122,23 +129,23 @@ function removePhoto() {
     if (res.ok) {
       state.url = null;
       state.fileId = null;
-      toast('Profile photo removed');
+      toast(t('photo.removed'));
     } else {
-      toast(MESSAGES.failed);
+      toast(msg('failed'));
     }
     renderProfileView();
   });
 }
 
 function openPhotoMenu(anchorEl) {
-  const items = [{ label: 'Choose from Gallery', value: 'choose' }];
-  if (state.url) items.push({ label: 'Remove Photo', value: 'remove', destructive: true });
+  const items = [{ label: t('photo.choose'), value: 'choose' }];
+  if (state.url) items.push({ label: t('photo.remove'), value: 'remove', destructive: true });
 
   if (window.unNative && typeof window.unNative.menu === 'function') {
     window.unNative.menu({
       anchorEl,
-      title: 'Profile photo',
-      cancelLabel: 'Cancel',
+      title: t('photo.menuTitle'),
+      cancelLabel: t('common.cancel'),
       items,
     }).then((picked) => {
       if (!picked) return;
@@ -232,9 +239,9 @@ async function decodeImage(file) {
 
 function cropMarkup() {
   return '<div class="flex items-center gap-1">'
-    + '<button type="button" data-route="profile" class="icon-btn -ml-2" aria-label="Back">'
+    + '<button type="button" data-route="profile" class="icon-btn -ml-2" aria-label="' + esc(t('aria.back')) + '">'
     + icon('chevronLeft', 'h-5 w-5') + '</button>'
-    + '<h1 class="section-title">Add photo</h1>'
+    + '<h1 class="section-title">' + esc(t('photo.addTitle')) + '</h1>'
     + '</div>'
     + '<div class="card mt-4 flex flex-col items-center gap-4 p-4">'
     + '<div data-crop-frame class="relative h-72 w-72 max-w-full touch-none select-none overflow-hidden rounded-xl bg-zinc-900">'
@@ -244,16 +251,16 @@ function cropMarkup() {
     + '</div>'
     + '</div>'
     + '<label class="flex w-full max-w-xs items-center gap-3">'
-    + '<span class="text-xs font-semibold text-zinc-500">Zoom</span>'
-    + '<input type="range" data-crop-zoom min="1" max="4" step="0.01" value="1" class="w-full accent-brand-600" aria-label="Zoom">'
+    + '<span class="text-xs font-semibold text-zinc-500">' + esc(t('photo.zoom')) + '</span>'
+    + '<input type="range" data-crop-zoom min="1" max="4" step="0.01" value="1" class="w-full accent-brand-600" aria-label="' + esc(t('aria.zoom')) + '">'
     + '</label>'
     + '<p data-crop-error class="field-msg hidden" role="alert"></p>'
     + '<div class="flex w-full max-w-xs gap-2">'
-    + '<button type="button" data-crop-cancel class="btn-outline flex-1">Cancel</button>'
-    + '<button type="button" data-crop-save class="btn-primary flex-1">Save photo</button>'
+    + '<button type="button" data-crop-cancel class="btn-outline flex-1">' + esc(t('photo.cancel')) + '</button>'
+    + '<button type="button" data-crop-save class="btn-primary flex-1">' + esc(t('photo.save')) + '</button>'
     + '</div>'
     + '</div>'
-    + '<p class="mt-3 px-1 text-xs text-zinc-400">Drag to reframe, pinch or use the slider to zoom. The circle shows what your avatar will look like.</p>';
+    + '<p class="mt-3 px-1 text-xs text-zinc-400">' + esc(t('photo.cropHint')) + '</p>';
 }
 
 /* Position the image inside the frame for the current zoom + offset. */
@@ -426,7 +433,7 @@ async function saveCrop() {
   setCropError('');
   if (saveBtn) {
     saveBtn.disabled = true;
-    saveBtn.innerHTML = icon('loader', 'h-4 w-4 animate-spin') + '<span>Saving…</span>';
+    saveBtn.innerHTML = icon('loader', 'h-4 w-4 animate-spin') + '<span>' + esc(t('photo.saving')) + '</span>';
   }
   if (cancelBtn) cancelBtn.disabled = true;
 
@@ -434,15 +441,15 @@ async function saveCrop() {
   try {
     encoded = await encodeAvatar();
   } catch {
-    setCropError(MESSAGES.failed);
-    if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Save photo'; }
+    setCropError(msg('failed'));
+    if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = t('photo.save'); }
     if (cancelBtn) cancelBtn.disabled = false;
     return;
   }
 
   if (!window.usernode || typeof window.usernode.uploadFile !== 'function') {
-    setCropError(MESSAGES.unavailable);
-    if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Save photo'; }
+    setCropError(msg('unavailable'));
+    if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = t('photo.save'); }
     if (cancelBtn) cancelBtn.disabled = false;
     return;
   }
@@ -453,7 +460,7 @@ async function saveCrop() {
     stored = await window.usernode.uploadFile(file, { visibility: 'public' });
   } catch (err) {
     setCropError(uploadErrorMessage(err));
-    if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Save photo'; }
+    if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = t('photo.save'); }
     if (cancelBtn) cancelBtn.disabled = false;
     return;
   }
@@ -463,8 +470,8 @@ async function saveCrop() {
     body: JSON.stringify({ url: stored.url, fileId: stored.id }),
   });
   if (!res.ok) {
-    setCropError(MESSAGES.failed);
-    if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Save photo'; }
+    setCropError(msg('failed'));
+    if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = t('photo.save'); }
     if (cancelBtn) cancelBtn.disabled = false;
     return;
   }
@@ -472,17 +479,17 @@ async function saveCrop() {
   state.url = stored.url;
   state.fileId = stored.id;
   discardPending();
-  toast('Profile photo updated');
+  toast(t('photo.updated'));
   location.hash = '/profile';
 }
 
 function uploadErrorMessage(err) {
   const code = err && (err.code || err.message) ? String(err.code || err.message) : '';
-  if (code.includes('file_too_large')) return MESSAGES.tooLarge;
-  if (code.includes('invalid_image')) return MESSAGES.invalid;
-  if (code.includes('quota')) return MESSAGES.failed;
-  if (code.includes('storage_unavailable')) return MESSAGES.unavailable;
-  return MESSAGES.failed;
+  if (code.includes('file_too_large')) return msg('tooLarge');
+  if (code.includes('invalid_image')) return msg('invalid');
+  if (code.includes('quota')) return msg('failed');
+  if (code.includes('storage_unavailable')) return msg('unavailable');
+  return msg('failed');
 }
 
 function cancelCrop() {
@@ -504,15 +511,15 @@ export function renderCropView() {
   if (!pending) {
     view.innerHTML =
       '<div class="flex items-center gap-1">'
-      + '<button type="button" data-route="profile" class="icon-btn -ml-2" aria-label="Back">'
+      + '<button type="button" data-route="profile" class="icon-btn -ml-2" aria-label="' + esc(t('aria.back')) + '">'
       + icon('chevronLeft', 'h-5 w-5') + '</button>'
-      + '<h1 class="section-title">Add photo</h1>'
+      + '<h1 class="section-title">' + esc(t('photo.addTitle')) + '</h1>'
       + '</div>'
       + '<div class="card mt-4">' + emptyState({
         icon: 'camera',
-        title: 'No photo selected',
-        body: 'Choose an image from your gallery to set a profile photo.',
-        actionLabel: 'Choose from Gallery',
+        title: esc(t('photo.noPhoto')),
+        body: esc(t('photo.noPhotoBody')),
+        actionLabel: esc(t('photo.choose')),
         actionAttr: 'data-avatar-choose',
       }) + '</div>';
     return;

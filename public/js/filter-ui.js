@@ -20,6 +20,7 @@ import { icon } from './icons.js';
 import { esc } from './ui.js';
 import { LOCATIONS, citiesByProvince, nearestCity } from './locations.js';
 import { SORT_OPTIONS } from './sort-options.js';
+import { plural, sortOptionLabel, t } from './i18n.js';
 import {
   DEFAULT_LIMIT,
   activeFilterCount,
@@ -47,7 +48,7 @@ function centsToInput(cents) {
 
 /* "[data-product]" count for the sheet's Apply button. */
 function countLabel(n) {
-  return n + (n === 1 ? ' product' : ' products');
+  return plural('count.products', n);
 }
 
 /* ------------------------------------------------------------------ */
@@ -60,11 +61,11 @@ export function activeFilterChipsHtml(f) {
   const pills = chips.map((c) =>
     '<span class="fchip" title="' + esc(c.title) + '">'
     + esc(c.label)
-    + '<button type="button" data-chip-remove="' + c.key + '" aria-label="Remove filter ' + esc(c.title)
+    + '<button type="button" data-chip-remove="' + c.key + '" aria-label="' + esc(t('aria.removeFilter', { title: c.title }))
     + '" class="fchip-x">' + icon('x', 'h-3 w-3') + '</button></span>').join('');
   return '<div class="mt-3 flex flex-wrap items-center gap-2" data-active-chips>'
     + pills
-    + '<button type="button" data-filter-clear class="ml-1 text-xs font-semibold text-brand-700 hover:underline">Clear all</button>'
+    + '<button type="button" data-filter-clear class="ml-1 text-xs font-semibold text-brand-700 hover:underline">' + esc(t('common.clearAll')) + '</button>'
     + '</div>';
 }
 
@@ -72,7 +73,7 @@ export function activeFilterChipsHtml(f) {
  * is applied. Visually it is the small line above the grid. */
 export function resultCountHtml(total) {
   return '<p class="mt-3 text-xs text-zinc-500" aria-live="polite" data-result-count>'
-    + total + (total === 1 ? ' product' : ' products') + '</p>';
+    + esc(plural('count.products', total)) + '</p>';
 }
 
 /* ------------------------------------------------------------------ */
@@ -81,16 +82,16 @@ export function resultCountHtml(total) {
 
 export function filterBarHtml(f) {
   const n = activeFilterCount(f);
-  const sortLabel = (SORT_OPTIONS.find((o) => o.id === f.sort) || SORT_OPTIONS[0]).label;
+  const sortLabel = sortOptionLabel((SORT_OPTIONS.find((o) => o.id === f.sort) || SORT_OPTIONS[0]).id);
   return '<div class="mt-4 flex items-center gap-2" data-filter-toolbar>'
     + '<button type="button" data-filter-open class="btn-outline btn-sm" aria-haspopup="dialog">'
-    + icon('sliders', 'h-4 w-4') + 'Filters'
+    + icon('sliders', 'h-4 w-4') + esc(t('aria.filters'))
     + '<span data-filter-badge class="flex h-4 min-w-4 items-center justify-center rounded-full bg-brand-600 px-1 text-[9px] font-bold leading-none text-white'
     + (n ? '' : ' hidden') + '">' + n + '</span>'
     + '</button>'
     + '<div class="relative ml-auto">'
     + '<button type="button" data-sort-toggle class="btn-outline btn-sm" aria-haspopup="menu" aria-expanded="false">'
-    + 'Sort: <span data-sort-label>' + esc(sortLabel) + '</span>' + icon('chevronDown', 'h-3.5 w-3.5')
+    + t('browse.sort', { label: '<span data-sort-label>' + esc(sortLabel) + '</span>' }) + icon('chevronDown', 'h-3.5 w-3.5')
     + '</button>'
     + '<div data-sort-menu class="absolute right-0 top-full z-30 mt-1.5 hidden w-56 rounded-xl border border-zinc-100 bg-white p-1.5 shadow-card-lg" role="menu">'
     + sortMenuItemsHtml(f.sort)
@@ -102,14 +103,14 @@ function sortMenuItemsHtml(current) {
     '<button type="button" data-sort-item="' + o.id + '" role="menuitemradio" aria-checked="' + (o.id === current)
     + '" class="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm text-zinc-700 hover:bg-zinc-50">'
     + '<span class="check-slot w-4 shrink-0">' + (o.id === current ? icon('check', 'h-4 w-4 text-brand-600') : '') + '</span>'
-    + esc(o.label) + '</button>').join('');
+    + esc(sortOptionLabel(o.id)) + '</button>').join('');
 }
 
 /* Refresh just the sort control + chip row in place, so applying a filter
  * does not rebuild the grid's parent and lose scroll. */
 export function updateFilterBar(root, f) {
   root.querySelectorAll('[data-sort-label]').forEach((el) => {
-    el.textContent = (SORT_OPTIONS.find((o) => o.id === f.sort) || SORT_OPTIONS[0]).label;
+    el.textContent = sortOptionLabel((SORT_OPTIONS.find((o) => o.id === f.sort) || SORT_OPTIONS[0]).id);
   });
   root.querySelectorAll('[data-sort-menu] [data-sort-item]').forEach((btn) => {
     const on = btn.dataset.sortItem === f.sort;
@@ -135,13 +136,13 @@ function selectedCitiesHtml(f) {
   return '<div class="mt-2 flex flex-wrap gap-1.5" data-city-chips>'
     + f.cities.map((c) =>
       '<span class="fchip">' + esc(c)
-      + '<button type="button" data-city-remove="' + esc(c) + '" aria-label="Remove ' + esc(c)
+      + '<button type="button" data-city-remove="' + esc(c) + '" aria-label="' + esc(t('aria.removeCity', { city: c }))
       + '" class="fchip-x">' + icon('x', 'h-3 w-3') + '</button></span>').join('')
     + '</div>';
 }
 
 export function locationSelectHtml(f) {
-  const provinceLabel = f.province || 'All Locations';
+  const provinceLabel = f.province || t('filter.allLocations');
   const list = LOCATIONS.map((p) => {
     const open = f.province === p.name;
     const options = p.cities.map((c) => {
@@ -165,23 +166,23 @@ export function locationSelectHtml(f) {
 
   return '<div data-location-select>'
     + '<div class="relative">'
-    + '<button type="button" id="loc-combobox" data-loc-toggle role="combobox" aria-expanded="false" aria-controls="loc-list" aria-haspopup="listbox" aria-label="Filter by location" class="field flex items-center justify-between text-left">'
+    + '<button type="button" id="loc-combobox" data-loc-toggle role="combobox" aria-expanded="false" aria-controls="loc-list" aria-haspopup="listbox" aria-label="' + esc(t('aria.filterByLocation')) + '" class="field flex items-center justify-between text-left">'
     + '<span class="truncate' + (f.province ? ' text-zinc-900' : ' text-zinc-400') + '" data-loc-label>' + esc(provinceLabel) + '</span>'
     + icon('chevronDown', 'h-4 w-4 text-zinc-400')
     + '</button>'
     + '<div id="loc-popover" class="mt-1.5 hidden rounded-xl border border-zinc-100 bg-white p-2 shadow-card-lg">'
     + '<div class="relative">'
     + '<span class="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400">' + icon('search', 'h-4 w-4') + '</span>'
-    + '<input type="search" id="loc-search" role="combobox" aria-controls="loc-list" aria-autocomplete="list" aria-expanded="true" autocomplete="off" placeholder="Search cities" class="field pl-8" data-loc-search>'
+    + '<input type="search" id="loc-search" role="combobox" aria-controls="loc-list" aria-autocomplete="list" aria-expanded="true" autocomplete="off" placeholder="' + esc(t('filter.searchCities')) + '" class="field pl-8" data-loc-search>'
     + '</div>'
-    + '<div id="loc-list" role="listbox" aria-multiselectable="true" aria-label="Cities" class="mt-1.5 max-h-60 overflow-y-auto pr-0.5" data-loc-list>'
+    + '<div id="loc-list" role="listbox" aria-multiselectable="true" aria-label="' + esc(t('filter.cities')) + '" class="mt-1.5 max-h-60 overflow-y-auto pr-0.5" data-loc-list>'
     + list
-    + '<p class="hidden p-2 text-sm text-zinc-500" data-loc-none>No cities match</p>'
+    + '<p class="hidden p-2 text-sm text-zinc-500" data-loc-none>' + esc(t('filter.noCities')) + '</p>'
     + '</div>'
     + '</div></div>'
     + selectedCitiesHtml(f)
     + '<button type="button" data-use-location class="mt-2 inline-flex h-9 items-center gap-1.5 rounded-lg px-2 text-xs font-semibold text-brand-700 hover:bg-brand-50">'
-    + icon('mapPin', 'h-4 w-4') + 'Use my current location</button>'
+    + icon('mapPin', 'h-4 w-4') + esc(t('filter.useMyLocation')) + '</button>'
     + '</div>';
 }
 
@@ -196,11 +197,11 @@ function cityOptionId(province, city) {
 export function priceRangeHtml(f) {
   return '<div data-price-range>'
     + '<div class="flex items-center gap-2">'
-    + '<input type="text" inputmode="decimal" id="price-min" data-price-min class="field" placeholder="Min" aria-label="Minimum price" value="' + esc(centsToInput(f.min)) + '">'
+    + '<input type="text" inputmode="decimal" id="price-min" data-price-min class="field" placeholder="' + esc(t('filter.min')) + '" aria-label="' + esc(t('aria.minPrice')) + '" value="' + esc(centsToInput(f.min)) + '">'
     + '<span class="text-zinc-400" aria-hidden="true">-</span>'
-    + '<input type="text" inputmode="decimal" id="price-max" data-price-max class="field" placeholder="Max" aria-label="Maximum price" value="' + esc(centsToInput(f.max)) + '">'
+    + '<input type="text" inputmode="decimal" id="price-max" data-price-max class="field" placeholder="' + esc(t('filter.max')) + '" aria-label="' + esc(t('aria.maxPrice')) + '" value="' + esc(centsToInput(f.max)) + '">'
     + '</div>'
-    + '<p class="mt-1.5 text-xs text-zinc-500" data-price-msg>Enter an amount, then Apply.</p>'
+    + '<p class="mt-1.5 text-xs text-zinc-500" data-price-msg>' + esc(t('filter.priceHint')) + '</p>'
     + '</div>';
 }
 
@@ -209,7 +210,7 @@ export function priceRangeHtml(f) {
 /* ------------------------------------------------------------------ */
 
 export function sortRadioHtml(f) {
-  return '<div role="radiogroup" aria-label="Sort by" class="mt-1.5">'
+  return '<div role="radiogroup" aria-label="' + esc(t('aria.sortBy')) + '" class="mt-1.5">'
     + SORT_OPTIONS.map((o) =>
       '<button type="button" role="radio" aria-checked="' + (o.id === f.sort) + '" data-sort-radio="' + o.id
       + '" class="flex w-full items-center gap-3 py-2.5 text-left text-sm '
@@ -217,7 +218,7 @@ export function sortRadioHtml(f) {
       + '<span class="dot flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 '
       + (o.id === f.sort ? 'border-brand-600 bg-brand-600 text-white' : 'border-zinc-300') + '">'
       + (o.id === f.sort ? icon('check', 'h-2.5 w-2.5') : '') + '</span>'
-      + esc(o.label) + '</button>').join('')
+      + esc(sortOptionLabel(o.id)) + '</button>').join('')
     + '</div>';
 }
 
@@ -229,18 +230,18 @@ export function filterSheetHtml({ filters, resultCount }) {
   return '<div class="absolute inset-0 bg-zinc-900/40" data-filter-close></div>'
     + '<div class="absolute inset-x-0 bottom-0 mx-auto flex max-h-[85vh] w-full flex-col rounded-t-2xl bg-white shadow-card-lg md:inset-0 md:my-auto md:h-fit md:max-w-md md:rounded-2xl" role="document">'
     + '<div class="flex items-center justify-between border-b border-zinc-100 px-4 py-3">'
-    + '<h2 class="text-base font-bold text-zinc-900">Filters</h2>'
-    + '<button type="button" data-filter-close class="icon-btn" aria-label="Close filters">' + icon('x', 'h-5 w-5') + '</button>'
+    + '<h2 class="text-base font-bold text-zinc-900">' + esc(t('aria.filters')) + '</h2>'
+    + '<button type="button" data-filter-close class="icon-btn" aria-label="' + esc(t('aria.closeFilters')) + '">' + icon('x', 'h-5 w-5') + '</button>'
     + '</div>'
     + '<div class="flex-1 space-y-5 overflow-y-auto px-4 py-4">'
-    + '<div>' + sectionHeading('Location') + '<div class="mt-2">' + locationSelectHtml(filters) + '</div></div>'
-    + '<div>' + sectionHeading('Price') + '<div class="mt-2">' + priceRangeHtml(filters) + '</div></div>'
-    + '<div>' + sectionHeading('Sort by') + sortRadioHtml(filters) + '</div>'
+    + '<div>' + sectionHeading(t('filter.location')) + '<div class="mt-2">' + locationSelectHtml(filters) + '</div></div>'
+    + '<div>' + sectionHeading(t('filter.price')) + '<div class="mt-2">' + priceRangeHtml(filters) + '</div></div>'
+    + '<div>' + sectionHeading(t('filter.sortBy')) + sortRadioHtml(filters) + '</div>'
     + '</div>'
     + '<div class="border-t border-zinc-100 p-3" style="padding-bottom: calc(0.75rem + var(--un-safe-inset-bottom, 0px));">'
     + '<div class="flex gap-2">'
-    + '<button type="button" data-filter-reset class="btn-outline flex-1">Reset</button>'
-    + '<button type="button" data-filter-apply class="btn-primary flex-1">Apply</button>'
+    + '<button type="button" data-filter-reset class="btn-outline flex-1">' + esc(t('common.reset')) + '</button>'
+    + '<button type="button" data-filter-apply class="btn-primary flex-1">' + esc(t('common.apply')) + '</button>'
     + '</div>'
     + '<p class="mt-2 text-center text-xs text-zinc-500" data-sheet-count>' + esc(countLabel(resultCount)) + '</p>'
     + '</div></div>';
@@ -402,23 +403,23 @@ export function bindFilterControls(root, service) {
   // (that would drop focus and the caret).
   function onSheetInput(e) {
     if (!staged) return;
-    const t = e.target;
-    if (t.matches('[data-price-min]')) {
-      patchStaged({ min: t.value.trim() === '' ? null : parseAmount(t.value) });
+    const el = e.target;
+    if (el.matches('[data-price-min]')) {
+      patchStaged({ min: el.value.trim() === '' ? null : parseAmount(el.value) });
       setPriceMessage();
-    } else if (t.matches('[data-price-max]')) {
-      patchStaged({ max: t.value.trim() === '' ? null : parseAmount(t.value) });
+    } else if (el.matches('[data-price-max]')) {
+      patchStaged({ max: el.value.trim() === '' ? null : parseAmount(el.value) });
       setPriceMessage();
-    } else if (t.matches('[data-loc-search]')) {
-      filterCityList(t.value);
+    } else if (el.matches('[data-loc-search]')) {
+      filterCityList(el.value);
     }
   }
   root.addEventListener('input', onSheetInput);
 
   root.addEventListener('change', (e) => {
     if (!staged) return;
-    const t = e.target;
-    if (t.matches('[data-price-min]') || t.matches('[data-price-max]')) onSheetInput(e);
+    const el = e.target;
+    if (el.matches('[data-price-min]') || el.matches('[data-price-max]')) onSheetInput(e);
   });
 
   // Keyboard support: Escape closes the sheet (and any open menu/popover);
@@ -574,10 +575,10 @@ export function bindFilterControls(root, service) {
     const msg = root.querySelector('[data-price-msg]');
     if (!msg || !staged) return;
     if (staged.min !== null && staged.max !== null && staged.min > staged.max) {
-      msg.textContent = 'Minimum is above maximum. They will be swapped when you apply.';
+      msg.textContent = t('filter.priceSwap');
       msg.classList.add('text-rose-600');
     } else {
-      msg.textContent = 'Enter an amount, then Apply.';
+      msg.textContent = t('filter.priceHint');
       msg.classList.remove('text-rose-600');
     }
   }
@@ -592,7 +593,7 @@ export function bindFilterControls(root, service) {
     const msg = root.querySelector('[data-price-msg]');
     if (!bridge || typeof bridge.requestPermission !== 'function'
       || (typeof bridge.hasCapability === 'function' && !bridge.hasCapability('geolocation'))) {
-      if (msg) msg.textContent = 'Location services are not available here.';
+      if (msg) msg.textContent = t('filter.locationUnavailable');
       return;
     }
     if (!navigator.geolocation) return;
@@ -600,8 +601,8 @@ export function bindFilterControls(root, service) {
       const r = await bridge.requestPermission('geolocation');
       if (!r || r.state !== 'granted') {
         if (msg) msg.textContent = r && r.reason === 'declined'
-          ? 'Location permission was declined.'
-          : 'Location services are not available here.';
+          ? t('filter.locationDeclined')
+          : t('filter.locationUnavailable');
         return;
       }
       if (!r.active) return; // granted; the frame is about to reload
@@ -610,17 +611,17 @@ export function bindFilterControls(root, service) {
         const prov = city && LOCATIONS.find((p) => p.cities.some((c) => c.name === city));
         // Only an independently known city in the taxonomy may be applied.
         if (!city || !prov || !citiesByProvince(prov.name).includes(city)) {
-          if (msg) msg.textContent = 'No marketplace city is near you yet.';
+          if (msg) msg.textContent = t('filter.noCityNearby');
           return;
         }
         if (!staged) return;
         patchStaged({ province: prov.name, cities: [city] });
         refreshSheet();
       }, () => {
-        if (msg) msg.textContent = 'Could not read your location.';
+        if (msg) msg.textContent = t('filter.locationError');
       }, { timeout: 8000 });
     } catch {
-      if (msg) msg.textContent = 'Could not read your location.';
+      if (msg) msg.textContent = t('filter.locationError');
     }
   }
 }

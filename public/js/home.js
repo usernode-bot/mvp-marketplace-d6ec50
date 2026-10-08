@@ -19,6 +19,7 @@ import {
 } from './ui.js';
 import { goToHash } from './router.js';
 import { createFilterService, parseFilterParams, filterParams, hasActiveFilters } from './filters.js';
+import { bannerText, categoryName, onLocaleChange, t } from './i18n.js';
 import { fetchProducts } from './api.js';
 import { localProductPage } from './product-query.js';
 import {
@@ -73,12 +74,12 @@ function bannerHtml(b, i) {
     + '<span class="pointer-events-none absolute -right-6 -top-10 h-36 w-36 rounded-full bg-white/15"></span>'
     + '<span class="pointer-events-none absolute -bottom-14 right-16 h-28 w-28 rounded-full bg-white/10"></span>'
     + '<span class="pointer-events-none absolute bottom-2 right-3 opacity-25">' + icon(b.icon, 'h-20 w-20') + '</span>'
-    + '<span class="badge ' + (b.tone === 'slate' ? 'bg-white/15 text-white' : 'bg-white/20 text-white') + '">' + icon('gift', 'h-3 w-3') + 'Limited time</span>'
+    + '<span class="badge ' + (b.tone === 'slate' ? 'bg-white/15 text-white' : 'bg-white/20 text-white') + '">' + icon('gift', 'h-3 w-3') + esc(t('home.limitedTime')) + '</span>'
     + '<div class="relative max-w-[75%]">'
-    + '<h3 class="text-lg font-bold leading-tight sm:text-xl">' + b.title + '</h3>'
-    + '<p class="mt-1 text-xs leading-snug text-white/85 sm:text-sm">' + b.subtitle + '</p>'
+    + '<h3 class="text-lg font-bold leading-tight sm:text-xl">' + esc(bannerText(b, 'title')) + '</h3>'
+    + '<p class="mt-1 text-xs leading-snug text-white/85 sm:text-sm">' + esc(bannerText(b, 'body')) + '</p>'
     + '</div>'
-    + '<div class="relative"><button type="button" data-banner-action="' + i + '" class="inline-flex h-8 items-center gap-1 rounded-full bg-white px-3.5 text-xs font-semibold text-zinc-900 transition-colors hover:bg-zinc-100">' + b.cta + icon('chevronRight', 'h-3.5 w-3.5') + '</button></div>'
+    + '<div class="relative"><button type="button" data-banner-action="' + i + '" class="inline-flex h-8 items-center gap-1 rounded-full bg-white px-3.5 text-xs font-semibold text-zinc-900 transition-colors hover:bg-zinc-100">' + esc(bannerText(b, 'cta')) + icon('chevronRight', 'h-3.5 w-3.5') + '</button></div>'
     + '</article>';
 }
 
@@ -94,11 +95,11 @@ function tileLink(name, t) {
 }
 
 function categoryTile(c) {
-  return tileLink(c.name, CATEGORY_TILES[c.id]);
+  return tileLink(categoryName(c.id, c.name), CATEGORY_TILES[c.id]);
 }
 
 function moreTile() {
-  return tileLink('More', CATEGORY_TILES.more);
+  return tileLink(t('home.more'), CATEGORY_TILES.more);
 }
 
 /* ------------------------------------------------------------------ */
@@ -183,6 +184,15 @@ export function initFlashNav() {
   updateFlashNav();
 }
 
+/* The Flash Sale cards. Rebuilt on a language change so each card's localized
+ * labels (badges, add-to-cart aria) refresh. */
+function renderFlashRow() {
+  const row = document.getElementById('flash-row');
+  if (!row) return;
+  row.innerHTML = PRODUCTS.filter((p) => p.flash).map((p) =>
+    '<div class="w-40 shrink-0 snap-start sm:w-44">' + productCard(p, { compact: true }) + '</div>').join('');
+}
+
 /* ------------------------------------------------------------------ */
 /* Results (Big deals banner)                                          */
 /* ------------------------------------------------------------------ */
@@ -199,9 +209,9 @@ function openResults() {
   closePanels();
   const products = productsForFilter();
   const section = document.getElementById('results-section');
-  document.getElementById('results-title').textContent = 'Big deals';
+  document.getElementById('results-title').textContent = t('home.bigDeals');
   const count = document.getElementById('results-count');
-  count.textContent = products.length + (products.length === 1 ? ' item' : ' items');
+  count.textContent = t(products.length === 1 ? 'count.items.one' : 'count.items.other', { n: products.length });
 
   const grid = document.getElementById('results-grid');
   const empty = document.getElementById('results-empty');
@@ -215,13 +225,13 @@ function openResults() {
     grid.classList.add('hidden');
     empty.classList.remove('hidden');
     const suggestions = TRENDING.slice(0, 4)
-      .map((t) => '<button type="button" data-search-suggest="' + t + '" class="badge-soft h-8 px-3 text-xs hover:bg-zinc-200">' + t + '</button>')
+      .map((s) => '<button type="button" data-search-suggest="' + s + '" class="badge-soft h-8 px-3 text-xs hover:bg-zinc-200">' + s + '</button>')
       .join('');
     empty.innerHTML = emptyState({
       icon: 'search',
-      title: 'No results found',
-      body: 'No discounted products right now. Try a trending search instead.',
-      actionLabel: 'Clear search',
+      title: t('home.noResults'),
+      body: t('home.noDealsBody'),
+      actionLabel: t('home.clearSearch'),
       actionAttr: 'data-results-clear',
     })
       // Suggestion chips below the empty-state action.
@@ -257,25 +267,25 @@ function panelRows(q) {
   const term = q.trim().toLowerCase();
   if (!term) {
     const recent = store.recent.length
-      ? '<div class="flex items-center justify-between px-1 pb-1"><span class="text-xs font-semibold uppercase tracking-wide text-zinc-400">Recent searches</span>'
-        + '<button type="button" data-recent-clear class="text-xs font-medium text-brand-700 hover:underline">Clear all</button></div>'
+      ? '<div class="flex items-center justify-between px-1 pb-1"><span class="text-xs font-semibold uppercase tracking-wide text-zinc-400">' + esc(t('search.recent')) + '</span>'
+        + '<button type="button" data-recent-clear class="text-xs font-medium text-brand-700 hover:underline">' + esc(t('common.clearAll')) + '</button></div>'
         + '<div class="flex flex-wrap gap-2 pb-1">'
         + store.recent.map((r) => '<span class="inline-flex items-center gap-1 rounded-full bg-zinc-100 pl-3 pr-1.5 text-xs font-medium text-zinc-700">'
           + '<button type="button" data-recent="' + esc(r) + '" class="py-1.5 hover:text-zinc-900">' + esc(r) + '</button>'
-          + '<button type="button" data-recent-remove="' + esc(r) + '" aria-label="Remove ' + esc(r) + ' from recent searches" class="flex h-4 w-4 items-center justify-center rounded-full text-zinc-400 hover:bg-zinc-200 hover:text-zinc-600">' + icon('x', 'h-3 w-3') + '</button>'
+          + '<button type="button" data-recent-remove="' + esc(r) + '" aria-label="' + esc(t('search.removeRecent', { q: r })) + '" class="flex h-4 w-4 items-center justify-center rounded-full text-zinc-400 hover:bg-zinc-200 hover:text-zinc-600">' + icon('x', 'h-3 w-3') + '</button>'
           + '</span>').join('')
         + '</div>'
       : '';
-    const trending = '<div class="px-1 pb-1 pt-1 text-xs font-semibold uppercase tracking-wide text-zinc-400">Trending searches</div>'
+    const trending = '<div class="px-1 pb-1 pt-1 text-xs font-semibold uppercase tracking-wide text-zinc-400">' + esc(t('search.trending')) + '</div>'
       + '<div class="flex flex-wrap gap-2">'
-      + TRENDING.map((t) => '<button type="button" data-recent="' + t + '" class="inline-flex items-center gap-1.5 rounded-full bg-zinc-100 px-3 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-200">' + icon('search', 'h-3 w-3') + t + '</button>').join('')
+      + TRENDING.map((s) => '<button type="button" data-recent="' + s + '" class="inline-flex items-center gap-1.5 rounded-full bg-zinc-100 px-3 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-200">' + icon('search', 'h-3 w-3') + s + '</button>').join('')
       + '</div>';
-    if (!recent && !trending) return '<p class="p-2 text-sm text-zinc-400">Start typing to search.</p>';
+    if (!recent && !trending) return '<p class="p-2 text-sm text-zinc-400">' + esc(t('search.startTyping')) + '</p>';
     return recent + trending;
   }
   const matches = PRODUCTS.filter((p) => p.name.toLowerCase().includes(term)).slice(0, 6);
   if (!matches.length) {
-    return '<p class="p-2 text-sm text-zinc-500">No matches for "' + esc(q) + '". Press Enter to search anyway.</p>';
+    return '<p class="p-2 text-sm text-zinc-500">' + esc(t('search.noMatches', { q })) + '</p>';
   }
   return matches.map((p) => '<button type="button" data-suggest="' + p.name + '" class="flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-left text-sm text-zinc-700 hover:bg-zinc-50">'
     + '<span class="text-zinc-400">' + icon('search', 'h-4 w-4') + '</span>'
@@ -358,6 +368,23 @@ function goTo(i) {
   setDots();
 }
 
+/* Fill the carousel track with the banners. Split from initCarousel so a
+ * language change can refill the copy without re-binding the scroll listener
+ * or starting a second autoplay timer. */
+function fillCarousel() {
+  const carousel = document.getElementById('promo-carousel');
+  if (carousel) carousel.innerHTML = BANNERS.map(bannerHtml).join('');
+}
+
+/* The carousel dots. Rebuilt on a language change because each dot carries a
+ * localized aria-label. */
+function renderDots() {
+  const dots = document.getElementById('promo-dots');
+  if (!dots) return;
+  dots.innerHTML = [0, 1, 2].map((i) =>
+    '<button type="button" data-dot="' + i + '" aria-label="' + esc(t('aria.goToBanner', { n: i + 1 })) + '" class="un-touch-target h-2 w-2 rounded-full bg-zinc-300 transition-all"></button>').join('');
+}
+
 function initCarousel() {
   const track = document.getElementById('promo-carousel');
   if (!track) return;
@@ -416,6 +443,13 @@ function recommendedHash(f) {
   return '#/home' + (qs ? '?' + qs : '');
 }
 
+/* Rebuild the Recommended toolbar in place from the current filter set, so
+ * its "Filters" / "Sort:" labels follow a language change. */
+function refreshFilterBar() {
+  const bar = document.getElementById('recommended-filterbar');
+  if (bar && recommendedService) bar.innerHTML = filterBarHtml(recommendedService.filters);
+}
+
 function renderRecommendedLoading() {
   const grid = document.getElementById('recommended-grid');
   const more = document.getElementById('recommended-more');
@@ -453,7 +487,7 @@ function renderRecommended() {
       const remaining = s.total - s.items.length;
       more.innerHTML = remaining > 0
         ? '<button type="button" id="recommended-more-btn" class="btn-outline btn-sm"'
-          + (s.loading ? ' disabled' : '') + '>Load more<span class="text-zinc-400">(' + remaining + ')</span></button>'
+          + (s.loading ? ' disabled' : '') + '>' + esc(t('common.loadMore')) + '<span class="text-zinc-400">(' + remaining + ')</span></button>'
         : '';
     }
   } else {
@@ -463,11 +497,11 @@ function renderRecommended() {
     if (empty) {
       empty.innerHTML = emptyState({
         icon: 'search',
-        title: 'No products found.',
+        title: t('home.emptyTitle'),
         body: hasActiveFilters(s.filters)
-          ? 'Try changing your filters.'
-          : 'Nothing to show here right now. Try again in a moment.',
-        actionLabel: hasActiveFilters(s.filters) ? 'Clear all' : '',
+          ? t('home.emptyBodyFilters')
+          : t('home.emptyBody'),
+        actionLabel: hasActiveFilters(s.filters) ? t('common.clearAll') : '',
         actionAttr: 'data-filter-clear',
       });
       empty.classList.remove('hidden');
@@ -513,7 +547,7 @@ const recommendedService = createFilterService({
   pushHash: (hash) => goToHash(hash),
   extraParams: () => ({}),
   limit: REC_PAGE,
-  onError: (msg) => toast(msg),
+  onError: () => toast(t('home.loadFailed')),
 });
 
 /* ------------------------------------------------------------------ */
@@ -523,8 +557,7 @@ const recommendedService = createFilterService({
 export function initHome() {
   // 1. Skeletons immediately, so the shell never shows an empty grid.
   document.getElementById('promo-carousel').innerHTML = skeletonBanner() + skeletonBanner() + skeletonBanner();
-  document.getElementById('promo-dots').innerHTML = [0, 1, 2].map((i) =>
-    '<button type="button" data-dot="' + i + '" aria-label="Go to banner ' + (i + 1) + '" class="un-touch-target h-2 w-2 rounded-full bg-zinc-300 transition-all"></button>').join('');
+  document.getElementById('promo-dots').innerHTML = '';
   document.getElementById('category-grid').innerHTML = CATEGORIES.concat([{ id: 'more' }]).map(() => skeletonCategoryTile()).join('');
   document.getElementById('flash-row').innerHTML = Array.from({ length: 5 }, () =>
     '<div class="w-40 shrink-0 snap-start sm:w-44">' + skeletonCard(true) + '</div>').join('');
@@ -533,8 +566,7 @@ export function initHome() {
   // 2. The Recommended filter bar: the toolbar renders at once (from the
   //    default filter set), then the service fills the grid from the URL.
   recommendedSection = document.getElementById('section-recommended');
-  const bar = document.getElementById('recommended-filterbar');
-  if (bar) bar.innerHTML = filterBarHtml(recommendedService.filters);
+  refreshFilterBar();
   recommendedService.subscribe(renderRecommended);
   bindFilterControls(recommendedSection, recommendedService);
   bindRecommended();
@@ -542,18 +574,37 @@ export function initHome() {
   // 3. Static home content shortly after. This is only long enough for the
   //    skeleton state to be visible (and testable).
   setTimeout(() => {
-    document.getElementById('promo-carousel').innerHTML = BANNERS.map(bannerHtml).join('');
-    document.getElementById('category-grid').innerHTML =
-      CATEGORIES.map(categoryTile).join('') + moreTile();
-    document.getElementById('flash-row').innerHTML =
-      PRODUCTS.filter((p) => p.flash).map((p) =>
-        '<div class="w-40 shrink-0 snap-start sm:w-44">' + productCard(p, { compact: true }) + '</div>').join('');
+    renderHomeContent();
     initCarousel();
     initFlashNav();
   }, 450);
 
+  // 4. A language change refills the static home content and the toolbar in
+  //    the new language without a reload (the recommended grid re-fetches
+  //    through the route re-render).
+  onLocaleChange(() => {
+    renderHomeContent();
+    // Re-fetch the Recommended grid so localized catalog content (name,
+    // description) follows the language too, not only the chrome.
+    if (recommendedService) recommendedService.reload();
+    updateFlashNav();
+  });
+
   startCountdown();
   bindSearch();
+}
+
+/* Fill every static piece of the home page from the active language. Safe to
+ * call repeatedly: it only sets innerHTML and rebuilds the filter toolbar, so
+ * a language change does not duplicate the carousel/flash listeners. */
+function renderHomeContent() {
+  fillCarousel();
+  renderDots();
+  const catGrid = document.getElementById('category-grid');
+  if (catGrid) catGrid.innerHTML = CATEGORIES.map(categoryTile).join('') + moreTile();
+  renderFlashRow();
+  refreshFilterBar();
+  renderRecommended();
 }
 
 /* Banner CTA targets: the deals banner opens a discounted-items results view

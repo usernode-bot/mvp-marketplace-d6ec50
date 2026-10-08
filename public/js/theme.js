@@ -11,6 +11,8 @@
  * Purple Dream, so an unset data-theme attribute renders the default.
  */
 
+import { t } from './i18n.js';
+
 export const THEMES = [
   { id: 'purple', name: 'Purple Dream' },
   { id: 'ocean', name: 'Ocean Breeze' },
@@ -73,10 +75,10 @@ export function themeName(id) {
  * compiler sees them. */
 export function swatchButtons() {
   const current = getTheme();
-  return THEMES.map((t) =>
-    '<button type="button" class="theme-swatch theme-swatch-' + t.id + '" data-theme-swatch="' + t.id + '"'
-    + ' role="radio" aria-checked="' + (t.id === current) + '"'
-    + ' aria-label="Switch to ' + t.name + ' theme" title="' + t.name + '"></button>'
+  return THEMES.map((theme) =>
+    '<button type="button" class="theme-swatch theme-swatch-' + theme.id + '" data-theme-swatch="' + theme.id + '"'
+    + ' role="radio" aria-checked="' + (theme.id === current) + '"'
+    + ' aria-label="' + t('theme.switchTo', { name: theme.name }) + '" title="' + theme.name + '"></button>'
   ).join('');
 }
 

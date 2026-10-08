@@ -16,6 +16,7 @@
  */
 
 import { SORT_OPTIONS, DEFAULT_SORT } from './sort-options.js';
+import { intlLocale, sortOptionLabel, t } from './i18n.js';
 
 /* How long to wait after the last keystroke/number before asking the server.
  * The URL is updated immediately (so the address bar is truthful and a
@@ -45,10 +46,15 @@ export function activeFilterCount(f) {
     + (f.min !== null || f.max !== null ? 1 : 0);
 }
 
-/* "$25" for a whole-dollar amount, "$25.50" otherwise. */
+/* "$25" for a whole-dollar amount, "$25.50" otherwise, in the selected
+ * locale (currency stays USD). */
 function fmtAmount(cents) {
   const d = cents / 100;
-  return '$' + (Number.isInteger(d) ? String(d) : d.toFixed(2));
+  try {
+    return new Intl.NumberFormat(intlLocale(), { style: 'currency', currency: 'USD', maximumFractionDigits: 2 }).format(d);
+  } catch {
+    return '$' + (Number.isInteger(d) ? String(d) : d.toFixed(2));
+  }
 }
 
 /* Short human labels for the active-filter chips, in a stable order:
@@ -62,15 +68,15 @@ export function filterChips(f) {
     chips.push({ key: 'location', label, title: f.province && f.cities.length ? f.province + ': ' + f.cities.join(', ') : label });
   }
   if (f.min !== null && f.max !== null) {
-    chips.push({ key: 'price', label: fmtAmount(f.min) + ' - ' + fmtAmount(f.max), title: 'Price ' + fmtAmount(f.min) + ' to ' + fmtAmount(f.max) });
+    chips.push({ key: 'price', label: fmtAmount(f.min) + ' - ' + fmtAmount(f.max), title: t('filter.chipPriceRange', { min: fmtAmount(f.min), max: fmtAmount(f.max) }) });
   } else if (f.min !== null) {
-    chips.push({ key: 'price', label: 'From ' + fmtAmount(f.min), title: 'Price from ' + fmtAmount(f.min) });
+    chips.push({ key: 'price', label: t('filter.chipFrom', { min: fmtAmount(f.min) }), title: t('filter.chipFromTitle', { min: fmtAmount(f.min) }) });
   } else if (f.max !== null) {
-    chips.push({ key: 'price', label: 'Up to ' + fmtAmount(f.max), title: 'Price up to ' + fmtAmount(f.max) });
+    chips.push({ key: 'price', label: t('filter.chipUpTo', { max: fmtAmount(f.max) }), title: t('filter.chipUpToTitle', { max: fmtAmount(f.max) }) });
   }
   if (f.sort !== DEFAULT_SORT) {
-    const opt = SORT_OPTIONS.find((o) => o.id === f.sort);
-    chips.push({ key: 'sort', label: opt ? opt.label : f.sort, title: 'Sort: ' + (opt ? opt.label : f.sort) });
+    const label = sortOptionLabel(f.sort);
+    chips.push({ key: 'sort', label, title: t('filter.chipSortTitle', { label }) });
   }
   return chips;
 }
@@ -177,7 +183,7 @@ export function toApiParams(f, extra = {}) {
  *   pushHash(hash)    -> void                    (router goToHash)
  *   extraParams()     -> object                  route params to send too
  *                      (q, cat, sub), read fresh on each request
- *   onError(message)  -> void                    optional
+ *   onError()        -> void                    optional (a toast)
  * ------------------------------------------------------------------------- */
 export function createFilterService(options = {}) {
   const fetcher = options.fetcher;
@@ -251,7 +257,7 @@ export function createFilterService(options = {}) {
     } else {
       state.loading = false;
       state.error = result ? result.status : 0;
-      onError('Could not load products. Pull to refresh or try again.');
+      if (typeof onError === 'function') onError();
     }
     emit();
   }
