@@ -4,9 +4,53 @@
  * carry their own listeners.
  */
 
-import { icon, productArt } from './icons.js';
+import { icon, productArt, productPlaceholder, sizedImage } from './icons.js';
 import { discountPct } from './data.js';
 import { store } from './store.js';
+
+/* ---------------------------------------------------------------------------
+ * Product photos for the generated marketplace catalog.
+ *
+ * Those photos live on Pexels' CDN, which resizes on request, so each surface
+ * asks for the size it shows (card 480, thumbnail 160, gallery 900, zoom
+ * 1800) instead of downloading the 940px original everywhere. Any other URL
+ * (a committed photo, a data URI) is returned unchanged.
+ * ------------------------------------------------------------------------- */
+export { sizedImage };
+
+/* A photo that failed to load: drop the broken <img> and the shimmer, and
+ * show the neutral placeholder in the same fixed box. This is the ONLY time
+ * the fallback appears; while loading, the shimmer shows instead. */
+window.unImgFail = function (img) {
+  const holder = img.parentElement;
+  if (!holder) return;
+  const alt = img.getAttribute('alt') || 'Product';
+  img.remove();
+  const shimmer = holder.querySelector('[data-img-shimmer]');
+  if (shimmer) shimmer.remove();
+  if (!holder.querySelector('[data-img-fallback]')) {
+    holder.insertAdjacentHTML('beforeend', '<div data-img-fallback class="absolute inset-0 bg-zinc-100">'
+      + productPlaceholder({ name: alt }, 'absolute inset-0 h-full w-full text-zinc-300') + '</div>');
+  }
+};
+
+window.unImgLoaded = function (img) {
+  const shimmer = img.parentElement && img.parentElement.querySelector('[data-img-shimmer]');
+  if (shimmer) shimmer.remove();
+};
+
+/* One photo in a fixed-aspect box: a pulsing placeholder while it loads, the
+ * photo once it has, the fallback only if it fails. `opts.w` is the pixel
+ * width to request, `opts.eager` skips lazy loading (the detail page's main
+ * photo), `opts.cls` adds classes to the <img> (e.g. the zoom transition). */
+export function photoHtml(url, alt, opts = {}) {
+  const w = opts.w || 480;
+  return '<div data-img-shimmer class="absolute inset-0 animate-pulse bg-zinc-100"></div>'
+    + '<img src="' + esc(sizedImage(url, w)) + '" alt="' + esc(alt) + '" width="' + w + '" height="' + w + '"'
+    + (opts.eager ? ' fetchpriority="high"' : ' loading="lazy"') + ' decoding="async" data-product-image'
+    + ' class="product-img absolute inset-0 h-full w-full ' + (opts.fit === 'contain' ? 'object-contain' : 'object-cover') + (opts.cls ? ' ' + opts.cls : '') + '"'
+    + ' onload="unImgLoaded(this)" onerror="unImgFail(this)">';
+}
 
 /* $12.99 from integer cents. */
 export function fmtPrice(cents) {
@@ -170,12 +214,19 @@ export function productCard(p, opts = {}) {
   // array. The generated illustration stays behind it as the instant first
   // paint and the failure fallback.
   const photo = (p.images && p.images.length) ? p.images[0] : p.image;
+  // Generated marketplace products have no illustration: their box shows a
+  // shimmer while the photo loads and the neutral placeholder only if it
+  // fails (photoHtml). A product with no photo at all gets the placeholder.
   const art = '<div class="relative h-full w-full transition-transform duration-300 group-hover:scale-[1.03]' + (p.oos ? ' opacity-60' : '') + '">'
-    + productArt(p)
-    + (photo
-      ? '<img src="' + esc(photo) + '" alt="' + esc(p.name) + '" loading="lazy" decoding="async" data-product-image'
-        + ' class="product-img absolute inset-0 h-full w-full ' + (p.imageFit === 'contain' ? 'object-contain' : 'object-cover') + '" onerror="this.remove()">'
-      : '')
+    + (p.art
+      ? productArt(p)
+        + (photo
+          ? '<img src="' + esc(photo) + '" alt="' + esc(p.name) + '" loading="lazy" decoding="async" data-product-image'
+            + ' class="product-img absolute inset-0 h-full w-full ' + (p.imageFit === 'contain' ? 'object-contain' : 'object-cover') + '" onerror="this.remove()">'
+          : '')
+      : (photo
+        ? photoHtml(photo, p.name, { w: 480, fit: p.imageFit })
+        : '<div class="absolute inset-0 bg-zinc-100">' + productPlaceholder(p, 'absolute inset-0 h-full w-full text-zinc-300') + '</div>'))
     + '</div>';
 
   return '<article class="card product-card group flex cursor-pointer flex-col overflow-hidden" data-product="' + p.id + '">'
