@@ -32,6 +32,10 @@ const MESSAGES = {
   get unavailable() { return t('profile.photo.err.unavailable'); },
 };
 
+function msg(name) {
+  return t(MESSAGES[name]);
+}
+
 /* In-memory photo state. `url` is the platform file URL (or the staging demo
  * data URI); `loading` drives the avatar spinner. */
 const state = { url: null, fileId: null, loading: false, hydrated: false };
@@ -126,7 +130,7 @@ function removePhoto() {
       state.fileId = null;
       toast(t('profile.photo.toast.removed'));
     } else {
-      toast(MESSAGES.failed);
+      toast(msg('failed'));
     }
     renderProfileView();
   });
@@ -480,11 +484,11 @@ async function saveCrop() {
 
 function uploadErrorMessage(err) {
   const code = err && (err.code || err.message) ? String(err.code || err.message) : '';
-  if (code.includes('file_too_large')) return MESSAGES.tooLarge;
-  if (code.includes('invalid_image')) return MESSAGES.invalid;
-  if (code.includes('quota')) return MESSAGES.failed;
-  if (code.includes('storage_unavailable')) return MESSAGES.unavailable;
-  return MESSAGES.failed;
+  if (code.includes('file_too_large')) return msg('tooLarge');
+  if (code.includes('invalid_image')) return msg('invalid');
+  if (code.includes('quota')) return msg('failed');
+  if (code.includes('storage_unavailable')) return msg('unavailable');
+  return msg('failed');
 }
 
 function cancelCrop() {

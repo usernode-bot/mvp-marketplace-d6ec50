@@ -13,7 +13,7 @@
       "expectSelector": "#section-recommended [data-filter-toolbar] [data-filter-open]",
       "expectText": "Filters",
       "visual": true,
-      "impact": ["public/js/filter-ui.js", "public/js/filters.js", "public/js/home.js", "public/js/ui.js", "public/js/router.js", "public/index.html", "styles/tailwind-input.css", "src/products.cjs", "server.js"]
+      "impact": ["public/js/i18n.js", "public/js/filter-ui.js", "public/js/filters.js", "public/js/home.js", "public/js/ui.js", "public/js/router.js", "public/index.html", "styles/tailwind-input.css", "src/products.cjs", "server.js"]
     },
     {
       "id": "home.filter-city",
@@ -402,6 +402,52 @@
       "name": "Checkout preselects the saved default payment method",
       "path": "/?demo=checkout#/checkout",
       "expectText": "BCA"
+    },
+    {
+      "id": "i18n.settings-language-row",
+      "name": "Settings shows a Language row that opens the language picker",
+      "path": "/#/profile/settings",
+      "expectSelector": "[data-lang-pick]",
+      "expectText": "Language"
+    },
+    {
+      "id": "i18n.settings-spanish",
+      "name": "Settings renders in Spanish behind ?lang=es",
+      "path": "/?lang=es#/profile/settings",
+      "expectSelector": "[data-lang-pick]",
+      "expectText": "Idioma"
+    },
+    {
+      "id": "i18n.home-spanish",
+      "name": "Home chrome renders in Spanish behind ?lang=es",
+      "path": "/?lang=es",
+      "expectSelector": "#section-recommended h2.section-title",
+      "expectText": "Recomendado para ti"
+    },
+    {
+      "id": "i18n.search-placeholder-spanish",
+      "name": "The search input carries the Spanish placeholder behind ?lang=es",
+      "path": "/?lang=es#/search",
+      "expectSelector": "#search-page-input[placeholder=\"Buscar productos, marcas y más\"]"
+    },
+    {
+      "id": "i18n.cart-spanish",
+      "name": "Cart chrome renders in Spanish behind ?lang=es",
+      "path": "/?demo=1&lang=es#/cart",
+      "expectText": "Resumen del pedido"
+    },
+    {
+      "id": "i18n.english-default",
+      "name": "With no stored preference the app stays in English",
+      "path": "/",
+      "expectSelector": "#section-recommended h2.section-title",
+      "expectText": "Recommended for you"
+    },
+    {
+      "id": "i18n.fallback-missing-key",
+      "name": "A key missing from a partial locale falls back to its English text",
+      "path": "/?lang=pt-BR#/profile/settings",
+      "expectText": "Notification settings"
     },
     {
       "id": "home.search-quoted",

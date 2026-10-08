@@ -446,6 +446,13 @@ function recommendedHash(f) {
   return '#/home' + (qs ? '?' + qs : '');
 }
 
+/* Rebuild the Recommended toolbar in place from the current filter set, so
+ * its "Filters" / "Sort:" labels follow a language change. */
+function refreshFilterBar() {
+  const bar = document.getElementById('recommended-filterbar');
+  if (bar && recommendedService) bar.innerHTML = filterBarHtml(recommendedService.filters);
+}
+
 function renderRecommendedLoading() {
   const grid = document.getElementById('recommended-grid');
   const more = document.getElementById('recommended-more');
@@ -653,8 +660,7 @@ export function initHome() {
   // 2. The Recommended filter bar: the toolbar renders at once (from the
   //    default filter set), then the service fills the grid from the URL.
   recommendedSection = document.getElementById('section-recommended');
-  const bar = document.getElementById('recommended-filterbar');
-  if (bar) bar.innerHTML = filterBarHtml(recommendedService.filters);
+  refreshFilterBar();
   recommendedService.subscribe(renderRecommended);
   bindFilterControls(recommendedSection, recommendedService);
   bindRecommended();

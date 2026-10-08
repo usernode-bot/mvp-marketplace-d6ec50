@@ -78,6 +78,11 @@ function normalize(code) {
   return DICTS[base] ? base : 'en';
 }
 
+/* The active display locale. Kept in module state (not read from the store on
+ * every call) so applyLocale() can set it once and every t() reflects it
+ * immediately, including a re-render triggered by a locale change. */
+let activeLocale = null;
+
 export function locale() {
   return normalize(store && store.prefs ? store.prefs.locale : 'en');
 }

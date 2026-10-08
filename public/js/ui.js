@@ -53,12 +53,19 @@ export function photoHtml(url, alt, opts = {}) {
     + ' onload="unImgLoaded(this)" onerror="unImgFail(this)">';
 }
 
-/* $12.99 from integer cents. */
+
+/* "$12.99" from integer cents, in the selected locale. The currency stays USD
+ * (the stored amounts are integer cents), so only the formatting changes. */
 export function fmtPrice(cents) {
-  return '$' + (cents / 100).toFixed(2);
+  try {
+    return numberFormat({ style: 'currency', currency: 'USD' }).format(cents / 100);
+  } catch {
+    return '$' + (cents / 100).toFixed(2);
+  }
 }
 
-/* 12040 -> "12k", 980 -> "980". */
+/* 12040 -> "12k", 980 -> "980". Below 1000 the digits are grouped by the
+ * locale (1.234); above it the compact "k" form stays as the visual budget. */
 export function fmtCount(n) {
   if (n >= 1000) {
     const k = n / 1000;
@@ -67,7 +74,7 @@ export function fmtCount(n) {
     try { text = new Intl.NumberFormat(intlLocale(), { maximumFractionDigits: 1 }).format(v); } catch { /* keep plain */ }
     return t('ui.thousands', { n: text });
   }
-  return String(n);
+  return numberFormat({ useGrouping: true, maximumFractionDigits: 0 }).format(n);
 }
 
 /* Localized display names for the fixed category / subcategory vocabulary

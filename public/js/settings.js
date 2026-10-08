@@ -21,7 +21,7 @@ function pageHeader(title, backRoute) {
   return '<div class="flex items-center gap-1">'
     + '<button type="button" data-route="' + backRoute + '" class="icon-btn -ml-2" aria-label="' + esc(t('common.back')) + '">'
     + icon('chevronLeft', 'h-5 w-5') + '</button>'
-    + '<h1 class="section-title">' + title + '</h1>'
+    + '<h1 class="section-title">' + esc(title) + '</h1>'
     + '</div>';
 }
 
@@ -93,7 +93,7 @@ export function renderSettingsView() {
 
 function fieldRow(label, inputHtml) {
   return '<label class="block">'
-    + '<span class="mb-1.5 block text-xs font-semibold text-zinc-500">' + label + '</span>'
+    + '<span class="mb-1.5 block text-xs font-semibold text-zinc-500">' + esc(label) + '</span>'
     + inputHtml
     + '</label>';
 }

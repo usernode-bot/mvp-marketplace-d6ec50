@@ -240,7 +240,7 @@ function emptyResultsHtml() {
     });
   }
   const suggestions = POPULAR_SEARCHES.slice(0, 4)
-    .map((t) => '<button type="button" data-search-suggest="' + t + '" class="badge-soft h-8 px-3 text-xs hover:bg-zinc-200">' + t + '</button>')
+    .map((s) => '<button type="button" data-search-suggest="' + s + '" class="badge-soft h-8 px-3 text-xs hover:bg-zinc-200">' + s + '</button>')
     .join('');
   return emptyState({
     icon: 'search',
@@ -272,7 +272,7 @@ function searchHomeShell() {
     : '';
   const popular = '<section class="mt-6" aria-label="' + esc(t('browse.popularSearches')) + '"><h2 class="text-sm font-semibold text-zinc-900">' + esc(t('browse.popularSearches')) + '</h2>'
     + '<div class="mt-2.5 flex flex-wrap gap-2">'
-    + POPULAR_SEARCHES.map((t) => '<button type="button" data-search-suggest="' + t + '" class="inline-flex items-center gap-1.5 rounded-full bg-zinc-100 px-3 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-200">' + icon('flame', 'h-3.5 w-3.5') + t + '</button>').join('')
+    + POPULAR_SEARCHES.map((s) => '<button type="button" data-search-suggest="' + s + '" class="inline-flex items-center gap-1.5 rounded-full bg-zinc-100 px-3 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-200">' + icon('flame', 'h-3.5 w-3.5') + s + '</button>').join('')
     + '</div></section>';
   return '<h1 class="section-title">' + esc(t('browse.searchTitle')) + '</h1>'
     + '<div class="mt-3">' + searchInputHtml('search-page-input', t('browse.searchPlaceholder'), '') + '</div>'

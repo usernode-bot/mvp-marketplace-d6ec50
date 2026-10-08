@@ -207,7 +207,7 @@ function voucherBlock(totals) {
       + '<span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-50 text-brand-600">' + icon('ticket', 'h-4 w-4') + '</span>'
       + '<div class="min-w-0 flex-1">'
       + '<p class="text-sm font-semibold text-zinc-900">' + v.code + '</p>'
-      + '<p class="text-xs text-zinc-500">' + voucherDescription(v) + '</p>'
+      + '<p class="text-xs text-zinc-500">' + esc(voucherDescription(v)) + '</p>'
       + '</div>'
       + (isApplied
         ? '<span class="badge-brand shrink-0">' + esc(t('cart.applied')) + '</span>'

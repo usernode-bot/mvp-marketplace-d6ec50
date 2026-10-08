@@ -17,6 +17,60 @@ const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 // demo avatar on ?demo=1); it never gates a feature or a code path.
 const IS_STAGING = process.env.USERNODE_ENV === 'staging';
 
+// Locales the API can answer with localized catalog content. The set mirrors
+// the client dictionaries; a request for any other tag falls back to English,
+// so an unknown language never empties a result.
+const KNOWN_LOCALES = ['en', 'es', 'pt-BR', 'id'];
+
+/* Map a BCP-47 tag (or an Accept-Language item, which may carry `;q=0.9`)
+ * onto a known locale, or null when nothing matches. */
+function localeId(tag) {
+  if (!tag || typeof tag !== 'string') return null;
+  const raw = tag.split(';')[0].trim();
+  if (!raw) return null;
+  const lower = raw.toLowerCase();
+  for (const known of KNOWN_LOCALES) {
+    if (known.toLowerCase() === lower) return known;
+  }
+  const base = lower.split('-')[0];
+  for (const known of KNOWN_LOCALES) {
+    if (known.toLowerCase().split('-')[0] === base) return known;
+  }
+  return null;
+}
+
+/* The locale for a request: an explicit `?lang=` override first, then the
+ * browser's Accept-Language (the app's frontend sends its active locale
+ * there), then the signed-in user's platform locale, then English. */
+function requestLocale(req) {
+  const candidates = [];
+  const q = req.query && typeof req.query.lang === 'string' ? req.query.lang : null;
+  if (q) candidates.push(q);
+  const header = req.headers && req.headers['accept-language'];
+  if (typeof header === 'string') candidates.push(...header.split(','));
+  if (req.user && req.user.locale) candidates.push(req.user.locale);
+  for (const candidate of candidates) {
+    const id = localeId(candidate);
+    if (id) return id;
+  }
+  return 'en';
+}
+
+// Short server-side copy for the handful of localized API messages. The
+// client dictionary owns everything the browser renders; this covers only
+// error strings the API itself returns.
+const SERVER_STRINGS = {
+  en: { loadFailed: 'Could not load products' },
+  es: { loadFailed: 'No se pudieron cargar los productos' },
+  'pt-BR': { loadFailed: 'Não foi possível carregar os produtos' },
+  id: { loadFailed: 'Tidak dapat memuat produk' },
+};
+
+function serverString(locale, key) {
+  const dict = SERVER_STRINGS[locale] || SERVER_STRINGS.en;
+  return dict[key] || SERVER_STRINGS.en[key];
+}
+
 // The platform signs user-identity tokens with an RSA private key it never
 // shares. Containers get only the PUBLIC half, so this app can verify who a
 // user is but cannot mint an identity — and neither can any other app.
@@ -872,6 +926,44 @@ async function seedReviews() {
 /* keep the table truthful in every environment.                       */
 /* ------------------------------------------------------------------ */
 
+/* Localized catalog content. One row per (product_id, locale) holds the
+ * translated name, description and spec rows; the API LEFT JOINs it and falls
+ * back to the English `products` columns when a locale has no row. Public
+ * table (it mirrors already-public catalog content); staging starts with only
+ * the English copy, so the boot seed below adds a couple of Spanish rows. */
+async function ensureProductI18nTable() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS product_i18n (
+      product_id TEXT NOT NULL,
+      locale TEXT NOT NULL,
+      name TEXT,
+      description TEXT,
+      specs JSONB,
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      PRIMARY KEY (product_id, locale)
+    )
+  `);
+}
+
+/* Staging-only seed: a couple of obviously fake Spanish rows so a tester can
+ * see localized catalog content behind ?lang=es. Idempotent and a strict
+ * no-op outside staging. Rows the app's own logic reads are untouched: this
+ * only feeds the LEFT JOIN that renders a product name. */
+async function seedProductI18n() {
+  const rows = [
+    ['r001', 'es', 'Portátil Nova 14" (Staging demo)', 'Un portátil fino con un procesador rápido, batería para todo el día y teclado retroiluminado.'],
+    ['p06', 'es', 'Camiseta de algodón orgánico (Staging demo)', 'Camiseta suave de algodón orgánico con un corte clásico que aguanta lavado tras lavado.'],
+  ];
+  for (const [productId, locale, name, description] of rows) {
+    await pool.query(
+      `INSERT INTO product_i18n (product_id, locale, name, description)
+       VALUES ($1, $2, $3, $4)
+       ON CONFLICT (product_id, locale) DO NOTHING`,
+      [productId, locale, name, description]
+    );
+  }
+}
+
 /* Idempotent upsert of the bundled catalog as a flat table, 100 rows a
  * statement. Re-running on every boot refreshes rows edited in the catalog
  * without duplicating them; it never deletes a row, so the generated
@@ -934,14 +1026,25 @@ app.get('/api/products', async (req, res) => {
   const params = parseParams(req.query);
   const where = buildWhere(params);
   const offset = (params.page - 1) * params.limit;
+  // Which locale to answer in. `?lang=` wins, then Accept-Language (the
+  // frontend sends its active locale there), then the user's platform locale.
+  const locale = requestLocale(req);
+  res.set('Content-Language', locale);
   try {
     const totalResult = await pool.query(
       'SELECT COUNT(*)::int AS total FROM products ' + where.clause, where.values);
     const total = totalResult.rows[0].total;
+    // Localized name/description/specs come from product_i18n via a LEFT JOIN;
+    // a missing row leaves the i18n_* columns NULL and toProduct falls back to
+    // the English column. The locale binds after the filter values and before
+    // LIMIT/OFFSET.
+    const localeIdx = where.values.length + 1;
     const listResult = await pool.query(
-      'SELECT * FROM products ' + where.clause + ' ' + orderBy(params.sort)
-      + ' LIMIT $' + (where.values.length + 1) + ' OFFSET $' + (where.values.length + 2),
-      where.values.concat([params.limit, offset]));
+      'SELECT p.*, i.name AS i18n_name, i.description AS i18n_description, i.specs AS i18n_specs'
+      + ' FROM products p LEFT JOIN product_i18n i ON i.product_id = p.id AND i.locale = $' + localeIdx
+      + ' ' + where.clause + ' ' + orderBy(params.sort)
+      + ' LIMIT $' + (localeIdx + 1) + ' OFFSET $' + (localeIdx + 2),
+      where.values.concat([locale, params.limit, offset]));
     const items = listResult.rows.map(toProduct);
     return res.json({
       items,
@@ -949,10 +1052,11 @@ app.get('/api/products', async (req, res) => {
       page: params.page,
       limit: params.limit,
       hasMore: offset + items.length < total,
+      locale,
     });
   } catch (err) {
     console.error('[products] load failed:', err.message);
-    return res.status(500).json({ error: 'Could not load products' });
+    return res.status(500).json({ error: serverString(locale, 'loadFailed') });
   }
 });
 
@@ -1060,8 +1164,12 @@ async function start() {
   // non-empty. Development/testing runs against a fresh local database, so
   // the same upsert is what fills it there.
   await ensureProductsTable(pool);
+  await ensureProductI18nTable();
   await seedCatalog(ROWS);
   if (IS_STAGING) await seedStagingDemo();
+  // Staging only: a couple of fake localized rows so ?lang=es has content to
+  // show. Strictly a no-op in production.
+  if (IS_STAGING) await seedProductI18n();
 
   // Reviews, their photos and the order mirror. Reviews/review_images are
   // public; orders/order_items are staging:private. The staging seed only

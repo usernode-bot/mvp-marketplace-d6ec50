@@ -13,7 +13,7 @@
 import { icon, productArt } from './icons.js';
 import { ORDER_SEEDS, productById } from './data.js';
 import { store } from './store.js';
-import { t, has } from './i18n.js';
+import { t } from './i18n.js';
 import { countryLabel, courierLabel } from './shipping.js';
 import { paymentLabel } from './payment.js';
 import { fmtDate, fmtPrice, emptyState, esc, toast, confirmDialog } from './ui.js';
@@ -60,20 +60,6 @@ function tabLabel(id) { return t('orders.tab.' + id); }
 function statusLabel(id) { return t('orders.status.' + id); }
 function statusHint(id) { return t('orders.hint.' + id); }
 
-/* The seed orders carry English snapshot text for payment, delivery method
- * and ETA; known values map to keys, anything else (a placed order's own
- * snapshot, a courier name) is shown as stored. */
-const SNAPSHOT_IDS = {
-  payment: { 'Visa ending in 4242': 'visa', 'MVP Marketplace Pay': 'pay', 'Payment on delivery': 'cod' },
-  method: { 'Standard delivery': 'standard', 'Express delivery': 'express' },
-  eta: { '3-5 business days': 'd35', '1-2 business days': 'd12' },
-};
-function snapshotText(group, value) {
-  const id = SNAPSHOT_IDS[group][value];
-  const key = 'orders.snap.' + group + '.' + id;
-  return id && has(key) ? t(key) : value;
-}
-
 let selectedTab = 'all';
 
 /* ------------------------------------------------------------------ */
@@ -95,7 +81,7 @@ function placedSeeds() {
     // Orders placed in the app carry stable ids: re-localize from them so a
     // language switch updates the stored order too. The name snapshots are the
     // fallback for older orders.
-    payment: (o.paymentId && paymentLabel(o.paymentId)) || o.paymentName || 'Payment on delivery', // snapshot; localized on display via snapshotText
+    payment: (o.paymentId && paymentLabel(o.paymentId)) || o.paymentName || 'Payment on delivery',
     shipMethod: (o.shippingId && courierLabel(o.shippingId)) || o.courierName || o.shippingName,
     shipEta: o.etaLabel,
     countryName: (o.countryId && countryLabel(o.countryId)) || o.countryName || '',
@@ -414,8 +400,8 @@ function renderOrderDetail(no) {
 
     // Payment + shipping method
     + '<div class="card mt-4 divide-y divide-zinc-100 overflow-hidden">'
-    + infoRow('creditCard', esc(t('orders.paymentMethod')), esc(snapshotText('payment', o.payment)))
-    + infoRow('truck', esc(t('orders.courier')), esc(o.courierName || snapshotText('method', o.shipMethod)), (o.countryName ? esc(t('orders.shipTo', { country: o.countryName })) + ' · ' : '') + esc(snapshotText('eta', o.shipEta)))
+    + infoRow('creditCard', esc(t('orders.paymentMethod')), esc(o.payment))
+    + infoRow('truck', esc(t('orders.courier')), esc(o.courierName || o.shipMethod), (o.countryName ? esc(t('orders.shipTo', { country: o.countryName })) + ' · ' : '') + esc(o.shipEta))
     + '</div>'
 
     // Price breakdown
