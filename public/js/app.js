@@ -15,6 +15,7 @@ import { hydrateIcons, icon } from './icons.js';
 import { productById } from './data.js';
 import { store } from './store.js';
 import { toast } from './ui.js';
+import { initI18n, t } from './i18n.js';
 import { initTheme, setTheme } from './theme.js';
 import { clearResults, initHome, panelRows, runBannerAction, submitSearch, updateFlashNav } from './home.js';
 import { initOrders } from './orders.js';
@@ -63,7 +64,7 @@ function handleClick(e) {
   const favId = target.getAttribute('data-fav');
   if (favId) {
     const on = store.toggleFavorite(favId);
-    toast(on ? 'Added to favorites' : 'Removed from favorites');
+    toast(t(on ? 'app.favoriteAdded' : 'app.favoriteRemoved'));
     document.querySelectorAll('[data-fav="' + favId + '"]').forEach((btn) => {
       btn.innerHTML = icon(on ? 'heartFilled' : 'heart', 'h-4 w-4');
       btn.classList.toggle('fav-btn-on', on);
@@ -77,14 +78,14 @@ function handleClick(e) {
   if (addId) {
     const product = productById(addId);
     if (product && product.oos) {
-      toast('This item is sold out');
+      toast(t('app.soldOutToast'));
       return;
     }
     store.addToCart(addId);
-    toast('Added to cart');
+    toast(t('app.addedToCart'));
     // Brief "Added" confirmation on the button that was tapped.
     const original = target.innerHTML;
-    target.innerHTML = icon('check', 'h-4 w-4') + '<span class="hidden lg:inline">Added</span>';
+    target.innerHTML = icon('check', 'h-4 w-4') + '<span class="hidden lg:inline">' + t('app.added') + '</span>';
     target.disabled = true;
     setTimeout(() => {
       target.innerHTML = original;
@@ -157,7 +158,7 @@ function handleClick(e) {
   }
 
   if (target.hasAttribute('data-soon')) {
-    toast('Coming in a later phase');
+    toast(t('common.comingSoon'));
     return;
   }
 
@@ -196,27 +197,27 @@ function handleClick(e) {
   const save = target.getAttribute('data-cart-save');
   if (save) {
     store.saveForLater(save);
-    toast('Saved for later');
+    toast(t('app.savedForLater'));
     return;
   }
 
   const move = target.getAttribute('data-saved-move');
   if (move) {
     store.moveToCart(move);
-    toast('Moved to cart');
+    toast(t('app.movedToCart'));
     return;
   }
 
   const savedRemove = target.getAttribute('data-saved-remove');
   if (savedRemove) {
     store.removeSaved(savedRemove);
-    toast('Removed from saved items');
+    toast(t('app.removedSaved'));
     return;
   }
 
   if (target.hasAttribute('data-voucher-remove')) {
     store.clearVoucher();
-    toast('Voucher removed');
+    toast(t('app.voucherRemoved'));
     return;
   }
 
@@ -246,6 +247,9 @@ function handleClick(e) {
 /* ------------------------------------------------------------------ */
 
 function boot() {
+  // Apply the saved language to the static markup before first paint of the
+  // routed view; i18n.js is the single owner of the active language.
+  initI18n();
   hydrateIcons();
 
   document.addEventListener('click', handleClick);
@@ -261,6 +265,13 @@ function boot() {
     renderRoute();
     // The Flash Sale row's scroll offset and visible width change when the
     // home view is shown again, so refresh the arrow buttons' state.
+    updateFlashNav();
+  });
+
+  // Changing the language (Settings, i18n.setLocale) re-renders whatever
+  // screen is showing; static markup was already retranslated by setLocale.
+  window.addEventListener('localechange', () => {
+    renderRoute();
     updateFlashNav();
   });
 
