@@ -238,6 +238,31 @@
       opacity: 1;
     }
   }
+
+  /* Review composer drop zone: a dashed frame matching the avatar crop box,
+   * filling with the soft accent while a drag is over it. */
+  .dropzone {
+    @apply flex cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-zinc-300 bg-zinc-50 px-4 py-3 text-center text-xs text-zinc-500 transition-colors hover:border-brand-400 hover:bg-brand-50;
+  }
+  .dropzone-active {
+    @apply border-brand-500 bg-brand-50;
+  }
+
+  /* Photo lightbox: a fixed dark scrim in every theme, so its glyphs and
+   * body copy are fixed light colours that must NOT follow Midnight's
+   * surface overrides (they would invert to dark on dark). */
+  .photo-lightbox {
+    @apply fixed inset-0 z-[60] flex flex-col;
+    background-color: rgba(9, 9, 11, 0.95);
+    color: #f4f4f5;
+  }
+  .photo-lightbox .lb-muted { color: #a1a1aa; }
+  .photo-lightbox .lb-strong { color: #e4e4e7; }
+  .photo-lightbox-btn {
+    @apply flex h-10 w-10 items-center justify-center rounded-full text-white transition-colors;
+    background-color: rgba(255, 255, 255, 0.12);
+  }
+  .photo-lightbox-btn:hover { background-color: rgba(255, 255, 255, 0.24); }
 }
 
 /* Keyboard focus: visible ring for keyboard navigation only (WCAG 2.4.7).

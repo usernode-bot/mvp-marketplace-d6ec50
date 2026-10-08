@@ -16,8 +16,10 @@ import {
   categoryById,
   discountPct,
   matchSearch,
+  registerProducts,
   score,
 } from './data.js';
+import { fetchProducts } from './api.js';
 import { store } from './store.js';
 import { emptyState, esc, productCard, skeletonCard } from './ui.js';
 import { goToHash } from './router.js';
@@ -58,6 +60,8 @@ const DISCOUNT_OPTIONS = [
 
 const GRID_CLASS = 'grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6';
 
+const PAGE_SIZE = 24;
+
 let state = null;
 
 function defaultFilters() {
@@ -68,14 +72,39 @@ function defaultFilters() {
 /* Data selection                                                       */
 /* ------------------------------------------------------------------ */
 
-function scopeProducts() {
+/* A page's products are the bundled catalog plus the generated marketplace
+ * products fetched from the server (state.server, see loadServerScope). */
+function inScope(p) {
   if (state.mode === 'category') {
-    let list = PRODUCTS.filter((p) => p.cat === state.id);
-    if (state.sub) list = list.filter((p) => p.sub === state.sub);
-    if (state.inCatQuery) list = list.filter((p) => matchSearch(p, state.inCatQuery));
-    return list;
+    if (p.cat !== state.id) return false;
+    if (state.sub && p.sub !== state.sub) return false;
+    if (state.inCatQuery && !matchSearch(p, state.inCatQuery)) return false;
+    return true;
   }
-  return PRODUCTS.filter((p) => matchSearch(p, state.q));
+  return matchSearch(p, state.q);
+}
+
+function scopeProducts() {
+  return PRODUCTS.concat(state.server).filter(inScope);
+}
+
+/* Pull this page's server products, 100 a request, up to 1,000. Category
+ * pages ask for the category; search pages for the query (the server runs the
+ * same every-word match as matchSearch). The grid redraws when they arrive. */
+async function loadServerScope(sig) {
+  const params = state.mode === 'category' ? { cat: state.id } : { q: state.q };
+  const items = [];
+  for (let page = 1; page <= 10; page++) {
+    const res = await fetchProducts(Object.assign({ limit: 100, page }, params));
+    if (!res.ok || !res.data || !Array.isArray(res.data.items)) break;
+    items.push(...res.data.items.filter((it) => it.generated));
+    if (!res.data.hasMore) break;
+  }
+  if (!state || state.sig !== sig) return;
+  registerProducts(items);
+  state.server = items;
+  state.loading = false;
+  renderGrid();
 }
 
 function applyFilters(list) {
@@ -93,7 +122,9 @@ function applyFilters(list) {
 
 function applySort(list) {
   const sorted = [...list];
-  if (state.sort === 'recommended') sorted.sort((a, b) => score(b) - score(a));
+  // Recommended: the curated catalog leads (as on the home grid), then the
+  // generated marketplace products, each group by score.
+  if (state.sort === 'recommended') sorted.sort((a, b) => (a.generated ? 1 : 0) - (b.generated ? 1 : 0) || score(b) - score(a));
   else if (state.sort === 'popular') sorted.sort((a, b) => b.sold - a.sold);
   else if (state.sort === 'newest') sorted.sort((a, b) => a.age - b.age);
   else if (state.sort === 'price-asc') sorted.sort((a, b) => a.price - b.price);
@@ -281,6 +312,7 @@ function categoryShell() {
     + '<div class="mt-2">' + searchInputHtml('cat-search', t('browse.searchIn', { cat: categoryName(category.id, category.name) }), state.inCatQuery) + '</div>'
     + toolbarHtml()
     + '<div id="browse-grid" class="mt-3 ' + GRID_CLASS + '"></div>'
+    + '<div id="browse-more" class="mt-4 flex justify-center"></div>'
     + '<div id="browse-empty" class="hidden"></div>'
     + filterOverlay();
 }
@@ -293,6 +325,7 @@ function searchResultsShell() {
     + '<div class="mt-2">' + searchInputHtml('search-page-input', t('search.placeholder'), state.q) + '</div>'
     + toolbarHtml()
     + '<div id="browse-grid" class="mt-3 ' + GRID_CLASS + '"></div>'
+    + '<div id="browse-more" class="mt-4 flex justify-center"></div>'
     + '<div id="browse-empty" class="hidden"></div>'
     + filterOverlay();
 }
@@ -323,10 +356,22 @@ function renderGrid() {
   const grid = document.getElementById('browse-grid');
   const empty = document.getElementById('browse-empty');
   const count = document.getElementById('browse-count');
+  const more = document.getElementById('browse-more');
   const badge = document.getElementById('filter-badge');
   const showCount = document.getElementById('filter-show-count');
 
-  if (count) count.textContent = plural('count.items', list.length);
+  // Back to the first page whenever the sort, a filter or the scope changes.
+  const pageKey = JSON.stringify([state.sort, state.filters, state.sub, state.inCatQuery]);
+  if (state.pageKey !== pageKey) {
+    state.pageKey = pageKey;
+    state.shown = PAGE_SIZE;
+  }
+  // In the default order every curated product stays on the first page and
+  // the paging applies to the generated ones after them; any other sort pages
+  // the whole list.
+  const lead = state.sort === 'recommended' ? list.filter((p) => !p.generated).length : 0;
+  const visible = list.slice(0, lead + state.shown);
+  if (count) count.textContent = plural('count.items', list.length) + (state.loading ? ' ' + t('browse.soFar') : '');
   if (badge) {
     const n = activeFilterCount();
     badge.textContent = String(n);
@@ -335,8 +380,19 @@ function renderGrid() {
   if (showCount) showCount.textContent = plural('count.products', list.length);
   if (!grid || !empty) return;
 
-  if (list.length) {
-    grid.innerHTML = list.map((p) => productCard(p)).join('');
+  if (more) {
+    more.innerHTML = list.length > visible.length
+      ? '<button type="button" data-browse-more class="btn-outline">Show more (' + (list.length - visible.length) + ' left)</button>'
+      : '';
+  }
+
+  if (!list.length && state.loading) {
+    // The server's products are still on their way: skeletons, not "no results".
+    grid.innerHTML = Array.from({ length: 8 }, () => skeletonCard()).join('');
+    grid.classList.remove('hidden');
+    empty.classList.add('hidden');
+  } else if (list.length) {
+    grid.innerHTML = visible.map((p) => productCard(p)).join('');
     grid.classList.remove('hidden');
     empty.classList.add('hidden');
     empty.innerHTML = '';
@@ -399,7 +455,12 @@ export function renderBrowse(route) {
       inCatQuery: '',
       sort: 'recommended',
       filters: defaultFilters(),
+      server: [],
+      loading: !!(route.mode === 'category' || route.q),
+      shown: PAGE_SIZE,
+      pageKey: '',
     };
+    if (state.loading) loadServerScope(sig);
   } else if (route.sub) {
     state.sub = route.sub;
   }
@@ -449,8 +510,14 @@ function bindBrowseEvents() {
   if (!view) return;
 
   view.addEventListener('click', (e) => {
-    const target = e.target.closest('[data-sub], [data-sort-toggle], [data-sort-item], [data-filter-open], [data-filter-close], [data-filter-reset], [data-filter-price], [data-filter-rating], [data-filter-discount], [data-browse-reset], [data-browse-clear-search]');
+    const target = e.target.closest('[data-sub], [data-sort-toggle], [data-sort-item], [data-filter-open], [data-filter-close], [data-filter-reset], [data-filter-price], [data-filter-rating], [data-filter-discount], [data-browse-reset], [data-browse-clear-search], [data-browse-more]');
     if (!target) return;
+
+    if (target.hasAttribute('data-browse-more')) {
+      state.shown += PAGE_SIZE;
+      renderGrid();
+      return;
+    }
 
     const sub = target.getAttribute('data-sub');
     if (sub !== null && target.hasAttribute('data-sub')) {

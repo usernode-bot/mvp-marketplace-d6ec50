@@ -63,3 +63,80 @@ export function fetchProducts(params = {}) {
   const query = qs.toString();
   return apiFetch('/api/products' + (query ? '?' + query : ''));
 }
+
+/* ------------------------------------------------------------------ */
+/* Reviews + orders                                                    */
+/* ------------------------------------------------------------------ */
+
+/* One product's reviews plus the viewer's own situation on it: whether they
+ * are signed in, whether a verified purchase lets them review, and whether
+ * they already have one (so the composer can edit instead of create). */
+export function fetchReviews(productId, params = {}) {
+  const qs = new URLSearchParams();
+  if (params.demo) qs.set('demo', '1');
+  const query = qs.toString();
+  return apiFetch('/api/products/' + encodeURIComponent(productId) + '/reviews' + (query ? '?' + query : ''));
+}
+
+export function createReview(payload) {
+  return apiFetch('/api/reviews', { method: 'POST', body: JSON.stringify(payload) });
+}
+
+export function updateReview(id, payload) {
+  return apiFetch('/api/reviews/' + encodeURIComponent(id), { method: 'PATCH', body: JSON.stringify(payload) });
+}
+
+export function deleteReview(id) {
+  return apiFetch('/api/reviews/' + encodeURIComponent(id), { method: 'DELETE' });
+}
+
+/* Mirror a placed order server-side so a verified-purchase look-up has
+ * something to find. Best effort: the local order already succeeded. */
+export function createOrder(order) {
+  return apiFetch('/api/orders', { method: 'POST', body: JSON.stringify(order) });
+}
+
+export function fetchOrders() {
+  return apiFetch('/api/orders');
+}
+
+/* The live reviews stream. EventSource cannot send request headers, so the
+ * iframe token rides in the query string exactly as it does on first load.
+ * Returns null when there is no EventSource in this browser. */
+export function openReviewStream(productId, { onEvent, onOpen, onError } = {}) {
+  if (typeof EventSource !== 'function') return null;
+  const qs = new URLSearchParams();
+  qs.set('product', productId);
+  const t = token();
+  if (t) qs.set('token', t);
+  let source;
+  try {
+    source = new EventSource('/api/reviews/stream?' + qs.toString());
+  } catch {
+    return null;
+  }
+  source.addEventListener('ready', () => { if (onOpen) onOpen(); });
+  source.addEventListener('message', (e) => {
+    if (!e.data) return;
+    try {
+      const payload = JSON.parse(e.data);
+      if (onEvent) onEvent(payload);
+    } catch {
+      // A malformed frame is ignored; the next one is still applied.
+    }
+  });
+  source.addEventListener('error', () => { if (onError) onError(); });
+  return source;
+}
+
+/* One product by id, with the detail fields (description, key features,
+ * variants, stock, photo credits). 404 resolves { ok: false, status: 404 }. */
+export function fetchProduct(id) {
+  return apiFetch('/api/products/' + encodeURIComponent(id));
+}
+
+/* Category and subcategory counts plus the Featured, Trending and Deals
+ * shelves, all computed from the products table. */
+export function fetchCatalogSummary() {
+  return apiFetch('/api/catalog/summary');
+}

@@ -105,6 +105,7 @@ const ART_ICONS = {
   smartphone: '<rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18h2"/>',
   laptop: '<rect x="4" y="4" width="16" height="11" rx="1.5"/><path d="M2.5 18.5h19"/>',
   camera: '<rect x="3" y="7" width="18" height="13" rx="2"/><path d="m9 7 1.5-2.5h3L15 7"/><circle cx="12" cy="13" r="3.5"/>',
+  imagePlus: '<path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7"/><path d="m3 16 4.5-4.5a2 2 0 0 1 2.83 0L15 16"/><circle cx="9" cy="9" r="1.5"/><path d="M18 2v6M15 5h6"/>',
   tv: '<rect x="3" y="5" width="18" height="12" rx="2"/><path d="M9 21h6"/><path d="M12 17v4"/>',
   speaker: '<rect x="7" y="3" width="10" height="18" rx="2"/><circle cx="12" cy="14" r="3.5"/><circle cx="12" cy="7" r="1.2"/>',
   watch: '<circle cx="12" cy="12" r="5"/><rect x="9" y="2.5" width="6" height="4" rx="1.5"/><rect x="9" y="17.5" width="6" height="4" rx="1.5"/>',
@@ -903,7 +904,21 @@ export function productPlaceholder(p, cls = 'absolute inset-0 h-full w-full text
 
 /* Generate the artwork SVG for a product. */
 export function productArt(p) {
+  // A generated marketplace product has no illustration: wherever the app
+  // shows a small thumbnail (cart, checkout, orders) it shows the product's
+  // real first photo, with the neutral placeholder if that photo fails.
+  if (!p.art && p.generated && p.images && p.images.length) {
+    return '<span class="relative block h-full w-full bg-zinc-100"><img src="' + attrEsc(sizedImage(p.images[0], 240))
+      + '" alt="" loading="lazy" width="240" height="240" class="h-full w-full object-cover" onerror="unImgFail(this)"></span>';
+  }
   return productArtView(p, 0);
+}
+
+/* Pexels' CDN resizes on request: ask for the width a surface shows. Any
+ * other URL (a committed photo, a data URI) is returned unchanged. */
+export function sizedImage(url, w) {
+  if (typeof url !== 'string' || !/^https:\/\/images\.pexels\.com\//.test(url)) return url;
+  return url.split('?')[0] + '?auto=compress&cs=tinysrgb&fit=crop&w=' + w + '&h=' + w;
 }
 
 /* ---------------------------------------------------------------------------

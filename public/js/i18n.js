@@ -260,6 +260,7 @@ const EN = {
   'browse.categoryNotFoundBody': 'That category does not exist. Browse all categories instead.',
   'browse.backToHome': 'Back to home',
   'browse.allCategories': 'All categories',
+  'browse.soFar': 'so far',
 
   'sort.recommended': 'Recommended',
   'sort.popular': 'Popular',
@@ -953,6 +954,7 @@ const ES = {
   'browse.categoryNotFoundBody': 'Esa categoría no existe. Explora todas las categorías.',
   'browse.backToHome': 'Volver al inicio',
   'browse.allCategories': 'Todas las categorías',
+  'browse.soFar': 'hasta ahora',
 
   'sort.recommended': 'Recomendado',
   'sort.popular': 'Popular',

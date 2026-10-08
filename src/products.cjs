@@ -271,6 +271,15 @@ function toProduct(row) {
     specs: parseJsonArray(specs, []),
     flash: row.flash,
     pct: row.pct,
+    // Detail fields, filled for generated marketplace products. `desc` is
+    // the name the bundled catalog uses for the description.
+    desc: row.description || '',
+    features: parseJsonArray(row.features, []),
+    variants: parseJsonArray(row.variants, []),
+    stock: row.stock === null || row.stock === undefined ? null : row.stock,
+    imageCredits: parseJsonArray(row.image_credits, []),
+    generated: !!row.generated,
+    createdAt: row.created_at instanceof Date ? row.created_at.toISOString() : (row.created_at || null),
   };
 }
 
