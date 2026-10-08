@@ -1,6 +1,7 @@
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
+const { EventEmitter } = require('events');
 const { Pool } = require('pg');
 const jwt = require('jsonwebtoken');
 const { ROWS, parseParams, buildWhere, orderBy, toProduct } =
@@ -36,9 +37,20 @@ const APP_AUDIENCE = process.env.USERNODE_APP_ID
 // caller's own avatar URL (already public content), and nulls when there is
 // no signed-in user, so a signed-out preview or a guest can render the page
 // without a spurious 401. The write routes below stay authenticated.
-const PUBLIC_API_PATHS = new Set(['/health', '/api/profile', '/api/products', '/api/catalog/summary']);
-// One product by id (GET /api/products/<id>) is public like the list.
+// EventSource cannot set request headers, so the live reviews stream passes
+// the same identity token in the query string; the middleware above reads it.
+const PUBLIC_API_PATHS = new Set(['/health', '/api/profile', '/api/products', '/api/catalog/summary', '/api/reviews/stream']);
+
+// Public GET routes whose path carries a parameter (a product id, say), so an
+// exact-path Set cannot name them. Only GET is ever public: every write still
+// requires a signed-in user (and the reviews stream, a GET, carries identity
+// through the same token the rest of the API uses).
 const PUBLIC_API_PREFIXES = ['/api/products/'];
+
+function isPublicApiGet(req) {
+  if (req.method !== 'GET') return false;
+  return PUBLIC_API_PREFIXES.some((p) => req.path.startsWith(p));
+}
 
 app.use(express.json());
 
@@ -110,7 +122,7 @@ app.use((req, res, next) => {
   // leak app data to the public internet.
   if (req.method !== 'GET' || req.path.startsWith('/api/')) {
     if (PUBLIC_API_PATHS.has(req.path)) return next();
-    if (req.method === 'GET' && PUBLIC_API_PREFIXES.some((p) => req.path.startsWith(p))) return next();
+    if (isPublicApiGet(req)) return next();
     if (!req.user) return res.status(401).json({ error: 'Not authenticated' });
   }
   next();
@@ -221,6 +233,634 @@ app.delete('/api/profile/photo', async (req, res) => {
     return res.status(500).json({ error: 'Could not remove profile photo' });
   }
 });
+
+/* ------------------------------------------------------------------ */
+/* Reviews + orders                                                    */
+/*                                                                     */
+/* Reviews, their photos and the orders behind "Verified purchase" are */
+/* stored here now. `reviews` and `review_images` are PUBLIC tables (a */
+/* review and the photos on it are public content). `orders` and       */
+/* `order_items` are staging:private (they name a buyer and what they  */
+/* bought), so `reviews` keeps an OPAQUE order reference and never a   */
+/* foreign key into a private table.                                   */
+/*                                                                     */
+/* Photos themselves are platform files: the browser uploads the       */
+/* re-encoded bytes through the bridge and this app persists only the  */
+/* returned URL, never image bytes. The server validates that URL shape*/
+/* exactly the way the profile photo does.                             */
+/* ------------------------------------------------------------------ */
+
+const REVIEW_MAX_IMAGES = 5;
+const REVIEW_MAX_TEXT = 2000;
+const REVIEW_MAX_ALT = 200;
+const REVIEW_URL_MAX = 2048;
+const REVIEW_FILE_ID_MAX = 128;
+const REVIEW_LIST_LIMIT = 50;
+
+// Rate limits (per user, in-memory sliding windows). A guard rail against a
+// runaway client, not a security boundary: a process restart clears it, and
+// with more than one container it would need a shared store.
+const RATE_WINDOW_MS = 10 * 60 * 1000;
+const RATE_WINDOW_MAX = 5;
+const RATE_DAY_MS = 24 * 60 * 60 * 1000;
+const RATE_DAY_MAX = 20;
+const RATE_IMAGE_DAY_MAX = 20;
+
+// Image moderation: OFF by default, with the interface in place. A pending
+// review (status = 'pending' + the "Pending review" chip) already renders,
+// but nothing is sent to the proxy yet. Enabling it means calling
+// POST `${USERNODE_LLM_PROXY_URL}/v1/messages` with `x-usernode-app-token`
+// and the reviewer's forwarded `x-usernode-token`, keeping the row pending on
+// a refusal, and failing open to published (with a log) on any proxy error.
+// Left off so no review is billed to a user's budget before that path is
+// reviewed and tested; the platform proxy is absent in staging either way.
+const MODERATION_ON = false;
+
+const rateState = new Map();
+
+function rateCount(times, now) {
+  return times.filter((t) => now - t < RATE_DAY_MS).length;
+}
+
+function rateWindowCount(userId, kind, windowMs, now) {
+  const arr = (rateState.get(userId + '|' + kind) || []).filter((t) => now - t < windowMs);
+  rateState.set(userId + '|' + kind, arr);
+  return arr.length;
+}
+
+// Returns an error object when any limit is already reached. Nothing is
+// recorded until the write actually succeeds, so a rejected request does not
+// spend the user's allowance.
+function rateBlock(userId, addedImages) {
+  const now = Date.now();
+  if (rateWindowCount(userId, 'w10', RATE_WINDOW_MS, now) >= RATE_WINDOW_MAX) {
+    return { status: 429, error: 'Too many reviews just now. Please try again in a few minutes.' };
+  }
+  if (rateWindowCount(userId, 'wday', RATE_DAY_MS, now) >= RATE_DAY_MAX) {
+    return { status: 429, error: 'You have posted the maximum number of reviews for today. Please try again tomorrow.' };
+  }
+  const imagesToday = rateWindowCount(userId, 'iday', RATE_DAY_MS, now);
+  if (addedImages > 0 && imagesToday + addedImages > RATE_IMAGE_DAY_MAX) {
+    return { status: 429, error: 'You have attached the maximum number of photos for today. Please try again tomorrow.' };
+  }
+  return null;
+}
+
+function rateRecord(userId, addedImages) {
+  const now = Date.now();
+  const push = (kind) => {
+    const arr = rateState.get(userId + '|' + kind) || [];
+    arr.push(now);
+    rateState.set(userId + '|' + kind, arr);
+  };
+  push('w10');
+  push('wday');
+  for (let i = 0; i < addedImages; i += 1) push('iday');
+}
+
+// An image URL is storable only if it is a platform file URL (or, in staging
+// only, a data URI the seed used). Same shape rule as the profile photo:
+// a crafted request must not persist an arbitrary or executable URL.
+function validReviewImageUrl(url) {
+  if (typeof url !== 'string') return false;
+  if (url.length > REVIEW_URL_MAX) return false;
+  if (url.startsWith('data:image/')) return IS_STAGING;
+  try {
+    const u = new URL(url);
+    return u.protocol === 'https:' && u.pathname.includes('/app-files/');
+  } catch {
+    return false;
+  }
+}
+
+function cleanReviewImages(images) {
+  if (!Array.isArray(images)) return { error: 'Invalid photos' };
+  if (images.length > REVIEW_MAX_IMAGES) {
+    return { error: 'You can attach up to ' + REVIEW_MAX_IMAGES + ' photos.' };
+  }
+  const out = [];
+  for (const raw of images) {
+    if (!raw || typeof raw !== 'object') return { error: 'Invalid photo' };
+    if (!validReviewImageUrl(raw.url)) return { error: 'Invalid photo URL' };
+    const fileId = typeof raw.fileId === 'string' && raw.fileId.length <= REVIEW_FILE_ID_MAX
+      ? raw.fileId : null;
+    const alt = typeof raw.alt === 'string' && raw.alt.length <= REVIEW_MAX_ALT
+      ? raw.alt.trim() : '';
+    out.push({ url: raw.url, fileId, alt });
+  }
+  return { images: out };
+}
+
+async function ensureReviewTables() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS reviews (
+      id BIGSERIAL PRIMARY KEY,
+      product_id TEXT NOT NULL,
+      user_id TEXT NOT NULL,
+      author TEXT NOT NULL,
+      rating INTEGER NOT NULL,
+      body TEXT NOT NULL DEFAULT '',
+      verified BOOLEAN NOT NULL DEFAULT FALSE,
+      status TEXT NOT NULL DEFAULT 'published',
+      order_ref TEXT,
+      order_item_ref TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )
+  `);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS review_images (
+      id BIGSERIAL PRIMARY KEY,
+      review_id BIGINT NOT NULL REFERENCES reviews(id) ON DELETE CASCADE,
+      url TEXT NOT NULL,
+      file_id TEXT,
+      alt TEXT NOT NULL DEFAULT '',
+      position INTEGER NOT NULL DEFAULT 0
+    )
+  `);
+  await pool.query('CREATE INDEX IF NOT EXISTS reviews_product_idx ON reviews (product_id, created_at DESC)');
+  await pool.query('CREATE INDEX IF NOT EXISTS review_images_review_idx ON review_images (review_id, position)');
+  // At most one review per purchased line. A second attempt at the same line
+  // edits the first row instead of creating a duplicate. Keyed on the real
+  // line reference, so rows without one (seed-only) do not collide.
+  await pool.query(`CREATE UNIQUE INDEX IF NOT EXISTS reviews_user_product_item_idx
+    ON reviews (user_id, product_id, order_item_ref)`);
+
+  // Orders are personal information, so the schema is copied to staging and
+  // the rows never are.
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS orders (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      number TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'Processing',
+      placed_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      total INTEGER NOT NULL DEFAULT 0,
+      currency TEXT NOT NULL DEFAULT 'USD',
+      shipping JSONB NOT NULL DEFAULT '{}'::jsonb,
+      address JSONB NOT NULL DEFAULT '{}'::jsonb
+    )
+  `);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS order_items (
+      id BIGSERIAL PRIMARY KEY,
+      order_id TEXT NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+      product_id TEXT NOT NULL,
+      name TEXT NOT NULL DEFAULT '',
+      qty INTEGER NOT NULL DEFAULT 1,
+      price INTEGER NOT NULL DEFAULT 0
+    )
+  `);
+  await pool.query('CREATE INDEX IF NOT EXISTS orders_user_idx ON orders (user_id, placed_at DESC)');
+  await pool.query('CREATE UNIQUE INDEX IF NOT EXISTS orders_user_number_idx ON orders (user_id, number)');
+  await pool.query('CREATE INDEX IF NOT EXISTS order_items_order_idx ON order_items (order_id)');
+  await pool.query('CREATE INDEX IF NOT EXISTS order_items_product_idx ON order_items (product_id)');
+  await pool.query("COMMENT ON TABLE orders IS 'staging:private'");
+  await pool.query("COMMENT ON TABLE order_items IS 'staging:private'");
+}
+
+// A purchase counts as verified when the buyer has an order containing this
+// product that was not cancelled or refunded. The seed creates one such order
+// for a FAKE user so the chip is visible in a preview; the viewing account is
+// deliberately given none, which is what keeps the refusal path testable.
+async function findVerifiedLine(userId, productId) {
+  const { rows } = await pool.query(
+    `SELECT oi.id AS item_id, oi.order_id
+       FROM order_items oi
+       JOIN orders o ON o.id = oi.order_id
+      WHERE o.user_id = $1 AND oi.product_id = $2
+        AND o.status NOT IN ('Cancelled', 'Refunded', 'Failed')
+      ORDER BY o.placed_at DESC
+      LIMIT 1`,
+    [String(userId), productId]);
+  return rows[0] || null;
+}
+
+function reviewJson(row, images, viewerId) {
+  return {
+    id: String(row.id),
+    productId: row.product_id,
+    author: row.author,
+    rating: row.rating,
+    body: row.body,
+    verified: row.verified,
+    status: row.status,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    mine: viewerId != null && String(row.user_id) === String(viewerId),
+    images: (images || []).map((im) => ({ id: String(im.id), url: im.url, alt: im.alt || '' })),
+  };
+}
+
+async function loadReviewImages(reviewIds) {
+  const byReview = new Map();
+  if (!reviewIds.length) return byReview;
+  const { rows } = await pool.query(
+    'SELECT id, review_id, url, alt FROM review_images WHERE review_id = ANY($1::bigint[]) ORDER BY position, id',
+    [reviewIds]);
+  for (const im of rows) {
+    const key = String(im.review_id);
+    if (!byReview.has(key)) byReview.set(key, []);
+    byReview.get(key).push(im);
+  }
+  return byReview;
+}
+
+/* Realtime fan-out: one process-local emitter, one channel per product id.
+ * The client's SSE connection is a GET, so the token rides in the query the
+ * same way the iframe's first load carries it. */
+const reviewBus = new EventEmitter();
+reviewBus.setMaxListeners(0);
+let reviewStreamCount = 0;
+const REVIEW_STREAM_MAX = 200;
+
+function publishReview(productId, event) {
+  reviewBus.emit('review:' + productId, event);
+}
+
+app.get('/api/products/:id/reviews', async (req, res) => {
+  const productId = String(req.params.id);
+  try {
+    const { rows } = await pool.query(
+      `SELECT * FROM reviews
+        WHERE product_id = $1 AND status <> 'rejected'
+        ORDER BY created_at DESC LIMIT ${REVIEW_LIST_LIMIT}`,
+      [productId]);
+    const images = await loadReviewImages(rows.map((r) => String(r.id)));
+    const viewerId = req.user ? req.user.id : null;
+    const items = rows.map((r) => reviewJson(r, images.get(String(r.id)), viewerId));
+    let viewer = { signedIn: !!req.user, canReview: false, hasReviewed: false, reviewId: null };
+    if (req.user) {
+      const mine = rows.find((r) => String(r.user_id) === String(req.user.id));
+      viewer.hasReviewed = !!mine;
+      viewer.reviewId = mine ? String(mine.id) : null;
+      viewer.canReview = !!await findVerifiedLine(req.user.id, productId);
+    }
+    return res.json({ items, viewer });
+  } catch (err) {
+    console.error('[reviews] load failed:', err.message);
+    return res.status(500).json({ error: 'Could not load reviews' });
+  }
+});
+
+async function insertReviewImages(client, reviewId, images) {
+  for (let i = 0; i < images.length; i += 1) {
+    const im = images[i];
+    await client.query(
+      'INSERT INTO review_images (review_id, url, file_id, alt, position) VALUES ($1, $2, $3, $4, $5)',
+      [reviewId, im.url, im.fileId, im.alt, i]);
+  }
+}
+
+app.post('/api/reviews', async (req, res) => {
+  if (!req.user) return res.status(401).json({ error: 'account_required' });
+  const body = req.body || {};
+  const productId = typeof body.productId === 'string' ? body.productId.slice(0, 64) : '';
+  const rating = Number(body.rating);
+  const text = typeof body.body === 'string' ? body.body.trim() : '';
+  if (!productId) return res.status(400).json({ error: 'Missing product' });
+  if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
+    return res.status(400).json({ error: 'Choose a rating from 1 to 5 stars.' });
+  }
+  if (text.length > REVIEW_MAX_TEXT) {
+    return res.status(400).json({ error: 'Review text is too long.' });
+  }
+  const cleaned = cleanReviewImages(body.images || []);
+  if (cleaned.error) return res.status(400).json({ error: cleaned.error });
+  const images = cleaned.images;
+
+  try {
+    const prod = await pool.query('SELECT id FROM products WHERE id = $1', [productId]);
+    if (!prod.rows.length) return res.status(404).json({ error: 'Product not found' });
+
+    const line = await findVerifiedLine(req.user.id, productId);
+    if (!line) {
+      return res.status(403).json({ error: 'Only verified buyers can review this product.' });
+    }
+
+    const blocked = rateBlock(String(req.user.id), images.length);
+    if (blocked) return res.status(blocked.status).json({ error: blocked.error });
+
+    const author = String(req.user.username || 'Shopper').slice(0, 80);
+    // Off unless the platform LLM proxy is configured; absent in staging, so
+    // this is `published` there and the chip never appears by accident.
+    const status = MODERATION_ON ? 'pending' : 'published';
+
+    const client = await pool.connect();
+    let row;
+    try {
+      await client.query('BEGIN');
+      // One review per purchased line: a second attempt edits the first.
+      const existing = await client.query(
+        `SELECT id FROM reviews
+          WHERE user_id = $1 AND product_id = $2 AND COALESCE(order_item_ref, '') = $3
+          LIMIT 1`,
+        [String(req.user.id), productId, String(line.item_id)]);
+      if (existing.rows.length) {
+        const updated = await client.query(
+          `UPDATE reviews
+              SET rating = $1, body = $2, status = $3, verified = TRUE,
+                  order_ref = $4, order_item_ref = $5, updated_at = now()
+            WHERE id = $6
+            RETURNING *`,
+          [rating, text, status, String(line.order_id), String(line.item_id), existing.rows[0].id]);
+        row = updated.rows[0];
+        await client.query('DELETE FROM review_images WHERE review_id = $1', [row.id]);
+      } else {
+        const inserted = await client.query(
+          `INSERT INTO reviews
+             (product_id, user_id, author, rating, body, verified, status, order_ref, order_item_ref)
+           VALUES ($1, $2, $3, $4, $5, TRUE, $6, $7, $8)
+           RETURNING *`,
+          [productId, String(req.user.id), author, rating, text, status,
+            String(line.order_id), String(line.item_id)]);
+        row = inserted.rows[0];
+      }
+      await insertReviewImages(client, row.id, images);
+      await client.query('COMMIT');
+    } catch (err) {
+      await client.query('ROLLBACK').catch(() => {});
+      throw err;
+    } finally {
+      client.release();
+    }
+
+    rateRecord(String(req.user.id), images.length);
+    const review = reviewJson(row, images.map((im, i) => ({ id: 'new-' + i, url: im.url, alt: im.alt })), req.user.id);
+    review.mine = true;
+    publishReview(productId, { type: 'upsert', productId, review });
+    return res.status(201).json({ review });
+  } catch (err) {
+    console.error('[reviews] save failed:', err.message);
+    return res.status(500).json({ error: 'Could not save your review' });
+  }
+});
+
+// Load a review and confirm the caller owns it. Answers 403 without saying
+// whether the row exists.
+async function loadOwnReview(req, res) {
+  const id = req.params.id;
+  if (!/^\d+$/.test(String(id))) {
+    res.status(404).json({ error: 'Review not found' });
+    return null;
+  }
+  const { rows } = await pool.query('SELECT * FROM reviews WHERE id = $1', [id]);
+  const row = rows[0];
+  if (!row) {
+    res.status(404).json({ error: 'Review not found' });
+    return null;
+  }
+  if (!req.user || String(row.user_id) !== String(req.user.id)) {
+    res.status(403).json({ error: 'Not your review' });
+    return null;
+  }
+  return row;
+}
+
+app.patch('/api/reviews/:id', async (req, res) => {
+  if (!req.user) return res.status(401).json({ error: 'account_required' });
+  const body = req.body || {};
+  let images = null;
+  if (body.images !== undefined) {
+    const cleaned = cleanReviewImages(body.images);
+    if (cleaned.error) return res.status(400).json({ error: cleaned.error });
+    images = cleaned.images;
+  }
+  const hasRating = body.rating !== undefined;
+  const rating = hasRating ? Number(body.rating) : null;
+  if (hasRating && (!Number.isInteger(rating) || rating < 1 || rating > 5)) {
+    return res.status(400).json({ error: 'Choose a rating from 1 to 5 stars.' });
+  }
+  const hasText = body.body !== undefined;
+  const text = hasText ? String(body.body).trim() : null;
+  if (hasText && text.length > REVIEW_MAX_TEXT) {
+    return res.status(400).json({ error: 'Review text is too long.' });
+  }
+
+  try {
+    const row = await loadOwnReview(req, res);
+    if (!row) return;
+    const client = await pool.connect();
+    let updatedRow;
+    try {
+      await client.query('BEGIN');
+      const updated = await client.query(
+        `UPDATE reviews
+            SET rating = COALESCE($1, rating),
+                body = COALESCE($2, body),
+                updated_at = now()
+          WHERE id = $3
+          RETURNING *`,
+        [rating, text, row.id]);
+      updatedRow = updated.rows[0];
+      if (images) {
+        await client.query('DELETE FROM review_images WHERE review_id = $1', [row.id]);
+        await insertReviewImages(client, row.id, images);
+      }
+      await client.query('COMMIT');
+    } catch (err) {
+      await client.query('ROLLBACK').catch(() => {});
+      throw err;
+    } finally {
+      client.release();
+    }
+    const imgRows = (await loadReviewImages([String(row.id)])).get(String(row.id)) || [];
+    const review = reviewJson(updatedRow, imgRows, req.user.id);
+    review.mine = true;
+    publishReview(row.product_id, { type: 'upsert', productId: row.product_id, review });
+    return res.json({ review });
+  } catch (err) {
+    console.error('[reviews] update failed:', err.message);
+    return res.status(500).json({ error: 'Could not update your review' });
+  }
+});
+
+app.delete('/api/reviews/:id', async (req, res) => {
+  if (!req.user) return res.status(401).json({ error: 'account_required' });
+  try {
+    const row = await loadOwnReview(req, res);
+    if (!row) return;
+    await pool.query('DELETE FROM reviews WHERE id = $1', [row.id]);
+    publishReview(row.product_id, { type: 'delete', productId: row.product_id, id: String(row.id) });
+    return res.json({ ok: true });
+  } catch (err) {
+    console.error('[reviews] delete failed:', err.message);
+    return res.status(500).json({ error: 'Could not delete your review' });
+  }
+});
+
+/* Server-sent events: one channel per product. Long-lived, so it is capped,
+ * and cleaned up the moment the client goes away. */
+app.get('/api/reviews/stream', (req, res) => {
+  const productId = String(req.query.product || '');
+  if (!productId) return res.status(400).json({ error: 'Missing product' });
+  if (reviewStreamCount >= REVIEW_STREAM_MAX) {
+    return res.status(503).json({ error: 'Too many live connections' });
+  }
+  res.set({
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache, no-transform',
+    Connection: 'keep-alive',
+    'X-Accel-Buffering': 'no',
+  });
+  res.flushHeaders?.();
+  res.write('event: ready\ndata: {}\n\n');
+  reviewStreamCount += 1;
+
+  const channel = 'review:' + productId;
+  const onEvent = (payload) => {
+    try {
+      res.write('data: ' + JSON.stringify(payload) + '\n\n');
+    } catch {
+      // The socket is gone; the close handler below tidies up.
+    }
+  };
+  reviewBus.on(channel, onEvent);
+
+  const heartbeat = setInterval(() => {
+    try { res.write(': ping\n\n'); } catch { /* ignore */ }
+  }, 25000);
+  heartbeat.unref?.();
+
+  const cleanup = () => {
+    clearInterval(heartbeat);
+    reviewBus.off(channel, onEvent);
+    reviewStreamCount = Math.max(0, reviewStreamCount - 1);
+  };
+  req.on('close', cleanup);
+  req.on('error', cleanup);
+});
+
+/* Orders mirror. The client still keeps its order locally (that path is what
+ * makes "Place order" work offline), and this call mirrors it into Postgres so
+ * a purchase can be verified later. Idempotent on (user, order number). */
+app.post('/api/orders', async (req, res) => {
+  if (!req.user) return res.status(401).json({ error: 'account_required' });
+  const body = req.body || {};
+  const number = typeof body.number === 'string' ? body.number.slice(0, 60) : '';
+  if (!number) return res.status(400).json({ error: 'Missing order number' });
+  const items = Array.isArray(body.items) ? body.items.slice(0, 50) : [];
+  const total = Number.isInteger(body.total) ? body.total : 0;
+  try {
+    const client = await pool.connect();
+    let orderId = String(body.id || '').slice(0, 80) || ('o_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8));
+    try {
+      await client.query('BEGIN');
+      const existing = await client.query(
+        'SELECT id FROM orders WHERE user_id = $1 AND number = $2', [String(req.user.id), number]);
+      if (existing.rows.length) {
+        await client.query('COMMIT');
+        return res.json({ ok: true, id: String(existing.rows[0].id), number });
+      }
+      await client.query(
+        `INSERT INTO orders (id, user_id, number, status, total, currency, shipping, address)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+        [orderId, String(req.user.id), number,
+          typeof body.status === 'string' ? body.status.slice(0, 40) : 'Processing',
+          total, typeof body.currency === 'string' ? body.currency.slice(0, 8) : 'USD',
+          JSON.stringify(body.shipping || {}), JSON.stringify(body.address || {})]);
+      for (const it of items) {
+        await client.query(
+          `INSERT INTO order_items (order_id, product_id, name, qty, price)
+           VALUES ($1, $2, $3, $4, $5)`,
+          [orderId, String(it.id || '').slice(0, 64), String(it.name || '').slice(0, 200),
+            Number(it.qty) || 1, Number(it.price) || 0]);
+      }
+      await client.query('COMMIT');
+    } catch (err) {
+      await client.query('ROLLBACK').catch(() => {});
+      throw err;
+    } finally {
+      client.release();
+    }
+    return res.status(201).json({ ok: true, id: orderId, number });
+  } catch (err) {
+    console.error('[orders] save failed:', err.message);
+    return res.status(500).json({ error: 'Could not save your order' });
+  }
+});
+
+app.get('/api/orders', async (req, res) => {
+  if (!req.user) return res.status(401).json({ error: 'account_required' });
+  try {
+    const { rows } = await pool.query(
+      'SELECT id, number, status, placed_at, total, currency FROM orders WHERE user_id = $1 ORDER BY placed_at DESC LIMIT 50',
+      [String(req.user.id)]);
+    return res.json({ items: rows.map((o) => ({
+      id: o.id, number: o.number, status: o.status, placedAt: o.placed_at,
+      total: o.total, currency: o.currency,
+    })) });
+  } catch (err) {
+    console.error('[orders] load failed:', err.message);
+    return res.status(500).json({ error: 'Could not load orders' });
+  }
+});
+
+/* Staging seed. Runs after the migrations, only under USERNODE_ENV=staging,
+ * and is idempotent. Every row belongs to a FAKE identity, never to the
+ * account that opens the preview, so a preview never hands the viewer a
+ * purchase it did not make and the refusal path stays testable. Photos use
+ * small data-URI placeholders, never /app-files/ URLs: platform files are
+ * not cloned into staging, so a production URL would 404 there. */
+function demoReviewImage(from, to) {
+  const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="320" height="320">'
+    + '<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">'
+    + '<stop offset="0" stop-color="' + from + '"/><stop offset="1" stop-color="' + to + '"/>'
+    + '</linearGradient></defs>'
+    + '<rect width="320" height="320" fill="url(#g)"/>'
+    + '<circle cx="160" cy="150" r="70" fill="#ffffff" fill-opacity="0.35"/></svg>';
+  return 'data:image/svg+xml,' + encodeURIComponent(svg);
+}
+
+async function seedReviews() {
+  if (!IS_STAGING) return;
+  await pool.query(
+    `INSERT INTO orders (id, user_id, number, status, placed_at, total, currency)
+     VALUES ('o_demo_9001', 'staging-demo-user', 'BZ-DEMO-9001', 'Completed', now() - interval '12 days', 2600, 'USD')
+     ON CONFLICT (id) DO NOTHING`);
+  await pool.query(
+    `INSERT INTO order_items (id, order_id, product_id, name, qty, price)
+     VALUES (900101, 'o_demo_9001', 'p09', 'Staging demo product', 1, 2600)
+     ON CONFLICT (id) DO NOTHING`);
+
+  const reviews = [
+    { id: 900001, product: 'p09', user: 'staging-demo-user', author: 'Staging demo shopper', rating: 5,
+      body: 'Staging demo review: the cotton is soft and the fit is comfortably relaxed.',
+      verified: true, order: 'o_demo_9001', item: '900101' },
+    { id: 900002, product: 'p09', user: 'staging-demo-user-2', author: 'Staging demo buyer', rating: 4,
+      body: 'Staging demo review: good value for the price and it washed well.',
+      verified: false, order: null, item: null },
+    { id: 900003, product: 'p19', user: 'staging-demo-user', author: 'Staging demo shopper', rating: 5,
+      body: 'Staging demo review: the lamp warms the whole room nicely.',
+      verified: false, order: null, item: null },
+    { id: 900004, product: 'p09', user: 'staging-demo-user-3', author: 'Staging demo customer', rating: 3,
+      body: 'Staging demo review: arrived on time and matches the photos, a little snug.',
+      verified: false, order: null, item: null },
+  ];
+  for (const r of reviews) {
+    await pool.query(
+      `INSERT INTO reviews (id, product_id, user_id, author, rating, body, verified, status, order_ref, order_item_ref, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, 'published', $8, $9, now() - ($10 || ' days')::interval)
+       ON CONFLICT (id) DO NOTHING`,
+      [r.id, r.product, r.user, r.author, r.rating, r.body, r.verified, r.order, r.item, String(20 - r.id % 10)]);
+  }
+
+  const images = [
+    { id: 900011, review: 900001, url: demoReviewImage('#c7d2fe', '#4f46e5'), alt: 'Folded shirt on a table' },
+    { id: 900012, review: 900001, url: demoReviewImage('#fde68a', '#b45309'), alt: 'Close-up of the fabric' },
+    { id: 900021, review: 900002, url: demoReviewImage('#bbf7d0', '#15803d'), alt: 'Shirt hanging by a window' },
+    { id: 900031, review: 900003, url: demoReviewImage('#fbcfe8', '#be185d'), alt: 'Lamp on a shelf at night' },
+    { id: 900032, review: 900003, url: demoReviewImage('#a5f3fc', '#0e7490'), alt: 'Lamp in a reading corner' },
+  ];
+  for (let i = 0; i < images.length; i += 1) {
+    const im = images[i];
+    await pool.query(
+      `INSERT INTO review_images (id, review_id, url, file_id, alt, position)
+       VALUES ($1, $2, $3, NULL, $4, $5)
+       ON CONFLICT (id) DO NOTHING`,
+      [im.id, im.review, im.url, im.alt, i]);
+  }
+}
 
 /* ------------------------------------------------------------------ */
 /* Product catalog (Phase 7)                                           */
@@ -422,6 +1062,12 @@ async function start() {
   await ensureProductsTable(pool);
   await seedCatalog(ROWS);
   if (IS_STAGING) await seedStagingDemo();
+
+  // Reviews, their photos and the order mirror. Reviews/review_images are
+  // public; orders/order_items are staging:private. The staging seed only
+  // runs under USERNODE_ENV=staging and only ever writes fake identities.
+  await ensureReviewTables();
+  await seedReviews();
 
   const server = app.listen(port, () => console.log(`Listening on :${port}`));
   // Let Envoy retire idle upstream connections at 60s, with a 15s margin.

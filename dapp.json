@@ -409,6 +409,40 @@
       "path": "/?q=wireless%20%22pro%22%20%3Ctest%3E",
       "expectText": "Nothing matches \"wireless \"pro\" <test>\" right now"
     },
+    {
+      "id": "product.reviews-photos",
+      "name": "A product's reviews render with real photos and the verified-purchase badge",
+      "path": "/#/product/p09",
+      "expectSelector": "#pdp-reviews [data-review-photo]",
+      "expectText": "Verified purchase",
+      "visual": true,
+      "impact": ["public/js/reviews.js", "public/js/product.js", "public/index.html", "styles/tailwind-input.css", "server.js"]
+    },
+    {
+      "id": "product.reviews-empty",
+      "name": "A product with no reviews shows the empty state",
+      "path": "/#/product/p27",
+      "expectText": "No reviews yet."
+    },
+    {
+      "id": "product.review-composer",
+      "name": "The reviews section offers the reviewer action for the signed-in viewer",
+      "path": "/#/product/p09",
+      "expectSelector": "#pdp-reviews [data-review-cta]"
+    },
+    {
+      "id": "product.reviews-live",
+      "name": "The reviews section opens its live-updates stream",
+      "path": "/#/product/p09",
+      "expectSelector": "[data-reviews-live]"
+    },
+    {
+      "id": "orders.server-mirror",
+      "name": "Checkout still renders and can place an order after the order mirror",
+      "path": "/?demo=checkout#/checkout",
+      "expectSelector": "[data-place-order]",
+      "expectText": "Order summary"
+    },
     {"id": "product.catalog-detail", "name": "A marketplace product page shows stock, variants, key features and a specifications table", "path": "/#/product/staging-demo-gx-0001", "expectSelector": "#view-product [data-stock-status] ~ div [data-variant-opt]", "expectText": "Key features", "visual": true, "impact": ["public/js/product.js", "public/js/ui.js", "public/js/api.js", "server.js", "src/products.cjs", "src/schema.cjs", "src/catalog-rows.cjs"]},
     {"name": "Marketplace product page has a zoomable photo gallery with thumbnails", "path": "/#/product/staging-demo-gx-0041", "expectSelector": "#view-product [data-zoom-area] img[data-product-image]"},
     {"name": "Marketplace product page lists its specifications table", "path": "/#/product/staging-demo-gx-0001", "expectSelector": "#view-product dl", "expectText": "Driver size"},
