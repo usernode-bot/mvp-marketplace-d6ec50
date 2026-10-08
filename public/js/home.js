@@ -5,7 +5,7 @@
  */
 
 import { icon } from './icons.js';
-import { BANNERS, CATEGORIES, PRODUCTS, TRENDING, discountPct } from './data.js';
+import { BANNERS, CATEGORIES, PRODUCTS, TRENDING, discountPct, productById, registerProducts } from './data.js';
 import { store } from './store.js';
 import {
   emptyState,
@@ -19,7 +19,7 @@ import {
 } from './ui.js';
 import { goToHash } from './router.js';
 import { createFilterService, parseFilterParams, filterParams, hasActiveFilters } from './filters.js';
-import { fetchProducts } from './api.js';
+import { fetchCatalogSummary, fetchProducts } from './api.js';
 import { localProductPage } from './product-query.js';
 import {
   activeFilterChipsHtml,
@@ -191,8 +191,14 @@ export function initFlashNav() {
  * from router.js). The home results section now only serves the "Big deals"
  * banner CTA. */
 
+/* The shelves from GET /api/catalog/summary, once loaded. */
+let shelvesData = null;
+
 function productsForFilter() {
-  return PRODUCTS.filter((p) => discountPct(p) >= 30);
+  const bundled = PRODUCTS.filter((p) => discountPct(p) >= 30);
+  // Plus the deepest discounts among the generated marketplace products.
+  const deals = shelvesData ? shelvesData.deals.filter((p) => p.generated && discountPct(p) >= 30) : [];
+  return bundled.concat(deals);
 }
 
 function openResults() {
@@ -229,7 +235,7 @@ function openResults() {
   }
 
   // Swap the home sections for the results view.
-  ['promo', 'categories', 'flash', 'recommended'].forEach((id) => {
+  ['promo', 'categories', 'flash', 'featured', 'trending', 'deals', 'recommended'].forEach((id) => {
     const el = document.getElementById('section-' + id);
     if (el) el.classList.add('hidden');
   });
@@ -239,9 +245,15 @@ function openResults() {
 
 export function clearResults() {
   document.getElementById('results-section').classList.add('hidden');
-  ['promo', 'categories', 'flash', 'recommended'].forEach((id) => {
+  ['promo', 'categories', 'flash', 'featured', 'trending', 'deals', 'recommended'].forEach((id) => {
     const el = document.getElementById('section-' + id);
     if (el) el.classList.remove('hidden');
+  });
+  // A shelf with nothing in it (the request failed or is still pending) stays hidden.
+  ['featured', 'trending', 'deals'].forEach((id) => {
+    const row = document.getElementById(id + '-row');
+    const el = document.getElementById('section-' + id);
+    if (el && row && !row.children.length) el.classList.add('hidden');
   });
 }
 
@@ -517,6 +529,31 @@ const recommendedService = createFilterService({
 });
 
 /* ------------------------------------------------------------------ */
+/* Featured, Trending and Deals shelves                                */
+/* ------------------------------------------------------------------ */
+
+/* All three rows come from one request that computes them in SQL from the
+ * live products table (best rating weighted by reviews, sales per day since
+ * listing, deepest discounts). A bundled product is drawn from its bundled
+ * record (richer than a table row); a failed request leaves the shelves
+ * hidden, since there is nothing honest to show in them. */
+async function loadShelves() {
+  const res = await fetchCatalogSummary();
+  if (!res.ok || !res.data) return;
+  shelvesData = res.data;
+  [['featured', res.data.featured], ['trending', res.data.trending], ['deals', res.data.deals]].forEach(([id, rows]) => {
+    const section = document.getElementById('section-' + id);
+    const row = document.getElementById(id + '-row');
+    if (!section || !row || !rows.length) return;
+    const list = rows.map((r) => productById(r.id) || r);
+    registerProducts(list);
+    row.innerHTML = list.map((p) =>
+      '<div class="w-40 shrink-0 snap-start sm:w-44">' + productCard(p, { compact: false }) + '</div>').join('');
+    section.classList.remove('hidden');
+  });
+}
+
+/* ------------------------------------------------------------------ */
 /* Boot                                                                */
 /* ------------------------------------------------------------------ */
 
@@ -552,6 +589,7 @@ export function initHome() {
     initFlashNav();
   }, 450);
 
+  loadShelves();
   startCountdown();
   bindSearch();
 }

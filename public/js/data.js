@@ -825,8 +825,43 @@ export const ORDER_SEEDS = [
   },
 ];
 
+/* Products that live only on the server (the generated marketplace catalog).
+ * The bundled PRODUCTS array stays the offline fallback; rows fetched from
+ * GET /api/products are registered here so the cart, orders, favorites and
+ * the product page can look them up by id exactly like a bundled product.
+ * The ones a shopper touched (cart, saved, viewed) are snapshotted to
+ * localStorage so a reload does not lose a cart line whose product has not
+ * been fetched yet. */
+const EXTRA_KEY = 'bazario:extra-products';
+const EXTRA_MAX = 150;
+const BUNDLED = new Map(PRODUCTS.map((p) => [p.id, p]));
+const EXTRA = new Map();
+
+try {
+  const saved = JSON.parse(localStorage.getItem(EXTRA_KEY) || '[]');
+  if (Array.isArray(saved)) saved.forEach((p) => { if (p && p.id && !BUNDLED.has(p.id)) EXTRA.set(p.id, p); });
+} catch {
+  // No storage (private mode, Node): server products simply are not cached.
+}
+
+export function registerProducts(list) {
+  (list || []).forEach((p) => { if (p && p.id && !BUNDLED.has(p.id)) EXTRA.set(p.id, p); });
+}
+
+export function rememberProduct(id) {
+  const p = EXTRA.get(id);
+  if (!p) return;
+  try {
+    const saved = JSON.parse(localStorage.getItem(EXTRA_KEY) || '[]');
+    const rest = (Array.isArray(saved) ? saved : []).filter((x) => x && x.id !== id);
+    localStorage.setItem(EXTRA_KEY, JSON.stringify(rest.concat([p]).slice(-EXTRA_MAX)));
+  } catch {
+    // Storage refused: the product is still usable for this session.
+  }
+}
+
 export function productById(id) {
-  return PRODUCTS.find((p) => p.id === id) || null;
+  return BUNDLED.get(id) || EXTRA.get(id) || null;
 }
 
 export function categoryById(id) {

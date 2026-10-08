@@ -139,6 +139,17 @@ soon" on those entry points rather than hiding them.
   public (a public avatar URL, no sensitive fields); staging starts empty,
   and the letter placeholder is the real empty state. `GET /api/profile`
   serves a staging-only demo avatar behind `?demo=1` for the check.
+- The **generated marketplace catalog** (about 1,000 products with fictional brands) is the one exception
+  to "photos are files in the repo": it is built by three one-command steps, `npm run generate:products`
+  (offline, deterministic, writes `data/generated/products.json`), `npm run fetch:images` (needs
+  `PEXELS_API_KEY` in the environment; writes `image-mapping.json` and the reports beside it) and
+  `npm run seed:products` (needs `DATABASE_URL`; idempotent batches of 100). `npm run preview:sample` and
+  `npm run verify:catalog` check it without a key. Those products live only in the `products` table
+  (`generated = true`, ids `gx-0001`...), not in `public/js/data.js`; their photos are Pexels CDN URLs
+  with the photographer credit kept in `image_credits`, shown on the product page. The client looks
+  them up through `registerProducts()` / `productById()` in `data.js`. Staging gets 21 fake
+  `staging-demo-gx-*` rows instead (see `seedStagingDemo` in `server.js`). The category and
+  subcategory counts live in `scripts/lib/taxonomy.mjs`.
 - Shipping/expedition options live in `public/js/shipping.js`: a typed
   `COUNTRIES` config where every country offers at least three couriers
   (`{ id, name, service, eta, etaDays, price }`) and names a
