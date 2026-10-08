@@ -12,7 +12,11 @@
     "fetch:images": "node scripts/fetch-images.mjs",
     "seed:products": "node scripts/seed-products.mjs",
     "preview:sample": "node scripts/preview-sample.mjs",
-    "verify:catalog": "node scripts/verify-catalog.mjs"
+    "verify:catalog": "node scripts/verify-catalog.mjs",
+    "mx:generate": "node scripts/generate-marketplace.mjs",
+    "mx:images": "node scripts/fetch-marketplace-images.mjs",
+    "mx:validate": "node scripts/validate-marketplace-images.mjs",
+    "mx:verify": "node scripts/verify-marketplace.mjs"
   },
   "dependencies": {
     "express": "^4.21.0",

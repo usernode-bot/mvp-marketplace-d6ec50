@@ -7,6 +7,7 @@ const jwt = require('jsonwebtoken');
 const { ROWS, parseParams, buildWhere, orderBy, toProduct } =
   require('./src/products.cjs');
 const { BASE_COLUMNS, ALL_COLUMNS, ensureProductsTable, upsertRows } = require('./src/schema.cjs');
+const marketplace = require('./src/marketplace.cjs');
 const { toGeneratedRow } = require('./src/catalog-rows.cjs');
 
 const app = express();
@@ -378,6 +379,13 @@ async function ensureReviewTables() {
       position INTEGER NOT NULL DEFAULT 0
     )
   `);
+  // Columns the marketplace catalog's reviews use: a headline, a helpful
+  // count and an optional seller reply. A shopper's own review leaves them at
+  // their defaults.
+  await pool.query("ALTER TABLE reviews ADD COLUMN IF NOT EXISTS title TEXT NOT NULL DEFAULT ''");
+  await pool.query('ALTER TABLE reviews ADD COLUMN IF NOT EXISTS helpful INTEGER NOT NULL DEFAULT 0');
+  await pool.query('ALTER TABLE reviews ADD COLUMN IF NOT EXISTS seller_reply TEXT');
+  await pool.query('ALTER TABLE reviews ADD COLUMN IF NOT EXISTS seller_reply_at TIMESTAMPTZ');
   await pool.query('CREATE INDEX IF NOT EXISTS reviews_product_idx ON reviews (product_id, created_at DESC)');
   await pool.query('CREATE INDEX IF NOT EXISTS review_images_review_idx ON review_images (review_id, position)');
   // At most one review per purchased line. A second attempt at the same line
@@ -445,6 +453,9 @@ function reviewJson(row, images, viewerId) {
     body: row.body,
     verified: row.verified,
     status: row.status,
+    title: row.title || '',
+    helpful: row.helpful || 0,
+    sellerReply: row.seller_reply ? { text: row.seller_reply, at: row.seller_reply_at } : null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     mine: viewerId != null && String(row.user_id) === String(viewerId),
@@ -496,7 +507,23 @@ app.get('/api/products/:id/reviews', async (req, res) => {
       viewer.reviewId = mine ? String(mine.id) : null;
       viewer.canReview = !!await findVerifiedLine(req.user.id, productId);
     }
-    return res.json({ items, viewer });
+    // Exact breakdown of every published review (the list below is capped).
+    // `exact` is true for marketplace products, whose card rating is this very
+    // average; the bundled catalog keeps its own aggregate.
+    const dist = await pool.query(
+      `SELECT rating, COUNT(*)::int AS n FROM reviews
+        WHERE product_id = $1 AND status <> 'rejected' GROUP BY rating`, [productId]);
+    const counts = [0, 0, 0, 0, 0];
+    dist.rows.forEach((r) => { if (r.rating >= 1 && r.rating <= 5) counts[5 - r.rating] = r.n; });
+    const total = counts.reduce((a, b) => a + b, 0);
+    const sum = counts.reduce((a, n, i) => a + n * (5 - i), 0);
+    const summary = {
+      exact: marketplace.isMarketplaceId(productId),
+      count: total,
+      average: total ? Math.floor((sum * 20 + total) / (2 * total)) / 10 : 0,
+      counts,
+    };
+    return res.json({ items, viewer, summary });
   } catch (err) {
     console.error('[reviews] load failed:', err.message);
     return res.status(500).json({ error: 'Could not load reviews' });
@@ -586,6 +613,7 @@ app.post('/api/reviews', async (req, res) => {
     }
 
     rateRecord(String(req.user.id), images.length);
+    if (marketplace.isMarketplaceId(productId)) await marketplace.refreshMarketplaceRatings(pool, productId);
     const review = reviewJson(row, images.map((im, i) => ({ id: 'new-' + i, url: im.url, alt: im.alt })), req.user.id);
     review.mine = true;
     publishReview(productId, { type: 'upsert', productId, review });
@@ -664,6 +692,7 @@ app.patch('/api/reviews/:id', async (req, res) => {
     } finally {
       client.release();
     }
+    if (marketplace.isMarketplaceId(row.product_id)) await marketplace.refreshMarketplaceRatings(pool, row.product_id);
     const imgRows = (await loadReviewImages([String(row.id)])).get(String(row.id)) || [];
     const review = reviewJson(updatedRow, imgRows, req.user.id);
     review.mine = true;
@@ -681,6 +710,7 @@ app.delete('/api/reviews/:id', async (req, res) => {
     const row = await loadOwnReview(req, res);
     if (!row) return;
     await pool.query('DELETE FROM reviews WHERE id = $1', [row.id]);
+    if (marketplace.isMarketplaceId(row.product_id)) await marketplace.refreshMarketplaceRatings(pool, row.product_id);
     publishReview(row.product_id, { type: 'delete', productId: row.product_id, id: String(row.id) });
     return res.json({ ok: true });
   } catch (err) {
@@ -1068,6 +1098,14 @@ async function start() {
   // runs under USERNODE_ENV=staging and only ever writes fake identities.
   await ensureReviewTables();
   await seedReviews();
+
+  // The marketplace expansion (about 500 products and their reviews) comes
+  // from data/marketplace/*.json in every environment: it is catalog content,
+  // not a staging fixture. Ratings are then recomputed from the reviews so a
+  // card always shows the average and count of the reviews behind it.
+  await marketplace.seedMarketplaceProducts(pool);
+  await marketplace.seedMarketplaceReviews(pool);
+  await marketplace.refreshMarketplaceRatings(pool);
 
   const server = app.listen(port, () => console.log(`Listening on :${port}`));
   // Let Envoy retire idle upstream connections at 60s, with a 15s margin.

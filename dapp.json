@@ -27,7 +27,7 @@
       "name": "Selecting two cities keeps products from both",
       "path": "/#/home?city=Bandung,Bekasi",
       "expectSelector": "#recommended-chips [data-result-count]",
-      "expectText": "14 products"
+      "expectText": "64 products"
     },
     {
       "id": "home.filter-city-card",
@@ -450,6 +450,11 @@
     {"name": "Categories tab shows category counts from the catalog table", "path": "/#/categories", "expectSelector": "[data-category-count='electronics']", "expectText": "products"},
     {"name": "Category browse merges the marketplace catalog from the server", "path": "/#/category/electronics", "expectSelector": "#browse-grid [data-product^='staging-demo-']"},
     {"name": "Search finds a marketplace product by brand name", "path": "/#/search?q=Primere", "expectSelector": "#browse-grid [data-product='staging-demo-gx-0001']"},
+    {"id": "product.review-breakdown", "name": "A marketplace product page shows the 5 to 1 star breakdown and review sorting", "path": "/#/product/mx-0003", "expectSelector": "#pdp-reviews [data-review-breakdown] [data-review-bar='5'] [data-review-bar-count]", "expectText": "Most helpful", "visual": true, "impact": ["public/js/reviews.js", "public/js/product.js", "server.js", "src/marketplace.cjs", "data/marketplace/**"]},
+    {"name": "A negative marketplace review shows the seller's reply", "path": "/#/product/mx-0005", "expectSelector": "#pdp-reviews [data-review-reply]", "expectText": "Seller reply"},
+    {"name": "A sold out marketplace product says so on its page", "path": "/#/product/mx-0019", "expectSelector": "#view-product [data-stock-status]", "expectText": "Sold out"},
+    {"name": "Search finds a new marketplace product by brand name", "path": "/#/search?q=Zanvale", "expectSelector": "#browse-grid [data-product='mx-0003']", "expectText": "Zanvale Dew Z570 Pro Face Serum"},
+    {"id": "home.marketplace-load-more", "name": "A filtered home grid shows its first page of 24 and the remaining count on Load more", "path": "/#/home?city=Batam", "expectSelector": "#recommended-more-btn", "expectText": "(18)"},
     {"name": "Unknown product id shows the not-found state", "path": "/#/product/gx-does-not-exist", "expectText": "Product not found", "allowConsoleErrors": true}
   ]
 }

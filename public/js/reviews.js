@@ -27,6 +27,18 @@ const MAX_INPUT_BYTES = 5 * 1024 * 1024;
 const OUTPUT_EDGE = 1600;
 const ACCEPTED = ['image/jpeg', 'image/png', 'image/webp'];
 
+/* The server lists at most this many reviews per product. A marketplace
+ * product has far fewer, so its breakdown can be counted from the list; past
+ * the cap the server's own counts are used instead. */
+const LIST_CAP = 50;
+
+const SORTS = [
+  { id: 'newest', label: 'Newest' },
+  { id: 'helpful', label: 'Most helpful' },
+  { id: 'highest', label: 'Highest rating' },
+  { id: 'lowest', label: 'Lowest rating' },
+];
+
 const COPY = {
   title: 'Reviews',
   write: 'Write a review',
@@ -63,6 +75,8 @@ const state = {
   product: null,
   container: null,
   items: new Map(),
+  summary: null,
+  sort: 'newest',
   viewer: null,
   loading: true,
   error: false,
@@ -88,11 +102,31 @@ let imgSeq = 0;
 /* ------------------------------------------------------------------ */
 
 function sorted() {
-  return [...state.items.values()].sort((a, b) => {
-    const ta = Date.parse(a.createdAt) || 0;
-    const tb = Date.parse(b.createdAt) || 0;
-    return tb - ta;
-  });
+  const time = (r) => Date.parse(r.createdAt) || 0;
+  const by = {
+    newest: (a, b) => time(b) - time(a),
+    helpful: (a, b) => (b.helpful || 0) - (a.helpful || 0) || time(b) - time(a),
+    highest: (a, b) => b.rating - a.rating || time(b) - time(a),
+    lowest: (a, b) => a.rating - b.rating || time(b) - time(a),
+  };
+  return [...state.items.values()].sort(by[state.sort] || by.newest);
+}
+
+/* The rating breakdown. For a marketplace product it is counted from the
+ * reviews themselves (the card's rating and count are that same average and
+ * number); for the bundled catalog it stays the product's own aggregate. */
+function statsFor() {
+  const s = state.summary;
+  if (!s || !s.exact) return null;
+  let counts = s.counts;
+  const items = [...state.items.values()].filter((r) => r.status !== 'rejected');
+  if (items.length < LIST_CAP) {
+    counts = [0, 0, 0, 0, 0];
+    items.forEach((r) => { if (r.rating >= 1 && r.rating <= 5) counts[5 - r.rating] += 1; });
+  }
+  const total = counts.reduce((a, b) => a + b, 0);
+  const sum = counts.reduce((a, n, i) => a + n * (5 - i), 0);
+  return { counts, total, average: total ? Math.floor((sum * 20 + total) / (2 * total)) / 10 : 0 };
 }
 
 function photoAlt(image, review) {
@@ -132,14 +166,38 @@ function whenLabel(iso) {
 
 function summaryHtml() {
   const p = state.product;
-  return '<div class="card mt-3 p-4"><div class="flex items-center gap-5">'
+  const stats = statsFor();
+  const rating = stats ? stats.average : (p ? p.rating : 0);
+  const count = stats ? stats.total : (p ? p.reviews : 0);
+  return '<div class="card mt-3 p-4" data-review-summary><div class="flex items-center gap-5">'
     + '<div class="shrink-0 text-center">'
-    + '<div class="text-3xl font-bold tabular-nums text-zinc-900">' + (p ? p.rating.toFixed(1) : '0.0') + '</div>'
-    + starRow(p ? p.rating : 0)
-    + '<div class="mt-1 text-xs text-zinc-500">' + fmtCountSafe(p ? p.reviews : 0) + ' reviews</div>'
+    + '<div class="text-3xl font-bold tabular-nums text-zinc-900" data-review-average>' + rating.toFixed(1) + '</div>'
+    + starRow(rating)
+    + '<div class="mt-1 text-xs text-zinc-500" data-review-count>' + fmtCountSafe(count) + ' reviews</div>'
     + '</div>'
-    + '<div class="flex-1 space-y-1.5">' + barsHtml(p ? p.rating : 0) + '</div>'
+    + '<div class="flex-1 space-y-1.5" data-review-breakdown>' + (stats ? exactBarsHtml(stats) : barsHtml(p ? p.rating : 0)) + '</div>'
     + '</div></div>';
+}
+
+function exactBarsHtml(stats) {
+  return stats.counts.map((n, i) => {
+    const stars = 5 - i;
+    const pct = stats.total ? Math.round((n / stats.total) * 100) : 0;
+    return '<div class="flex items-center gap-2 text-xs text-zinc-500" data-review-bar="' + stars + '">'
+      + '<span class="w-3 shrink-0 text-right tabular-nums">' + stars + '</span>'
+      + icon('star', 'h-3 w-3 shrink-0 text-amber-400')
+      + '<div class="h-1.5 flex-1 overflow-hidden rounded-full bg-zinc-100"><div class="h-full rounded-full bg-amber-400" style="width:' + pct + '%"></div></div>'
+      + '<span class="w-6 shrink-0 text-right tabular-nums" data-review-bar-count>' + n + '</span>'
+      + '</div>';
+  }).join('');
+}
+
+function sortBarHtml() {
+  if (state.loading || state.error || state.items.size < 2) return '';
+  return '<div class="mt-3 flex flex-wrap gap-2" role="group" aria-label="Sort reviews" data-review-sorts>'
+    + SORTS.map((o) => '<button type="button" data-review-sort="' + o.id + '" aria-pressed="' + (state.sort === o.id) + '"'
+      + ' class="tab-pill' + (state.sort === o.id ? ' tab-pill-active' : '') + '">' + o.label + '</button>').join('')
+    + '</div>';
 }
 
 function fmtCountSafe(n) {
@@ -218,10 +276,25 @@ function reviewCard(r) {
     + '</div>'
     + verified
     + '</div>'
-    + (r.body ? '<p class="mt-2.5 text-sm leading-relaxed text-zinc-600">' + esc(r.body) + '</p>' : '')
+    + (r.title ? '<h3 class="mt-2.5 text-sm font-semibold text-zinc-900" data-review-title>' + esc(r.title) + '</h3>' : '')
+    + (r.body ? '<p class="' + (r.title ? 'mt-1' : 'mt-2.5') + ' text-sm leading-relaxed text-zinc-600">' + esc(r.body) + '</p>' : '')
     + photos
+    + helpfulHtml(r)
+    + replyHtml(r)
     + owner
     + '</article>';
+}
+
+function helpfulHtml(r) {
+  if (!r.helpful) return '';
+  return '<p class="mt-2.5 text-xs text-zinc-400" data-review-helpful>' + r.helpful + (r.helpful === 1 ? ' person' : ' people') + ' found this helpful</p>';
+}
+
+function replyHtml(r) {
+  if (!r.sellerReply || !r.sellerReply.text) return '';
+  return '<div class="mt-3 rounded-lg bg-zinc-50 px-3 py-2" data-review-reply>'
+    + '<div class="text-xs font-semibold text-zinc-700">Seller reply</div>'
+    + '<p class="mt-1 text-xs leading-relaxed text-zinc-500">' + esc(r.sellerReply.text) + '</p></div>';
 }
 
 function skeletonCard() {
@@ -329,6 +402,7 @@ function sectionHtml() {
   return '<section id="pdp-reviews" class="mt-8 scroll-mt-20">'
     + '<div class="flex items-center gap-2"><h2 class="text-base font-bold text-zinc-900">' + COPY.title + '</h2>' + liveBadgeHtml() + '</div>'
     + summaryHtml()
+    + sortBarHtml()
     + actionRowHtml()
     + composerHtml()
     + listBodyHtml()
@@ -352,6 +426,7 @@ async function load() {
   if (!alive()) return;
   if (res.ok && res.data) {
     state.items = new Map();
+    state.summary = res.data.summary || null;
     for (const r of res.data.items || []) state.items.set(String(r.id), r);
     state.viewer = res.data.viewer || { signedIn: false, canReview: false, hasReviewed: false, reviewId: null };
     state.loading = false;
@@ -471,6 +546,8 @@ export function mountReviews(container, product, opts = {}) {
   unmountReviews();
   state.product = { id: product.id, name: product.name, rating: product.rating, reviews: product.reviews };
   state.container = container;
+  state.summary = null;
+  state.sort = 'newest';
   state.demo = !!opts.demo;
   render();
   load().finally(scheduleStream);
@@ -876,7 +953,7 @@ export function initReviews() {
     const target = e.target.closest(
       '[data-review-start], [data-review-cancel], [data-review-save], [data-review-star], ' +
       '[data-review-edit], [data-review-delete], [data-review-retry], [data-review-photo], ' +
-      '[data-review-ask], [data-draft-remove], [data-review-drop], ' +
+      '[data-review-ask], [data-draft-remove], [data-review-drop], [data-review-sort], ' +
       '[data-lightbox-close], [data-lightbox-prev], [data-lightbox-next]');
     if (!target) return;
 
@@ -888,6 +965,11 @@ export function initReviews() {
     if (target.hasAttribute('data-review-save')) { save(); return; }
     if (target.hasAttribute('data-review-star')) { setRating(Number(target.getAttribute('data-review-star'))); return; }
     if (target.hasAttribute('data-review-retry')) { load(); return; }
+    if (target.hasAttribute('data-review-sort')) {
+      state.sort = target.getAttribute('data-review-sort');
+      render();
+      return;
+    }
     if (target.closest('[data-review-drop]')) return; // the file input handles it
     if (target.hasAttribute('data-review-photo')) {
       openLightbox(target.getAttribute('data-review-photo'), Number(target.getAttribute('data-photo-index')));

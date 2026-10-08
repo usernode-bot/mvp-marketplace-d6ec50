@@ -1,0 +1,275 @@
+{
+ "checkedAt": "2026-10-08T05:07:30.883Z",
+ "network": true,
+ "source": "wikimedia-commons",
+ "products": 500,
+ "productsPerCategory": {
+  "electronics": {
+   "products": 76,
+   "discounted": 40,
+   "soldOut": 6
+  },
+  "fashion": {
+   "products": 72,
+   "discounted": 39,
+   "soldOut": 3
+  },
+  "beauty": {
+   "products": 66,
+   "discounted": 26,
+   "soldOut": 4
+  },
+  "home": {
+   "products": 74,
+   "discounted": 44,
+   "soldOut": 5
+  },
+  "sports": {
+   "products": 70,
+   "discounted": 32,
+   "soldOut": 2
+  },
+  "groceries": {
+   "products": 66,
+   "discounted": 31,
+   "soldOut": 2
+  },
+  "accessories": {
+   "products": 76,
+   "discounted": 29,
+   "soldOut": 6
+  }
+ },
+ "discounted": 241,
+ "soldOut": 28,
+ "photoUrlsChecked": 936,
+ "photoUrlsOk": 936,
+ "photoUrlsUnverifiedThrottled": 0,
+ "photoUrlsFailed": [],
+ "replacedWithSameTypePhoto": 0,
+ "placeholderFallbacks": [
+  {
+   "id": "mx-0367",
+   "name": "Zanvale Veil V40 Max Skin-Tint Foundation",
+   "cat": "beauty",
+   "type": "foundation",
+   "placeholder": "/images/placeholders/beauty.svg"
+  },
+  {
+   "id": "mx-0486",
+   "name": "Casley Neat X650 Pro Packing Cubes Set",
+   "cat": "accessories",
+   "type": "packing-cubes",
+   "placeholder": "/images/placeholders/accessories.svg"
+  }
+ ],
+ "productsWithFewerThanThreePhotos": [
+  {
+   "id": "mx-0073",
+   "name": "Oxaro Soft Z590 Daily Moisturizer",
+   "photos": 2
+  },
+  {
+   "id": "mx-0080",
+   "name": "Covewood Dew M740 Pro Daily Moisturizer",
+   "photos": 2
+  },
+  {
+   "id": "mx-0087",
+   "name": "Covewick Calm Z340 Daily Moisturizer",
+   "photos": 1
+  },
+  {
+   "id": "mx-0094",
+   "name": "Marlyn Dew X960 Daily Moisturizer",
+   "photos": 1
+  },
+  {
+   "id": "mx-0101",
+   "name": "Zanvale Cloud S790 Max Daily Moisturizer",
+   "photos": 1
+  },
+  {
+   "id": "mx-0103",
+   "name": "Coverin Loop 810 Plus Resistance Band Set",
+   "photos": 2
+  },
+  {
+   "id": "mx-0108",
+   "name": "Bryford Calm 410 Max Daily Moisturizer",
+   "photos": 1
+  },
+  {
+   "id": "mx-0110",
+   "name": "Coverin Flex S360 Max Resistance Band Set",
+   "photos": 1
+  },
+  {
+   "id": "mx-0115",
+   "name": "Marlyn Soft 860 Daily Moisturizer",
+   "photos": 1
+  },
+  {
+   "id": "mx-0117",
+   "name": "Galware Stretch M320 Pro Resistance Band Set",
+   "photos": 1
+  },
+  {
+   "id": "mx-0122",
+   "name": "Talwick Dew X360 Plus Daily Moisturizer",
+   "photos": 1
+  },
+  {
+   "id": "mx-0124",
+   "name": "Orivale Pull Z80 Resistance Band Set",
+   "photos": 1
+  },
+  {
+   "id": "mx-0129",
+   "name": "Talvale Cloud S630 Pro Daily Moisturizer",
+   "photos": 1
+  },
+  {
+   "id": "mx-0131",
+   "name": "Solrin Loop M260 Pro Resistance Band Set",
+   "photos": 1
+  },
+  {
+   "id": "mx-0136",
+   "name": "Lorton Soft M370 Daily Moisturizer",
+   "photos": 1
+  },
+  {
+   "id": "mx-0138",
+   "name": "Coverin Stretch 480 Resistance Band Set",
+   "photos": 1
+  },
+  {
+   "id": "mx-0145",
+   "name": "Quildale Pull Z880 II Resistance Band Set",
+   "photos": 1
+  },
+  {
+   "id": "mx-0241",
+   "name": "Oxaro Fresh Z890 Gentle Facial Cleanser",
+   "photos": 2
+  },
+  {
+   "id": "mx-0248",
+   "name": "Covewick Fresh M620 Pro Gentle Facial Cleanser",
+   "photos": 2
+  },
+  {
+   "id": "mx-0250",
+   "name": "Coverin Trail V320 II Hiking Backpack",
+   "photos": 2
+  },
+  {
+   "id": "mx-0255",
+   "name": "Covewick Pure 600 Max Gentle Facial Cleanser",
+   "photos": 2
+  },
+  {
+   "id": "mx-0257",
+   "name": "Grovedale Trek S690 II Hiking Backpack",
+   "photos": 2
+  },
+  {
+   "id": "mx-0262",
+   "name": "Covewick Foam Z220 Gentle Facial Cleanser",
+   "photos": 2
+  },
+  {
+   "id": "mx-0264",
+   "name": "Caelmere Trail Z830 II Hiking Backpack",
+   "photos": 1
+  },
+  {
+   "id": "mx-0269",
+   "name": "Covewick Clear M990 Gentle Facial Cleanser",
+   "photos": 2
+  },
+  {
+   "id": "mx-0271",
+   "name": "Galware Ridge X990 Max Hiking Backpack",
+   "photos": 1
+  },
+  {
+   "id": "mx-0278",
+   "name": "Caelmere Ridge S510 Pro Hiking Backpack",
+   "photos": 1
+  },
+  {
+   "id": "mx-0285",
+   "name": "Coverin Trek V510 II Hiking Backpack",
+   "photos": 1
+  },
+  {
+   "id": "mx-0296",
+   "name": "Talova Alpine M20 II Puffer Jacket",
+   "photos": 2
+  },
+  {
+   "id": "mx-0325",
+   "name": "Talwick Base S60 Max Skin-Tint Foundation",
+   "photos": 1
+  },
+  {
+   "id": "mx-0332",
+   "name": "Covewick Base Z370 Skin-Tint Foundation",
+   "photos": 1
+  },
+  {
+   "id": "mx-0339",
+   "name": "Talvale Veil M250 Max Skin-Tint Foundation",
+   "photos": 1
+  },
+  {
+   "id": "mx-0346",
+   "name": "Covewick Natural X630 II Skin-Tint Foundation",
+   "photos": 1
+  },
+  {
+   "id": "mx-0353",
+   "name": "Lorton Natural M730 Skin-Tint Foundation",
+   "photos": 1
+  },
+  {
+   "id": "mx-0360",
+   "name": "Bryford Skin 910 Skin-Tint Foundation",
+   "photos": 1
+  },
+  {
+   "id": "mx-0467",
+   "name": "Nexrin Pack X860 Packing Cubes Set",
+   "photos": 1
+  },
+  {
+   "id": "mx-0472",
+   "name": "Zanbell Cube X870 II Packing Cubes Set",
+   "photos": 1
+  },
+  {
+   "id": "mx-0477",
+   "name": "Iskova Fold V110 Max Packing Cubes Set",
+   "photos": 1
+  },
+  {
+   "id": "mx-0482",
+   "name": "Iskova Neat 840 II Packing Cubes Set",
+   "photos": 1
+  },
+  {
+   "id": "mx-0500",
+   "name": "Holnova Wrap M920 Pro Memory Foam Travel Pillow",
+   "photos": 2
+  }
+ ],
+ "photosPerProduct": {
+  "0": 2,
+  "1": 28,
+  "2": 12,
+  "3": 12,
+  "4": 446
+ }
+}
