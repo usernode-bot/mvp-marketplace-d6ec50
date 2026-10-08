@@ -24,7 +24,7 @@ import {
 import { store } from './store.js';
 import { emptyState, esc, fmtCount, fmtPrice, photoHtml, productCard, sizedImage, skeletonCard, starRow, toast } from './ui.js';
 import { goToHash } from './router.js';
-import { has, t } from './i18n.js';
+import { fmtNumber, has, t } from './i18n.js';
 import { initReviews, mountReviews } from './reviews.js';
 
 
@@ -170,7 +170,7 @@ function infoHtml() {
   return '<h1 class="text-lg font-bold leading-snug text-zinc-900 md:text-xl">' + esc(p.name) + '</h1>'
     + '<div class="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1">'
     + starRow(p.rating)
-    + '<span class="text-sm font-semibold text-zinc-700">' + p.rating.toFixed(1) + '</span>'
+    + '<span class="text-sm font-semibold text-zinc-700">' + fmtNumber(p.rating, { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + '</span>'
     + '<button type="button" data-scroll-reviews class="text-xs text-zinc-500 underline-offset-2 hover:text-brand-700 hover:underline">(' + esc(t('product.reviewsWord', { count: p.reviews, n: fmtCount(p.reviews) })) + ')</button>'
     + '<span class="text-xs text-zinc-300">|</span>'
     + '<span class="text-xs text-zinc-500">' + esc(t('product.sold', { n: fmtCount(p.sold) })) + '</span>'
@@ -209,7 +209,7 @@ function sellerHtml() {
     + '<span class="badge badge-soft">' + esc(s.badge) + '</span></div>'
     + '<div class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-zinc-500">'
     + starRow(s.rating, 'h-3 w-3')
-    + '<span class="font-semibold text-zinc-700">' + s.rating.toFixed(1) + '</span>'
+    + '<span class="font-semibold text-zinc-700">' + fmtNumber(s.rating, { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + '</span>'
     + '<span>' + esc(t('product.followers', { n: s.followers })) + '</span><span class="text-zinc-300">|</span>'
     + '<span>' + esc(t('product.responseRate', { rate: s.response })) + '</span><span class="text-zinc-300">|</span>'
     + '<span>' + esc(t('product.since', { year: s.since })) + '</span>'

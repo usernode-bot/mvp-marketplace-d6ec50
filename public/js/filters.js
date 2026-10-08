@@ -15,7 +15,7 @@
  */
 
 import { SORT_OPTIONS, DEFAULT_SORT } from './sort-options.js';
-import { t, has } from './i18n.js';
+import { t, has, fmtNumber } from './i18n.js';
 
 /* The translated name of a sort order, resolved at call time. */
 export function sortText(id) {
@@ -54,7 +54,8 @@ export function activeFilterCount(f) {
 /* "$25" for a whole-dollar amount, "$25.50" otherwise. */
 function fmtAmount(cents) {
   const d = cents / 100;
-  return '$' + (Number.isInteger(d) ? String(d) : d.toFixed(2));
+  const frac = Number.isInteger(d) ? 0 : 2;
+  return fmtNumber(d, { style: 'currency', currency: 'USD', minimumFractionDigits: frac, maximumFractionDigits: frac });
 }
 
 /* Short human labels for the active-filter chips, in a stable order:

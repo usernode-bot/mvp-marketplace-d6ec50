@@ -21,7 +21,7 @@ import {
   updateReview,
 } from './api.js';
 import { confirmDialog, esc, starRow, toast } from './ui.js';
-import { intlLocale, t } from './i18n.js';
+import { fmtNumber, intlLocale, t } from './i18n.js';
 
 const MAX_IMAGES = 5;
 const MAX_INPUT_BYTES = 5 * 1024 * 1024;
@@ -127,7 +127,7 @@ function summaryHtml() {
   const p = state.product;
   return '<div class="card mt-3 p-4"><div class="flex items-center gap-5">'
     + '<div class="shrink-0 text-center">'
-    + '<div class="text-3xl font-bold tabular-nums text-zinc-900">' + (p ? p.rating.toFixed(1) : '0.0') + '</div>'
+    + '<div class="text-3xl font-bold tabular-nums text-zinc-900">' + fmtNumber(p ? p.rating : 0, { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + '</div>'
     + starRow(p ? p.rating : 0)
     + '<div class="mt-1 text-xs text-zinc-500">' + esc(t('reviews.count', { count: p ? p.reviews : 0, n: fmtCountSafe(p ? p.reviews : 0) })) + '</div>'
     + '</div>'

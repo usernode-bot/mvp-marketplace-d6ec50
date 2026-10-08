@@ -52,6 +52,11 @@ import id_payment from './locales/id/payment.js';
 import id_addresses from './locales/id/addresses.js';
 import id_orders from './locales/id/orders.js';
 import id_profile from './locales/id/profile.js';
+import ar_all from './locales/ar/all.js';
+import zh_all from './locales/zh/all.js';
+import ko_all from './locales/ko/all.js';
+import ja_all from './locales/ja/all.js';
+import es_all from './locales/es/all.js';
 
 const NAMESPACES = [[en_common, id_common], [en_nav, id_nav], [en_settings, id_settings], [en_home, id_home], [en_filters, id_filters], [en_browse, id_browse], [en_ui, id_ui], [en_product, id_product], [en_reviews, id_reviews], [en_catalog, id_catalog], [en_cart, id_cart], [en_checkout, id_checkout], [en_shipping, id_shipping], [en_payment, id_payment], [en_addresses, id_addresses], [en_orders, id_orders], [en_profile, id_profile]];
 
@@ -62,12 +67,17 @@ function merge(index) {
 }
 
 const EN = merge(0);
-const DICTS = { en: EN, id: merge(1) };
+const DICTS = { en: EN, id: merge(1), ar: ar_all, zh: zh_all, ko: ko_all, ja: ja_all, es: es_all };
 
 /* The locales the Language picker offers, with each one's own name. */
 export const LOCALES = [
   { code: 'en', label: 'English', intl: 'en-US' },
   { code: 'id', label: 'Bahasa Indonesia', intl: 'id-ID' },
+  { code: 'ar', label: 'العربية', intl: 'ar-AE', dir: 'rtl' },
+  { code: 'zh', label: '中文', intl: 'zh-CN' },
+  { code: 'ko', label: '한국어', intl: 'ko-KR' },
+  { code: 'ja', label: '日本語', intl: 'ja-JP' },
+  { code: 'es', label: 'Español', intl: 'es-ES' },
 ];
 
 /* Map any stored tag onto a shipped locale (language-subtag match). */
@@ -86,6 +96,37 @@ export function locale() {
 export function intlLocale() {
   const found = LOCALES.find((l) => l.code === locale());
   return found ? found.intl : 'en-US';
+}
+
+export function isRtl() {
+  const found = LOCALES.find((l) => l.code === locale());
+  return !!(found && found.dir === 'rtl');
+}
+
+/* Numbers and prices follow the active language (Intl.NumberFormat). The
+ * formatters are cached per locale tag. */
+const nfCache = new Map();
+function numberFormat(tag, opts) {
+  const k = tag + JSON.stringify(opts || {});
+  let f = nfCache.get(k);
+  if (!f) {
+    try {
+      f = new Intl.NumberFormat(tag, opts);
+    } catch {
+      f = new Intl.NumberFormat('en-US', opts);
+    }
+    nfCache.set(k, f);
+  }
+  return f;
+}
+
+export function fmtNumber(n, opts) {
+  return numberFormat(intlLocale(), opts).format(n);
+}
+
+/* Integer cents -> localized USD price ("$12.99", "12,99 US$", ...). */
+export function fmtMoney(cents) {
+  return numberFormat(intlLocale(), { style: 'currency', currency: 'USD' }).format(cents / 100);
 }
 
 export function localeLabel() {
@@ -110,7 +151,8 @@ function fill(str, params) {
   if (!params) return str;
   return str.replace(/\{(\w+)\}/g, (m, name) => {
     const v = params[name];
-    return v === undefined || v === null ? '' : String(v);
+    if (v === undefined || v === null) return '';
+    return name === 'count' && typeof v === 'number' ? fmtNumber(v) : String(v);
   });
 }
 
@@ -142,6 +184,28 @@ export function t(key, params) {
 /* sets placeholder / aria-label / title.                              */
 /* ------------------------------------------------------------------ */
 
+/* Noto Sans for scripts the system may lack (no empty boxes). Fetched only
+ * when a language that needs it is chosen; the font stack in the stylesheet
+ * also lists common system CJK / Arabic fonts as a fallback. */
+const FONT_HREF = {
+  ar: 'Noto+Sans+Arabic:wght@400;500;600;700',
+  zh: 'Noto+Sans+SC:wght@400;500;700',
+  ko: 'Noto+Sans+KR:wght@400;500;700',
+  ja: 'Noto+Sans+JP:wght@400;500;700',
+};
+
+function loadScriptFonts() {
+  const fam = FONT_HREF[locale()];
+  if (!fam || typeof document.createElement !== 'function') return;
+  const id = 'font-' + locale();
+  if (document.getElementById(id)) return;
+  const link = document.createElement('link');
+  link.id = id;
+  link.rel = 'stylesheet';
+  link.href = 'https://fonts.googleapis.com/css2?family=' + fam + '&display=swap';
+  document.head.appendChild(link);
+}
+
 const ATTRS = ['placeholder', 'aria-label', 'title'];
 
 export function translateStatic(root) {
@@ -155,6 +219,8 @@ export function translateStatic(root) {
     });
   });
   document.documentElement.lang = locale();
+  document.documentElement.dir = isRtl() ? 'rtl' : 'ltr';
+  loadScriptFonts();
   const title = t('common.appName');
   if (title) document.title = title;
 }

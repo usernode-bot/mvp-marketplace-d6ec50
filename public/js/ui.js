@@ -7,7 +7,7 @@
 import { icon, productArt, productPlaceholder, sizedImage } from './icons.js';
 import { discountPct } from './data.js';
 import { store } from './store.js';
-import { t, has, intlLocale } from './i18n.js';
+import { t, has, intlLocale, fmtNumber, fmtMoney } from './i18n.js';
 
 /* ---------------------------------------------------------------------------
  * Product photos for the generated marketplace catalog.
@@ -53,9 +53,9 @@ export function photoHtml(url, alt, opts = {}) {
     + ' onload="unImgLoaded(this)" onerror="unImgFail(this)">';
 }
 
-/* $12.99 from integer cents. */
+/* "$12.99" from integer cents, formatted for the active language. */
 export function fmtPrice(cents) {
-  return '$' + (cents / 100).toFixed(2);
+  return fmtMoney(cents);
 }
 
 /* 12040 -> "12k", 980 -> "980". */
@@ -63,11 +63,9 @@ export function fmtCount(n) {
   if (n >= 1000) {
     const k = n / 1000;
     const v = k >= 10 ? Math.round(k) : Math.round(k * 10) / 10;
-    let text = String(v);
-    try { text = new Intl.NumberFormat(intlLocale(), { maximumFractionDigits: 1 }).format(v); } catch { /* keep plain */ }
-    return t('ui.thousands', { n: text });
+    return t('ui.thousands', { n: fmtNumber(v, { maximumFractionDigits: 1 }) });
   }
-  return String(n);
+  return fmtNumber(n);
 }
 
 /* Localized display names for the fixed category / subcategory vocabulary
@@ -265,7 +263,7 @@ export function productCard(p, opts = {}) {
     + '<h3 class="line-clamp-2 text-sm font-medium leading-snug text-zinc-800">' + p.name + '</h3>'
     + '<div class="mt-1.5 flex items-center gap-1 text-xs text-zinc-500">'
     + '<span class="text-amber-400">' + icon('star', 'h-3.5 w-3.5') + '</span>'
-    + '<span class="font-semibold text-zinc-700">' + p.rating.toFixed(1) + '</span>'
+    + '<span class="font-semibold text-zinc-700">' + fmtNumber(p.rating, { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + '</span>'
     + '<span>(' + fmtCount(p.reviews) + ')</span>'
     + (opts.compact ? '' : soldBlock)
     + '</div>'

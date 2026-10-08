@@ -5,7 +5,7 @@
  * through the store's prefs (persisted under the bazario: prefix). The
  * Theme row shows the active color theme (the swatches themselves live in
  * the desktop header and the Profile page, see theme.js). Language: English
- * and Bahasa Indonesia; the picker calls i18n.setLocale, which changes the
+ * Bahasa Indonesia, Arabic, Chinese, Korean, Japanese and Spanish (each shown by its own name); the picker calls i18n.setLocale, which changes the
  * whole app.
  */
 
@@ -15,7 +15,7 @@ import { avatarHtml, confirmDialog, esc, toast } from './ui.js';
 import { getTheme, themeName } from './theme.js';
 import { displayName } from './profile.js';
 import { getAvatarState } from './profile-photo.js';
-import { LOCALES, localeLabel, setLocale, t } from './i18n.js';
+import { LOCALES, locale, localeLabel, setLocale, t } from './i18n.js';
 
 function pageHeader(title, backRoute) {
   return '<div class="flex items-center gap-1">'
@@ -134,15 +134,30 @@ function renderEditProfile() {
 /* Pickers + logout                                                    */
 /* ------------------------------------------------------------------ */
 
+function langMark(selected) {
+  const el = document.createElement('span');
+  if (selected) {
+    el.innerHTML = icon('check', 'h-5 w-5');
+    el.setAttribute('role', 'img');
+    el.setAttribute('aria-label', t('settings.selected'));
+  } else {
+    el.className = 'lang-check-slot';
+  }
+  return el;
+}
+
 function pickLanguage(anchorEl) {
   if (window.unNative && typeof window.unNative.menu === 'function') {
     window.unNative.menu({
       anchorEl,
       title: t('settings.language'),
       cancelLabel: t('common.cancel'),
+      // The active language carries a checkmark; the others get an empty
+      // slot of the same width so every native name lines up.
       items: LOCALES.map((l) => ({
         label: l.label,
         code: l.code,
+        iconEl: langMark(l.code === locale()),
       })),
     }).then((picked) => {
       if (!picked || !picked.code) return;
