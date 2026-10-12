@@ -21,7 +21,7 @@ import {
 } from './data.js';
 import { fetchProducts } from './api.js';
 import { store } from './store.js';
-import { categoryName, emptyState, esc, productCard, skeletonCard, subcategoryLabel } from './ui.js';
+import { categoryName, emptyState, esc, productCard, skeletonCard, subcategoryLabel, syncProductGrid } from './ui.js';
 import { t } from './i18n.js';
 import { goToHash } from './router.js';
 
@@ -391,7 +391,7 @@ function renderGrid() {
     grid.classList.remove('hidden');
     empty.classList.add('hidden');
   } else if (list.length) {
-    grid.innerHTML = visible.map((p) => productCard(p)).join('');
+    syncProductGrid(grid, visible, (p) => productCard(p));
     grid.classList.remove('hidden');
     empty.classList.add('hidden');
     empty.innerHTML = '';

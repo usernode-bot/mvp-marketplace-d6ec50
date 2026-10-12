@@ -7,7 +7,7 @@
 import { icon, productArt, productPlaceholder, sizedImage } from './icons.js';
 import { discountPct } from './data.js';
 import { store } from './store.js';
-import { t, has, intlLocale, fmtNumber, fmtMoney } from './i18n.js';
+import { t, has, intlLocale, fmtNumber, fmtMoney, locale } from './i18n.js';
 
 /* ---------------------------------------------------------------------------
  * Product photos for the generated marketplace catalog.
@@ -46,11 +46,36 @@ window.unImgLoaded = function (img) {
  * photo), `opts.cls` adds classes to the <img> (e.g. the zoom transition). */
 export function photoHtml(url, alt, opts = {}) {
   const w = opts.w || 480;
-  return '<div data-img-shimmer class="absolute inset-0 animate-pulse bg-zinc-100"></div>'
+  return '<div data-img-shimmer class="absolute inset-0 bg-zinc-100"></div>'
     + '<img src="' + esc(sizedImage(url, w)) + '" alt="' + esc(alt) + '" width="' + w + '" height="' + w + '"'
     + (opts.eager ? ' fetchpriority="high"' : ' loading="lazy"') + ' decoding="async" data-product-image'
     + ' class="product-img absolute inset-0 h-full w-full ' + (opts.fit === 'contain' ? 'object-contain' : 'object-cover') + (opts.cls ? ' ' + opts.cls : '') + '"'
     + ' onload="unImgLoaded(this)" onerror="unImgFail(this)">';
+}
+
+/* 'smooth' for user-initiated scrolls, 'auto' for people who asked for less motion. */
+export function scrollBehavior() {
+  return window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
+}
+
+/* Fill a product grid with `items`. When the grid already shows the first n
+ * of them in the same order and language (the "Load more" case), only the new
+ * cards are appended, so the photos already on screen are not destroyed and
+ * redecoded mid-scroll. Anything else (new filters, sort, language, skeletons
+ * on screen) rebuilds the grid. */
+export function syncProductGrid(grid, items, cardFn) {
+  const loc = locale();
+  const have = grid.children.length;
+  let append = have > 0 && have <= items.length && grid.dataset.locale === loc;
+  for (let i = 0; append && i < have; i++) {
+    if (grid.children[i].getAttribute('data-product') !== String(items[i].id)) append = false;
+  }
+  if (append) {
+    if (have < items.length) grid.insertAdjacentHTML('beforeend', items.slice(have).map(cardFn).join(''));
+  } else {
+    grid.innerHTML = items.map(cardFn).join('');
+  }
+  grid.dataset.locale = loc;
 }
 
 /* "$12.99" from integer cents, formatted for the active language. */
@@ -240,7 +265,7 @@ export function productCard(p, opts = {}) {
     + (p.art
       ? productArt(p)
         + (photo
-          ? '<img src="' + esc(photo) + '" alt="' + esc(p.name) + '" loading="lazy" decoding="async" data-product-image'
+          ? '<img src="' + esc(photo) + '" alt="' + esc(p.name) + '" width="480" height="480" loading="lazy" decoding="async" data-product-image'
             + ' class="product-img absolute inset-0 h-full w-full ' + (p.imageFit === 'contain' ? 'object-contain' : 'object-cover') + '" onerror="this.remove()">'
           : '')
       : (photo

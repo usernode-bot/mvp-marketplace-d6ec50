@@ -402,7 +402,12 @@ export function initCart() {
   // Keep the sticky bar above the bottom nav when the viewport moves across
   // the md breakpoint (the nav is display:none on desktop, so a render there
   // leaves the bar at bottom 0 until something repositions it).
-  window.addEventListener('resize', positionBar);
+  let barScheduled = false;
+  window.addEventListener('resize', () => {
+    if (barScheduled) return;
+    barScheduled = true;
+    requestAnimationFrame(() => { barScheduled = false; positionBar(); });
+  }, { passive: true });
   document.addEventListener('submit', (e) => {
     const form = e.target.closest('[data-voucher-form]');
     if (!form) return;

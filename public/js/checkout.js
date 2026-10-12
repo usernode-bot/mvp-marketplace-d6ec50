@@ -17,7 +17,7 @@
 
 import { icon, productArt } from './icons.js';
 import { store } from './store.js';
-import { fmtPrice, emptyState, toast } from './ui.js';
+import { fmtPrice, emptyState, scrollBehavior, toast } from './ui.js';
 import { t, has, intlLocale } from './i18n.js';
 import { createOrder } from './api.js';
 import { reserveFlashLines } from './flash-sale.js';
@@ -446,7 +446,7 @@ function collectForm() {
 function scrollFirstError(errors) {
   const first = FIELDS.find((f) => errors[f.key]);
   const el = first && view.querySelector('[data-field="' + first.key + '"]');
-  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  if (el) el.scrollIntoView({ behavior: scrollBehavior(), block: 'center' });
 }
 
 /* ------------------------------------------------------------------ */
@@ -579,7 +579,7 @@ function placeOrder() {
     const msg = view.querySelector('[data-payment-msg]');
     if (msg) {
       msg.classList.remove('hidden');
-      msg.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      msg.scrollIntoView({ behavior: scrollBehavior(), block: 'center' });
     }
     toast(t('checkout.choosePaymentToast'));
     return;
