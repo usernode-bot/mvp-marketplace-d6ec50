@@ -196,7 +196,10 @@
       <section id="section-flash" class="panel panel-flash mt-7 p-4 sm:p-5" aria-label="Flash Sale" data-i18n-aria-label="nav.flashSale">
         <div class="section-head">
           <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-sale-50 text-sale-600"><span data-icon="flame" data-cls="h-5 w-5"></span></span>
-          <h2 class="section-title" data-i18n="nav.flashSale">Flash Sale</h2>
+          <div class="min-w-0">
+            <h2 class="section-title" data-i18n="nav.flashSale">Flash Sale</h2>
+            <p id="flash-label" class="hidden truncate text-xs text-zinc-500"></p>
+          </div>
           <div class="ml-auto flex items-center gap-1.5">
             <span class="text-xs text-zinc-500" data-i18n="nav.endsIn">Ends in</span>
             <div id="flash-timer" class="flex items-center gap-1" aria-live="off"></div>

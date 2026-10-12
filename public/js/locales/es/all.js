@@ -869,4 +869,13 @@ export default {
   "ui.sub.jewelry": "Joyería",
   "ui.sub.small-goods": "Bolsos y billeteras",
   "ui.sub.travel": "Viajes",
+  "flash.today": "Oferta relámpago de hoy",
+  "flash.endedTitle": "Esta oferta relámpago ha terminado",
+  "flash.endedBody": "La próxima oferta relámpago empieza a las {time}.",
+  "flash.emptyTitle": "Hoy no hay oferta relámpago",
+  "flash.emptyBody": "No hay ofertas disponibles ahora. Vuelve mañana.",
+  "checkout.flashEnded": "La oferta relámpago terminó. Tu carrito ahora muestra los precios normales.",
+  "checkout.flashStock": "Un artículo de la oferta relámpago ya no está disponible en esa cantidad.",
+  "checkout.flashPrice": "Cambió el precio de una oferta relámpago. Revisa tu carrito.",
+  "checkout.flashFailed": "No pudimos confirmar tus artículos de la oferta relámpago. Revisa tu conexión e inténtalo de nuevo.",
 };

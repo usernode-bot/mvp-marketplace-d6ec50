@@ -7,6 +7,7 @@ const jwt = require('jsonwebtoken');
 const { ROWS, parseParams, buildWhere, orderBy, toProduct } =
   require('./src/products.cjs');
 const { BASE_COLUMNS, ALL_COLUMNS, ensureProductsTable, upsertRows } = require('./src/schema.cjs');
+const flashSale = require('./src/flash-sale.cjs');
 const marketplace = require('./src/marketplace.cjs');
 const { toGeneratedRow } = require('./src/catalog-rows.cjs');
 
@@ -40,7 +41,7 @@ const APP_AUDIENCE = process.env.USERNODE_APP_ID
 // without a spurious 401. The write routes below stay authenticated.
 // EventSource cannot set request headers, so the live reviews stream passes
 // the same identity token in the query string; the middleware above reads it.
-const PUBLIC_API_PATHS = new Set(['/health', '/api/profile', '/api/products', '/api/catalog/summary', '/api/reviews/stream']);
+const PUBLIC_API_PATHS = new Set(['/health', '/api/profile', '/api/products', '/api/catalog/summary', '/api/reviews/stream', '/api/flash-sale']);
 
 // Public GET routes whose path carries a parameter (a product id, say), so an
 // exact-path Set cannot name them. Only GET is ever public: every write still
@@ -54,6 +55,16 @@ function isPublicApiGet(req) {
 }
 
 app.use(express.json());
+
+// "Now" for anything where the day or the time decides what shows (the Flash
+// Sale). Real time everywhere except a staging preview opened at a chosen
+// moment ("Time-dependent features" in the platform conventions).
+const PREVIEW_NOW = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d{1,3})?)?(?:Z|[+-]\d{2}:\d{2})$/;
+function requestNow(req) {
+  const raw = IS_STAGING ? (req.headers['x-usernode-now'] || req.query['un-now']) : null;
+  return typeof raw === 'string' && PREVIEW_NOW.test(raw) ? new Date(raw) : new Date();
+}
+app.use((req, _res, next) => { req.now = requestNow(req); next(); });
 
 // The platform's three centrally hosted files — the bridge, the native UI
 // kit and the Tailwind runtime — are reachable at these paths on this app's
@@ -761,6 +772,37 @@ app.get('/api/reviews/stream', (req, res) => {
   req.on('error', cleanup);
 });
 
+/* Flash Sale. GET is public (every shopper sees the same campaign for the
+ * day); the purchase check needs a signed-in user like every other write. */
+app.get('/api/flash-sale', async (req, res) => {
+  try {
+    res.set('Cache-Control', 'no-store');
+    return res.json(await flashSale.currentFlashSale(pool, req.now.getTime()));
+  } catch (err) {
+    console.error('[flash-sale] load failed:', err.message);
+    return res.status(500).json({ error: 'Could not load the Flash Sale' });
+  }
+});
+
+/* Validates stock and the campaign price for the Flash Sale lines of an order
+ * and reserves the units. 409 with a `code` when the campaign has ended, a
+ * price changed or there is not enough stock; nothing is reserved then. */
+app.post('/api/flash-sale/purchase', async (req, res) => {
+  if (!req.user) return res.status(401).json({ error: 'account_required' });
+  try {
+    const lines = ((req.body || {}).items || []).map((i) => ({
+      productId: i && i.productId, qty: i && i.qty, price: i && i.price,
+    }));
+    return res.json(Object.assign({ ok: true }, await flashSale.reserveFlashSale(pool, lines, req.now.getTime())));
+  } catch (err) {
+    if (err instanceof flashSale.FlashError) {
+      return res.status(err.code === 'bad_request' ? 400 : 409).json(Object.assign({ error: err.code, code: err.code }, err.extra));
+    }
+    console.error('[flash-sale] purchase failed:', err.message);
+    return res.status(500).json({ error: 'Could not confirm the Flash Sale items' });
+  }
+});
+
 /* Orders mirror. The client still keeps its order locally (that path is what
  * makes "Place order" work offline), and this call mirrors it into Postgres so
  * a purchase can be verified later. Idempotent on (user, order number). */
@@ -1091,6 +1133,7 @@ async function start() {
   // the same upsert is what fills it there.
   await ensureProductsTable(pool);
   await seedCatalog(ROWS);
+  await flashSale.ensureFlashTables(pool);
   if (IS_STAGING) await seedStagingDemo();
 
   // Reviews, their photos and the order mirror. Reviews/review_images are

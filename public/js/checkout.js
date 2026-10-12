@@ -20,6 +20,7 @@ import { store } from './store.js';
 import { fmtPrice, emptyState, toast } from './ui.js';
 import { t, has, intlLocale } from './i18n.js';
 import { createOrder } from './api.js';
+import { reserveFlashLines } from './flash-sale.js';
 import { methodById, methodName, methodSubtitle } from './payment.js';
 import {
   COUNTRIES,
@@ -584,19 +585,40 @@ function placeOrder() {
     return;
   }
 
-  // Mock payment: two simulated stages, no real provider is contacted.
   state.phase = 'loading';
   updatePlaceButton();
-  setTimeout(() => {
+
+  // Flash Sale lines are checked (campaign still running, stock, price) and
+  // reserved with the server before any payment step starts. A refusal stops
+  // the order and redraws the cart at what the server now says.
+  reserveFlashLines(entries).then((check) => {
     if (state.phase !== 'loading') return;
-    state.phase = 'processing';
-    updatePlaceButton();
-  }, LOADING_MS);
-  setTimeout(() => {
-    if (state.phase !== 'processing') return;
-    completeOrder(entries);
-  }, LOADING_MS + PROCESSING_MS);
+    if (!check.ok) {
+      state.phase = 'idle';
+      renderCheckoutView();
+      if (check.code !== 'account_required') toast(t(FLASH_REFUSALS[check.code] || 'checkout.flashFailed'));
+      return;
+    }
+    // Mock payment: two simulated stages, no real provider is contacted.
+    setTimeout(() => {
+      if (state.phase !== 'loading') return;
+      state.phase = 'processing';
+      updatePlaceButton();
+    }, LOADING_MS);
+    setTimeout(() => {
+      if (state.phase !== 'processing') return;
+      completeOrder(entries);
+    }, LOADING_MS + PROCESSING_MS);
+  });
 }
+
+const FLASH_REFUSALS = {
+  campaign_ended: 'checkout.flashEnded',
+  not_in_campaign: 'checkout.flashEnded',
+  price_changed: 'checkout.flashPrice',
+  out_of_stock: 'checkout.flashStock',
+  unavailable: 'checkout.flashStock',
+};
 
 /* ------------------------------------------------------------------ */
 /* Payment modal                                                       */

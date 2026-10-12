@@ -64,6 +64,12 @@ async function ensureProductsTable(pool) {
   await pool.query("ALTER TABLE products ADD COLUMN IF NOT EXISTS image_credits JSONB NOT NULL DEFAULT '[]'::jsonb");
   await pool.query('ALTER TABLE products ADD COLUMN IF NOT EXISTS generated BOOLEAN NOT NULL DEFAULT FALSE');
   await pool.query('ALTER TABLE products ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ NOT NULL DEFAULT now()');
+  // Flash Sale eligibility: `active` takes a listing off sale entirely,
+  // `flash_eligible` opts one out of Flash Sale campaigns only. Both default
+  // to true so every existing product keeps its behaviour. Seeding upserts
+  // never write them, so a manual change survives a re-seed.
+  await pool.query('ALTER TABLE products ADD COLUMN IF NOT EXISTS active BOOLEAN NOT NULL DEFAULT TRUE');
+  await pool.query('ALTER TABLE products ADD COLUMN IF NOT EXISTS flash_eligible BOOLEAN NOT NULL DEFAULT TRUE');
 
   // Indexes for every filter and sort column: category, subcategory, brand,
   // price, rating, created_at, plus the location pair the home filter uses.
