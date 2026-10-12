@@ -61,7 +61,19 @@
   /* Product cards lift slightly on hover, matching the category tiles'
    * TILE_HOVER motion; still for reduced-motion users. */
   .product-card {
-    @apply transition duration-200 hover:-translate-y-0.5 hover:shadow-card-lg motion-reduce:transition-none motion-reduce:hover:translate-y-0;
+    @apply transition-shadow duration-200 motion-reduce:transition-none;
+    /* Off-screen cards skip layout and paint; the box size keeps the
+     * scrollbar steady until they are drawn. */
+    content-visibility: auto;
+    contain-intrinsic-size: auto 300px;
+  }
+  /* Hover lift only on devices that really hover: a tap on a phone must not
+   * leave a card stuck lifted (and repainted). */
+  @media (hover: hover) {
+    .product-card:hover { content-visibility: visible; } /* paint containment would clip the lifted shadow */
+    .product-card {
+      @apply transition duration-200 hover:-translate-y-0.5 hover:shadow-card-lg motion-reduce:hover:translate-y-0;
+    }
   }
 
   /* Round ghost button for header actions (bell, cart, back). */
@@ -77,7 +89,7 @@
    * the arrows never cover them. Sized down on small screens and stilled
    * for reduced-motion users. */
   .flash-nav {
-    @apply absolute top-1/2 z-10 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-white/40 bg-zinc-900/45 text-white shadow-card backdrop-blur-sm transition duration-200 hover:scale-110 hover:border-brand-400 hover:bg-brand-600 focus-visible:ring-offset-0 motion-reduce:transition-none motion-reduce:hover:scale-100 sm:h-9 sm:w-9;
+    @apply absolute top-1/2 z-10 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-white/40 bg-zinc-900/70 text-white shadow-card transition duration-200 hover:scale-110 hover:border-brand-400 hover:bg-brand-600 focus-visible:ring-offset-0 motion-reduce:transition-none motion-reduce:hover:scale-100 sm:h-9 sm:w-9;
   }
   .flash-nav-prev { @apply left-1 sm:left-2; }
   .flash-nav-next { @apply right-1 sm:right-2; }
@@ -224,7 +236,7 @@
    * carries .product-img. The animation gives freshly-built grids a short
    * fade instead of a hard pop; reduced-motion users see the art instantly. */
   .product-img {
-    animation: product-img-fade 250ms ease-out both;
+    animation: product-img-fade 150ms ease-out both;
   }
 
   @keyframes product-img-fade {
@@ -284,6 +296,13 @@
   }
   .no-scrollbar::-webkit-scrollbar {
     display: none;
+  }
+  /* Horizontal rows: a sideways swipe stays in the row instead of chaining
+   * into the browser's back gesture, while vertical movement still scrolls
+   * the page. Native scrolling is untouched. */
+  .h-scroll-row {
+    overscroll-behavior-x: contain;
+    touch-action: pan-x pan-y;
   }
 }
 
@@ -592,7 +611,7 @@ html[lang='ko'] input, html[lang='ko'] button, html[lang='ko'] textarea, html[la
 html[lang='ja'] input, html[lang='ja'] button, html[lang='ja'] textarea, html[lang='ja'] select { font-family: inherit; }
 
 /* Language picker: a long list scrolls inside the sheet. */
-.un-action-sheet .un-action-card:first-of-type { max-height: 60vh; overflow-y: auto; }
+.un-action-sheet .un-action-card:first-of-type { max-height: 60vh; overflow-y: auto; overscroll-behavior: contain; }
 .lang-check-slot { display: inline-block; width: 1.25rem; height: 1.25rem; }
 
 html[dir='rtl'] .rtl-flip { transform: scaleX(-1); }

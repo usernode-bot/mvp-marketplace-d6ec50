@@ -22,7 +22,7 @@ import {
   specsFor,
 } from './data.js';
 import { store } from './store.js';
-import { emptyState, esc, fmtCount, fmtPrice, photoHtml, productCard, sizedImage, skeletonCard, starRow, toast } from './ui.js';
+import { emptyState, esc, fmtCount, fmtPrice, photoHtml, productCard, scrollBehavior, sizedImage, skeletonCard, starRow, toast } from './ui.js';
 import { goToHash } from './router.js';
 import { fmtNumber, has, t } from './i18n.js';
 import { initReviews, mountReviews } from './reviews.js';
@@ -476,7 +476,7 @@ function bindProductEvents() {
 
     if (target.hasAttribute('data-scroll-reviews')) {
       const section = document.getElementById('pdp-reviews');
-      if (section) section.scrollIntoView({ behavior: 'smooth' });
+      if (section) section.scrollIntoView({ behavior: scrollBehavior() });
       return;
     }
     if (target.hasAttribute('data-chat')) {

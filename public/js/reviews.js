@@ -20,7 +20,7 @@ import {
   openReviewStream,
   updateReview,
 } from './api.js';
-import { confirmDialog, esc, starRow, toast } from './ui.js';
+import { confirmDialog, esc, scrollBehavior, starRow, toast } from './ui.js';
 import { fmtNumber, intlLocale, t } from './i18n.js';
 
 const MAX_IMAGES = 5;
@@ -593,7 +593,7 @@ function cancelCompose() {
 
 function focusComposer() {
   const box = state.container && state.container.querySelector('[data-review-compose]');
-  if (box) box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  if (box) box.scrollIntoView({ behavior: scrollBehavior(), block: 'nearest' });
 }
 
 function setRating(n) {

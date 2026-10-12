@@ -12,9 +12,11 @@ import {
   fmtCount,
   fmtPrice,
   productCard,
+  scrollBehavior,
   skeletonBanner,
   skeletonCard,
   skeletonCategoryTile,
+  syncProductGrid,
   toast,
   categoryName,
 } from './ui.js';
@@ -183,11 +185,18 @@ export function initFlashNav() {
   const next = document.getElementById('flash-next');
   if (!row || !prev || !next) return;
 
-  row.addEventListener('scroll', () => requestAnimationFrame(updateFlashNav), { passive: true });
-  window.addEventListener('resize', updateFlashNav);
+  // One layout read per frame however many scroll/resize events fire.
+  let scheduled = false;
+  const schedule = () => {
+    if (scheduled) return;
+    scheduled = true;
+    requestAnimationFrame(() => { scheduled = false; updateFlashNav(); });
+  };
+  row.addEventListener('scroll', schedule, { passive: true });
+  window.addEventListener('resize', schedule, { passive: true });
 
-  prev.addEventListener('click', () => row.scrollBy({ left: -flashStep(row), behavior: 'smooth' }));
-  next.addEventListener('click', () => row.scrollBy({ left: flashStep(row), behavior: 'smooth' }));
+  prev.addEventListener('click', () => row.scrollBy({ left: -flashStep(row), behavior: scrollBehavior() }));
+  next.addEventListener('click', () => row.scrollBy({ left: flashStep(row), behavior: scrollBehavior() }));
 
   updateFlashNav();
 }
@@ -384,7 +393,7 @@ function goTo(i) {
   const n = carouselCount();
   if (!track || !n) return;
   carousel.index = ((i % n) + n) % n;
-  track.scrollTo({ left: track.children[carousel.index].offsetLeft, behavior: 'smooth' });
+  track.scrollTo({ left: track.children[carousel.index].offsetLeft, behavior: scrollBehavior() });
   setDots();
 }
 
@@ -392,10 +401,12 @@ function initCarousel() {
   const track = document.getElementById('promo-carousel');
   if (!track) return;
 
-  let raf = null;
+  let scheduled = false;
   track.addEventListener('scroll', () => {
-    if (raf) cancelAnimationFrame(raf);
-    raf = requestAnimationFrame(() => {
+    if (scheduled) return;
+    scheduled = true;
+    requestAnimationFrame(() => {
+      scheduled = false;
       const n = carouselCount();
       const mid = track.scrollLeft + track.clientWidth / 2;
       let nearest = 0;
@@ -476,7 +487,7 @@ function renderRecommended() {
   }
 
   if (s.items.length) {
-    grid.innerHTML = s.items.map((p) => productCard(p)).join('');
+    syncProductGrid(grid, s.items, (p) => productCard(p));
     grid.classList.remove('hidden');
     if (empty) { empty.classList.add('hidden'); empty.innerHTML = ''; }
     if (more) {
@@ -684,7 +695,7 @@ export function runBannerAction(i) {
   if (b.action.type === 'scroll') {
     clearResults();
     const el = document.getElementById('section-flash');
-    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (el) el.scrollIntoView({ behavior: scrollBehavior(), block: 'start' });
     return;
   }
   if (b.action.type === 'deals') {
