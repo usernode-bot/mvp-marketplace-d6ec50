@@ -4,7 +4,15 @@
   "permissions": [
     { "capability": "geolocation", "reason": "Find products shipping from a city near you" }
   ],
-  "secrets": [],
+  "secrets": [
+    {
+      "key": "MARKETPLACE_TIMEZONE",
+      "description": "IANA timezone the marketplace runs on (for example Asia/Jakarta). The Flash Sale day starts and ends at local midnight here.",
+      "required": false,
+      "private": false,
+      "default": "Asia/Jakarta"
+    }
+  ],
   "tests": [
     {
       "id": "home.filters-toolbar",
@@ -186,10 +194,26 @@
     },
     {
       "id": "home.flash-images",
-      "name": "Flash Sale cards show detailed product illustrations",
+      "name": "Flash Sale cards show product images",
       "path": "/",
-      "expectSelector": "#flash-row .product-card svg.product-img",
+      "expectSelector": "#flash-row .product-card .product-img",
       "expectText": "Flash Sale"
+    },
+    {
+      "id": "home.flash-today",
+      "name": "Flash Sale shows today's campaign label, date and a running countdown",
+      "path": "/",
+      "expectSelector": "#flash-label:not(.hidden)",
+      "expectText": "Today's Flash Sale",
+      "visual": true,
+      "impact": ["public/js/flash-sale.js", "public/js/flash-sale-core.js", "public/js/flash-demo.js", "public/js/home.js", "src/flash-sale.cjs", "public/index.html", "server.js"]
+    },
+    {
+      "id": "home.flash-countdown",
+      "name": "Flash Sale countdown shows hours, minutes and seconds",
+      "path": "/",
+      "expectSelector": "#flash-timer[data-ms-left] .chip",
+      "expectText": "Ends in"
     },
     {
       "id": "home.flash-nav",

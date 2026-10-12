@@ -869,4 +869,13 @@ export default {
   "ui.sub.jewelry": "珠宝首饰",
   "ui.sub.small-goods": "包袋与钱包",
   "ui.sub.travel": "旅行用品",
+  "flash.today": "今日限时抢购",
+  "flash.endedTitle": "本场限时抢购已结束",
+  "flash.endedBody": "下一场限时抢购将于 {time} 开始。",
+  "flash.emptyTitle": "今日没有限时抢购",
+  "flash.emptyBody": "目前没有符合条件的优惠，明天再来看看。",
+  "checkout.flashEnded": "限时抢购已结束，购物车已恢复原价。",
+  "checkout.flashStock": "限时抢购商品库存不足，无法满足该数量。",
+  "checkout.flashPrice": "限时抢购价格已变化，请检查购物车。",
+  "checkout.flashFailed": "无法确认限时抢购商品，请检查网络后重试。",
 };

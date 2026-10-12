@@ -869,4 +869,13 @@ export default {
   "ui.sub.jewelry": "주얼리",
   "ui.sub.small-goods": "가방 및 지갑",
   "ui.sub.travel": "여행",
+  "flash.today": "오늘의 플래시 세일",
+  "flash.endedTitle": "이번 플래시 세일이 끝났어요",
+  "flash.endedBody": "다음 플래시 세일은 {time}에 시작해요.",
+  "flash.emptyTitle": "오늘은 플래시 세일이 없어요",
+  "flash.emptyBody": "지금은 대상 상품이 없어요. 내일 다시 확인해 주세요.",
+  "checkout.flashEnded": "플래시 세일이 끝나 장바구니가 정상가로 바뀌었어요.",
+  "checkout.flashStock": "플래시 세일 상품의 재고가 해당 수량만큼 남아 있지 않아요.",
+  "checkout.flashPrice": "플래시 세일 가격이 바뀌었어요. 장바구니를 확인해 주세요.",
+  "checkout.flashFailed": "플래시 세일 상품을 확인하지 못했어요. 연결을 확인하고 다시 시도해 주세요.",
 };

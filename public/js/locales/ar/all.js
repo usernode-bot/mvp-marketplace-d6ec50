@@ -852,5 +852,14 @@ export default {
   "ui.sub.watches": "الساعات",
   "ui.sub.jewelry": "المجوهرات",
   "ui.sub.small-goods": "الحقائب والمحافظ",
-  "ui.sub.travel": "السفر"
+  "ui.sub.travel": "السفر",
+  "flash.today": "عرض اليوم الخاطف",
+  "flash.endedTitle": "انتهى هذا العرض الخاطف",
+  "flash.endedBody": "يبدأ العرض الخاطف التالي في {time}.",
+  "flash.emptyTitle": "لا يوجد عرض خاطف اليوم",
+  "flash.emptyBody": "لا توجد عروض مؤهلة حاليًا. عد غدًا.",
+  "checkout.flashEnded": "انتهى العرض الخاطف. تعرض سلتك الآن الأسعار العادية.",
+  "checkout.flashStock": "لم يعد منتج العرض الخاطف متوفرًا بهذه الكمية.",
+  "checkout.flashPrice": "تغيّر سعر العرض الخاطف. راجع سلتك.",
+  "checkout.flashFailed": "تعذّر تأكيد منتجات العرض الخاطف. تحقق من اتصالك وحاول مجددًا.",
 };

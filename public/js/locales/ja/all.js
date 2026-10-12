@@ -853,4 +853,13 @@ export default {
   "ui.sub.jewelry": "ジュエリー",
   "ui.sub.small-goods": "バッグ・財布",
   "ui.sub.travel": "トラベル",
+  "flash.today": "本日のフラッシュセール",
+  "flash.endedTitle": "このフラッシュセールは終了しました",
+  "flash.endedBody": "次のフラッシュセールは {time} に始まります。",
+  "flash.emptyTitle": "本日のフラッシュセールはありません",
+  "flash.emptyBody": "現在、対象の商品がありません。明日またご確認ください。",
+  "checkout.flashEnded": "フラッシュセールが終了したため、カートは通常価格になりました。",
+  "checkout.flashStock": "フラッシュセール商品は、その数量では在庫がありません。",
+  "checkout.flashPrice": "フラッシュセールの価格が変わりました。カートをご確認ください。",
+  "checkout.flashFailed": "フラッシュセール商品を確認できませんでした。接続を確認して、もう一度お試しください。",
 };

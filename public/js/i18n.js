@@ -35,6 +35,8 @@ import en_payment from './locales/en/payment.js';
 import en_addresses from './locales/en/addresses.js';
 import en_orders from './locales/en/orders.js';
 import en_profile from './locales/en/profile.js';
+import en_flash from './locales/en/flash.js';
+import id_flash from './locales/id/flash.js';
 import id_common from './locales/id/common.js';
 import id_nav from './locales/id/nav.js';
 import id_settings from './locales/id/settings.js';
@@ -58,7 +60,7 @@ import ko_all from './locales/ko/all.js';
 import ja_all from './locales/ja/all.js';
 import es_all from './locales/es/all.js';
 
-const NAMESPACES = [[en_common, id_common], [en_nav, id_nav], [en_settings, id_settings], [en_home, id_home], [en_filters, id_filters], [en_browse, id_browse], [en_ui, id_ui], [en_product, id_product], [en_reviews, id_reviews], [en_catalog, id_catalog], [en_cart, id_cart], [en_checkout, id_checkout], [en_shipping, id_shipping], [en_payment, id_payment], [en_addresses, id_addresses], [en_orders, id_orders], [en_profile, id_profile]];
+const NAMESPACES = [[en_common, id_common], [en_nav, id_nav], [en_settings, id_settings], [en_home, id_home], [en_filters, id_filters], [en_browse, id_browse], [en_ui, id_ui], [en_product, id_product], [en_reviews, id_reviews], [en_catalog, id_catalog], [en_cart, id_cart], [en_checkout, id_checkout], [en_shipping, id_shipping], [en_payment, id_payment], [en_addresses, id_addresses], [en_orders, id_orders], [en_profile, id_profile], [en_flash, id_flash]];
 
 function merge(index) {
   const out = {};

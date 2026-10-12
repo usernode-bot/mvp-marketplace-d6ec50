@@ -10,6 +10,7 @@
  */
 
 import { productById, rememberProduct } from './data.js';
+import { effectiveProduct } from './flash-sale.js';
 
 const KEYS = {
   favorites: 'bazario:favorites',
@@ -281,7 +282,9 @@ export const store = {
     // older data set drop out instead of breaking the cart view.
     return this.cart
       .map((item) => ({ item, product: productById(item.id) }))
-      .filter((entry) => entry.product);
+      .filter((entry) => entry.product)
+      // A product in today's Flash Sale is priced at its campaign price.
+      .map((entry) => ({ item: entry.item, product: effectiveProduct(entry.product) }));
   },
 
   cartTotal() {

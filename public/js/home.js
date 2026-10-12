@@ -18,7 +18,8 @@ import {
   toast,
   categoryName,
 } from './ui.js';
-import { t, has } from './i18n.js';
+import { t, has, intlLocale } from './i18n.js';
+import { flashSnapshot, subscribeFlash, loadFlashSale, expireIfDue, msUntilEnd } from './flash-sale.js';
 import { goToHash } from './router.js';
 import { createFilterService, parseFilterParams, filterParams, hasActiveFilters } from './filters.js';
 import { fetchCatalogSummary, fetchProducts } from './api.js';
@@ -115,12 +116,7 @@ function moreTile() {
 /* ------------------------------------------------------------------ */
 
 let timerHandle = null;
-
-function flashDeadline() {
-  const t = new Date();
-  t.setHours(24, 0, 0, 0); // next local midnight
-  return t.getTime();
-}
+let retryHandle = null;
 
 function renderTimer(msLeft) {
   const el = document.getElementById('flash-timer');
@@ -132,14 +128,80 @@ function renderTimer(msLeft) {
   el.innerHTML = '<span class="chip">' + hh + '</span><span class="text-xs font-bold text-zinc-400">:</span>'
     + '<span class="chip">' + mm + '</span><span class="text-xs font-bold text-zinc-400">:</span>'
     + '<span class="chip">' + ss + '</span>';
+  el.setAttribute('data-ms-left', String(msLeft));
+}
+
+/* The countdown runs to the campaign's end instant, read from the server's
+ * clock on every tick, so re-rendering the page or the row never restarts it.
+ * When it reaches zero the campaign is marked ended (purchases stop) and the
+ * next campaign is requested, retrying every 15 seconds until one is there. */
+function tick() {
+  const snap = flashSnapshot();
+  renderTimer(snap.campaign ? msUntilEnd() : 0);
+  if (expireIfDue()) scheduleNextCampaign(0);
+}
+
+function scheduleNextCampaign(delay) {
+  clearTimeout(retryHandle);
+  retryHandle = setTimeout(async () => {
+    await loadFlashSale();
+    if (flashSnapshot().status !== 'active') scheduleNextCampaign(15000);
+  }, delay);
 }
 
 function startCountdown() {
   if (timerHandle) return;
-  const deadline = flashDeadline();
-  const tick = () => renderTimer(deadline - Date.now());
   tick();
   timerHandle = setInterval(tick, 1000);
+}
+
+/* "Today's Flash Sale" label with the campaign date, in the marketplace
+ * timezone's calendar day (not the device's). */
+function flashLabelText(campaign) {
+  if (!campaign) return '';
+  const [y, m, d] = campaign.dateKey.split('-').map(Number);
+  const date = new Intl.DateTimeFormat(intlLocale(), { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' })
+    .format(new Date(Date.UTC(y, m - 1, d, 12)));
+  return t('flash.today') + ' \u00b7 ' + date;
+}
+
+function nextStartLabel(campaign) {
+  if (!campaign) return '';
+  return new Intl.DateTimeFormat(intlLocale(), { hour: 'numeric', minute: '2-digit', timeZone: campaign.timezone })
+    .format(new Date(campaign.endsAt));
+}
+
+function flashMessage(title, body) {
+  return '<div class="w-full rounded-xl bg-zinc-50 p-4 text-center" data-flash-state>'
+    + '<div class="text-sm font-semibold text-zinc-800">' + esc(title) + '</div>'
+    + '<div class="mt-1 text-xs text-zinc-500">' + esc(body) + '</div></div>';
+}
+
+/* The Flash Sale row, label and timer for the current campaign state. */
+function renderFlash() {
+  const row = document.getElementById('flash-row');
+  if (!row) return;
+  const snap = flashSnapshot();
+  const label = document.getElementById('flash-label');
+  if (label) {
+    label.textContent = flashLabelText(snap.campaign);
+    label.classList.toggle('hidden', !snap.campaign);
+  }
+  const keep = row.scrollLeft;
+  if (snap.status === 'loading') {
+    row.innerHTML = Array.from({ length: 5 }, () =>
+      '<div class="w-40 shrink-0 snap-start sm:w-44">' + skeletonCard(true) + '</div>').join('');
+  } else if (snap.status === 'active') {
+    row.innerHTML = snap.items.map((p) =>
+      '<div class="w-40 shrink-0 snap-start sm:w-44">' + productCard(p, { compact: true }) + '</div>').join('');
+  } else if (snap.status === 'ended') {
+    row.innerHTML = flashMessage(t('flash.endedTitle'), t('flash.endedBody', { time: nextStartLabel(snap.campaign) }));
+  } else {
+    row.innerHTML = flashMessage(t('flash.emptyTitle'), t('flash.emptyBody'));
+  }
+  row.scrollLeft = keep;
+  tick();
+  updateFlashNav();
 }
 
 /* ------------------------------------------------------------------ */
@@ -592,9 +654,7 @@ function renderStaticSections() {
   document.getElementById('promo-carousel').innerHTML = BANNERS.map(bannerHtml).join('');
   document.getElementById('category-grid').innerHTML =
     CATEGORIES.map(categoryTile).join('') + moreTile();
-  document.getElementById('flash-row').innerHTML =
-    PRODUCTS.filter((p) => p.flash).map((p) =>
-      '<div class="w-40 shrink-0 snap-start sm:w-44">' + productCard(p, { compact: true }) + '</div>').join('');
+  renderFlash();
 }
 
 /* Language changed: redraw every language-dependent piece of the home page
@@ -672,6 +732,8 @@ export function initHome() {
 
   loadShelves();
   startCountdown();
+  subscribeFlash(() => { if (staticReady) renderFlash(); });
+  loadFlashSale();
   bindSearch();
 }
 

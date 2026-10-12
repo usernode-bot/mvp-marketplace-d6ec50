@@ -216,3 +216,11 @@ soon" on those entry points rather than hiding them.
 - The product page's rating breakdown is counted from the reviews for `mx-` products (`summary.exact` from
   `GET /api/products/:id/reviews`); the bundled catalog keeps its own aggregate bars. Review sorting (Newest, Most
   helpful, Highest rating, Lowest rating) is client-side over the loaded list. Home loads 24 products per batch.
+
+## Daily Flash Sale
+
+- The Home Flash Sale row is a persisted daily campaign, not `flash: true` on the bundled catalog (that column is now legacy). `src/flash-sale.cjs` owns the tables `flash_campaigns` (one per marketplace day, unique `date_key`) and `flash_campaign_items` (primary key `(campaign_id, product_id)`, so no duplicates; flash price, original price, flash stock and sold are frozen at creation). The first request of a day creates it; a product can also be assigned by hand with an insert. Both tables are public.
+- The rules (date key, timezone, eligibility, selection) live once in `public/js/flash-sale-core.js`, shared by the server and the offline demo fallback (`public/js/flash-demo.js`, used only when `GET /api/flash-sale` fails; delete it when no longer wanted). Selection: order eligible products by `hash32(date_key|id)`, take 12, and use the previous day's picks only to top up a short pool.
+- The marketplace timezone is the `MARKETPLACE_TIMEZONE` setting (default `Asia/Jakarta`); the day, the label date and the countdown end all follow it. "Now" comes from `req.now` (staging preview moments) on the server and from the server clock on the client.
+- `products.active` and `products.flash_eligible` (default true) are the manual switches. Only products with a positive `stock` and `orig > price` qualify, which in practice means the generated (`gx-`) and expansion (`mx-`) catalogs, not the bundled `p`/`r` ones.
+- Checkout calls `POST /api/flash-sale/purchase` before payment: it checks the campaign is running, the price and the stock, and reserves the units in one transaction.
