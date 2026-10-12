@@ -62,15 +62,10 @@
    * TILE_HOVER motion; still for reduced-motion users. */
   .product-card {
     @apply transition-shadow duration-200 motion-reduce:transition-none;
-    /* Off-screen cards skip layout and paint; the box size keeps the
-     * scrollbar steady until they are drawn. */
-    content-visibility: auto;
-    contain-intrinsic-size: auto 300px;
   }
   /* Hover lift only on devices that really hover: a tap on a phone must not
    * leave a card stuck lifted (and repainted). */
   @media (hover: hover) {
-    .product-card:hover { content-visibility: visible; } /* paint containment would clip the lifted shadow */
     .product-card {
       @apply transition duration-200 hover:-translate-y-0.5 hover:shadow-card-lg motion-reduce:hover:translate-y-0;
     }
