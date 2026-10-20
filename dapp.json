@@ -1,10 +1,68 @@
 {
   "description": "A modern mobile-first marketplace: deals, categories and everyday essentials.",
-  "icon": {
-    "image": "brand/icon.png"
-  },
-  "secrets": [],
+  "icon": { "image": "brand/icon.png" },
+  "permissions": [
+    { "capability": "geolocation", "reason": "Find products shipping from a city near you" }
+  ],
+  "secrets": [
+    {
+      "key": "MARKETPLACE_TIMEZONE",
+      "description": "IANA timezone the marketplace runs on (for example Asia/Jakarta). The Flash Sale day starts and ends at local midnight here.",
+      "required": false,
+      "private": false,
+      "default": "Asia/Jakarta"
+    }
+  ],
   "tests": [
+    {
+      "id": "home.filters-toolbar",
+      "name": "Home Recommended grid renders the filter and sort toolbar",
+      "path": "/",
+      "expectSelector": "#section-recommended [data-filter-toolbar] [data-filter-open]",
+      "expectText": "Filters",
+      "visual": true,
+      "impact": ["public/js/filter-ui.js", "public/js/filters.js", "public/js/home.js", "public/js/ui.js", "public/js/router.js", "public/index.html", "styles/tailwind-input.css", "src/products.cjs", "server.js"]
+    },
+    {
+      "id": "home.filter-city",
+      "name": "Filtering the home grid by city keeps only that city's products",
+      "path": "/#/home?city=Batam",
+      "expectSelector": "#recommended-chips [data-result-count]",
+      "expectText": "products"
+    },
+    {
+      "id": "home.filter-cities-multi",
+      "name": "Selecting two cities keeps products from both",
+      "path": "/#/home?city=Bandung,Bekasi",
+      "expectSelector": "#recommended-chips [data-result-count]",
+      "expectText": "64 products"
+    },
+    {
+      "id": "home.filter-city-card",
+      "name": "A filtered product card shows the city it ships from",
+      "path": "/#/home?city=Batam",
+      "expectSelector": "#recommended-grid [data-card-city]"
+    },
+    {
+      "id": "home.filter-sort-price",
+      "name": "Home grid applies a price range and sort from the URL",
+      "path": "/#/home?sort=price_asc&min=100&max=200",
+      "expectSelector": "[data-chip-remove='price']",
+      "expectText": "Price: Low to High"
+    },
+    {
+      "id": "home.filter-empty",
+      "name": "A city with no products shows the empty state",
+      "path": "/#/home?city=Nowhere",
+      "expectText": "No products found."
+    },
+    {
+      "id": "home.filter-province-chip",
+      "name": "A province filter renders a removable location chip",
+      "path": "/#/home?province=Bali",
+      "expectSelector": "[data-chip-remove='location']",
+      "expectText": "Bali"
+    },
     {
       "id": "home.default",
       "name": "Home renders with banners, categories, flash sale and products",
@@ -80,24 +138,65 @@
     },
     {
       "id": "home.grid-new-cards",
-      "name": "Recommended grid renders the Smart Home Hub and Vertical Mouse cards",
+      "name": "Recommended grid leads with the expanded catalog and its add buttons",
       "path": "/",
-      "expectSelector": "[data-product='p44'] .add-btn",
-      "expectText": "Mendo Smart Home Hub"
+      "expectSelector": "[data-product='r001'] .add-btn",
+      "expectText": "Nova Laptop 14\""
+    },
+    {
+      "id": "home.recommended-photo",
+      "name": "A Recommended card shows a real product photo",
+      "path": "/",
+      "expectSelector": "[data-product='r001'] img[data-product-image]",
+      "expectText": "Nova Laptop 14\""
+    },
+    {
+      "id": "home.flash-photo",
+      "name": "Flash Sale cards show real product photos",
+      "path": "/",
+      "expectSelector": "#flash-row .product-card img[data-product-image]",
+      "expectText": "Flash Sale"
+    },
+    {
+      "id": "home.browse-photo",
+      "name": "Category browse cards show real product photos",
+      "path": "/#/category/electronics",
+      "expectSelector": "#view-browse .product-card img[data-product-image]"
     },
     {
       "id": "home.grid-rich-art",
-      "name": "Recommended grid renders rich illustrations for previously placeholder products",
-      "path": "/",
+      "name": "Previously placeholder products still render rich illustrations",
+      "path": "/#/category/electronics",
       "expectSelector": "[data-product='p03'] svg.product-img[data-art='rich']",
       "expectText": "Klarita 4K Action Camera"
     },
     {
       "id": "home.sold-out-art",
-      "name": "Sold out TV card keeps its badge and renders rich art",
-      "path": "/",
+      "name": "Sold out product keeps its badge and renders rich art",
+      "path": "/#/category/electronics",
       "expectSelector": "[data-product='p04'] svg.product-img[data-art='rich']",
       "expectText": "Sold out"
+    },
+    {
+      "id": "home.recommended-load-more",
+      "name": "Recommended grid paginates with a Load more button",
+      "path": "/",
+      "expectSelector": "#recommended-more-btn",
+      "expectText": "Load more"
+    },
+    {
+      "id": "home.recommended-sold-out",
+      "name": "A sold out recommendation shows the disabled add button",
+      "path": "/",
+      "expectSelector": "[data-product='r007'] .add-btn[disabled]",
+      "expectText": "Sold out"
+    },
+    {
+      "id": "home.recommended-no-discount",
+      "name": "A full-price recommendation renders without a sale badge",
+      "path": "/",
+      "expectSelector": "[data-product='r004']:not(:has(.badge-sale)) .add-btn",
+      "expectText": "Orbit Laptop 14\""
     },
     {
       "id": "product.smarthome-hub",
@@ -107,18 +206,73 @@
       "expectText": "$119.99"
     },
     {
+      "id": "product.detail-image",
+      "name": "Product detail gallery shows the product's real photo",
+      "path": "/#/product/r001",
+      "expectSelector": "#view-product #pdp-img img[data-gallery-img][src*='notebook-1.jpg']"
+    },
+    {
+      "id": "product.image-matches-card",
+      "name": "Detail main image matches the card photo for the same product",
+      "path": "/#/product/p09",
+      "expectSelector": "#view-product #pdp-img img[data-gallery-img][src*='tee-1.jpg']",
+      "visual": true,
+      "impact": ["public/js/product.js", "public/js/data.js", "public/js/ui.js"]
+    },
+    {
+      "id": "product.gallery-thumbnails",
+      "name": "Detail gallery renders thumbnails for a multi-photo product",
+      "path": "/#/product/p05",
+      "expectSelector": "#view-product [data-img-go][aria-label^='Show photo 2']"
+    },
+    {
+      "id": "product.specs",
+      "name": "Detail page renders the Specifications table with identity rows",
+      "path": "/#/product/r001",
+      "expectSelector": "#view-product dl",
+      "expectText": "Specifications"
+    },
+    {
+      "id": "product.specs-rows",
+      "name": "Specifications renders the category-shaped rows for another product",
+      "path": "/#/product/p26",
+      "expectText": "Power / Capacity"
+    },
+    {
+      "id": "product.no-glyph-gallery",
+      "name": "Detail gallery shows a photo rather than the generated glyph",
+      "path": "/#/product/p12",
+      "expectSelector": "#view-product #pdp-img img[data-gallery-img][src*='sunglasses-6.jpg']"
+    },
+    {
       "id": "home.flash-images",
-      "name": "Flash Sale cards show detailed product illustrations",
+      "name": "Flash Sale cards show product images",
       "path": "/",
-      "expectSelector": "#flash-row .product-card svg.product-img",
+      "expectSelector": "#flash-row .product-card .product-img",
       "expectText": "Flash Sale"
     },
     {
-      "id": "home.app-shortcuts",
-      "name": "App shortcuts render as icon-free text chips",
+      "id": "home.flash-today",
+      "name": "Flash Sale shows today's campaign label, date and a running countdown",
       "path": "/",
-      "expectText": "App shortcuts",
-      "expectSelector": "#app-shortcut-grid > button.rounded-full[data-app-shortcut='Game Corner']"
+      "expectSelector": "#flash-label:not(.hidden)",
+      "expectText": "Today's Flash Sale",
+      "visual": true,
+      "impact": ["public/js/flash-sale.js", "public/js/flash-sale-core.js", "public/js/flash-demo.js", "public/js/home.js", "src/flash-sale.cjs", "public/index.html", "server.js"]
+    },
+    {
+      "id": "home.flash-countdown",
+      "name": "Flash Sale countdown shows hours, minutes and seconds",
+      "path": "/",
+      "expectSelector": "#flash-timer[data-ms-left] .chip",
+      "expectText": "Ends in"
+    },
+    {
+      "id": "home.flash-nav",
+      "name": "Flash Sale row has an accessible right scroll arrow",
+      "path": "/",
+      "expectSelector": "#flash-next[aria-label=\"Scroll right\"]",
+      "expectText": "Flash Sale"
     },
     {
       "id": "home.category-tiles",
@@ -196,6 +350,7 @@
       "visual": true,
       "impact": [
         "public/js/checkout.js",
+        "public/js/shipping.js",
         "public/js/app.js",
         "public/js/store.js",
         "public/js/views.js",
@@ -210,6 +365,19 @@
       "name": "Checkout with an empty cart shows the empty state",
       "path": "/#/checkout",
       "expectText": "Add items to your cart"
+    },
+    {
+      "id": "checkout.couriers",
+      "name": "Checkout offers a destination country and at least three couriers",
+      "path": "/?demo=checkout#/checkout",
+      "expectSelector": "[data-country-select]",
+      "expectText": "Destination country"
+    },
+    {
+      "id": "orders.detail-courier",
+      "name": "Order detail names the chosen courier and destination country",
+      "path": "/#/orders/BZ-48073",
+      "expectText": "Ship to United States"
     },
     {
       "id": "cart.default",
@@ -251,9 +419,7 @@
       "expectSelector": "[data-order-timeline]",
       "expectText": "Shipping address",
       "visual": true,
-      "impact": [
-        "public/js/orders.js"
-      ]
+      "impact": ["public/js/orders.js", "public/js/data.js"]
     },
     {
       "id": "profile.default",
@@ -263,8 +429,27 @@
       "visual": true,
       "impact": [
         "public/js/profile.js",
-        "public/js/app.js"
+        "public/js/profile-photo.js",
+        "public/js/settings.js",
+        "public/js/ui.js",
+        "public/js/api.js",
+        "public/js/icons.js",
+        "public/js/app.js",
+        "server.js",
+        "styles/tailwind-input.css"
       ]
+    },
+    {
+      "id": "profile.avatar-control",
+      "name": "Profile avatar is tappable and carries the camera badge",
+      "path": "/#/profile",
+      "expectSelector": "[data-avatar-edit] [data-avatar] [data-avatar-fallback]"
+    },
+    {
+      "id": "profile.avatar-photo-demo",
+      "name": "Profile shows a stored photo as a circular avatar (staging demo)",
+      "path": "/?demo=1#/profile",
+      "expectSelector": "[data-avatar] [data-avatar-img]"
     },
     {
       "id": "profile.wishlist-demo",
@@ -287,10 +472,85 @@
       "expectText": "Notification settings"
     },
     {
+      "id": "profile.payment-default",
+      "name": "Payment methods page lists grouped methods with a default badge",
+      "path": "/?demo=1#/profile/payment",
+      "expectSelector": "[data-pay-row='bca'] .badge-brand",
+      "expectText": "Bank Transfer / Virtual Account",
+      "visual": true,
+      "impact": [
+        "public/js/payment.js",
+        "public/js/profile.js",
+        "public/js/store.js",
+        "public/js/app.js",
+        "public/js/checkout.js",
+        "public/index.html"
+      ]
+    },
+    {
+      "id": "profile.payment-empty",
+      "name": "Payment methods page shows the empty state when nothing is saved",
+      "path": "/#/profile/payment",
+      "expectText": "No payment methods saved"
+    },
+    {
+      "id": "checkout.default-payment",
+      "name": "Checkout preselects the saved default payment method",
+      "path": "/?demo=checkout#/checkout",
+      "expectText": "BCA"
+    },
+    {
       "id": "home.search-quoted",
       "name": "Search query with quotes and angle brackets renders as text",
       "path": "/?q=wireless%20%22pro%22%20%3Ctest%3E",
       "expectText": "Nothing matches \"wireless \"pro\" <test>\" right now"
-    }
+    },
+    {
+      "id": "product.reviews-photos",
+      "name": "A product's reviews render with real photos and the verified-purchase badge",
+      "path": "/#/product/p09",
+      "expectSelector": "#pdp-reviews [data-review-photo]",
+      "expectText": "Verified purchase",
+      "visual": true,
+      "impact": ["public/js/reviews.js", "public/js/product.js", "public/index.html", "styles/tailwind-input.css", "server.js"]
+    },
+    {
+      "id": "product.reviews-empty",
+      "name": "A product with no reviews shows the empty state",
+      "path": "/#/product/p27",
+      "expectText": "No reviews yet."
+    },
+    {
+      "id": "product.review-composer",
+      "name": "The reviews section offers the reviewer action for the signed-in viewer",
+      "path": "/#/product/p09",
+      "expectSelector": "#pdp-reviews [data-review-cta]"
+    },
+    {
+      "id": "product.reviews-live",
+      "name": "The reviews section opens its live-updates stream",
+      "path": "/#/product/p09",
+      "expectSelector": "[data-reviews-live]"
+    },
+    {
+      "id": "orders.server-mirror",
+      "name": "Checkout still renders and can place an order after the order mirror",
+      "path": "/?demo=checkout#/checkout",
+      "expectSelector": "[data-place-order]",
+      "expectText": "Order summary"
+    },
+    {"id": "product.catalog-detail", "name": "A marketplace product page shows stock, variants, key features and a specifications table", "path": "/#/product/staging-demo-gx-0001", "expectSelector": "#view-product [data-stock-status] ~ div [data-variant-opt]", "expectText": "Key features", "visual": true, "impact": ["public/js/product.js", "public/js/ui.js", "public/js/api.js", "server.js", "src/products.cjs", "src/schema.cjs", "src/catalog-rows.cjs"]},
+    {"name": "Marketplace product page has a zoomable photo gallery with thumbnails", "path": "/#/product/staging-demo-gx-0041", "expectSelector": "#view-product [data-zoom-area] img[data-product-image]"},
+    {"name": "Marketplace product page lists its specifications table", "path": "/#/product/staging-demo-gx-0001", "expectSelector": "#view-product dl", "expectText": "Driver size"},
+    {"name": "Home shows Featured, Trending and Deals shelves computed from the catalog", "path": "/", "expectSelector": "#featured-row [data-product]", "expectText": "Trending now"},
+    {"name": "Categories tab shows category counts from the catalog table", "path": "/#/categories", "expectSelector": "[data-category-count='electronics']", "expectText": "products"},
+    {"name": "Category browse merges the marketplace catalog from the server", "path": "/#/category/electronics", "expectSelector": "#browse-grid [data-product^='staging-demo-']"},
+    {"name": "Search finds a marketplace product by brand name", "path": "/#/search?q=Primere", "expectSelector": "#browse-grid [data-product='staging-demo-gx-0001']"},
+    {"id": "product.review-breakdown", "name": "A marketplace product page shows the 5 to 1 star breakdown and review sorting", "path": "/#/product/mx-0003", "expectSelector": "#pdp-reviews [data-review-breakdown] [data-review-bar='5'] [data-review-bar-count]", "expectText": "Most helpful", "visual": true, "impact": ["public/js/reviews.js", "public/js/product.js", "server.js", "src/marketplace.cjs", "data/marketplace/**"]},
+    {"name": "A negative marketplace review shows the seller's reply", "path": "/#/product/mx-0005", "expectSelector": "#pdp-reviews [data-review-reply]", "expectText": "Seller reply"},
+    {"name": "A sold out marketplace product says so on its page", "path": "/#/product/mx-0019", "expectSelector": "#view-product [data-stock-status]", "expectText": "Sold out"},
+    {"name": "Search finds a new marketplace product by brand name", "path": "/#/search?q=Zanvale", "expectSelector": "#browse-grid [data-product='mx-0003']", "expectText": "Zanvale Dew Z570 Pro Face Serum"},
+    {"id": "home.marketplace-load-more", "name": "A filtered home grid shows its first page of 24 and the remaining count on Load more", "path": "/#/home?city=Batam", "expectSelector": "#recommended-more-btn", "expectText": "(18)"},
+    {"name": "Unknown product id shows the not-found state", "path": "/#/product/gx-does-not-exist", "expectText": "Product not found", "allowConsoleErrors": true}
   ]
 }
