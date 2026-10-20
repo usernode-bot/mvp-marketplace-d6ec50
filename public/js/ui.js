@@ -5,7 +5,7 @@
  */
 
 import { icon, productArt, productPlaceholder, sizedImage } from './icons.js';
-import { discountPct } from './data.js';
+import { discountPct, productById } from './data.js';
 import { store } from './store.js';
 import { t, has, intlLocale, fmtNumber, fmtMoney, locale } from './i18n.js';
 
@@ -226,6 +226,47 @@ export function toast(message) {
   requestAnimationFrame(() => { el.style.opacity = '1'; });
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => { el.style.opacity = '0'; }, 1800);
+}
+
+/* ---------------------------------------------------------------------------
+ * Lazy illustrations. Product artwork is inline SVG with no network request,
+ * so "lazy" here means deferring the (non-trivial) string build and DOM
+ * weight until a tile scrolls near the viewport. One shared observer serves
+ * every grid; the wrapper keeps a skeleton until it fires, so layout never
+ * shifts. Called after each grid render.
+ * ------------------------------------------------------------------------- */
+function fillArt(el) {
+  const id = el.getAttribute('data-lazy-art');
+  const p = id ? productById(id) : null;
+  if (p) el.innerHTML = productArt(p);
+  el.removeAttribute('data-lazy-art');
+}
+
+let artObserver = null;
+
+export function hydrateLazyArt(root) {
+  const scope = root || document;
+  const nodes = scope.querySelectorAll('[data-lazy-art]');
+  if (!nodes.length) return;
+  if (typeof window === 'undefined' || !('IntersectionObserver' in window)) {
+    nodes.forEach(fillArt);
+    return;
+  }
+  if (!artObserver) {
+    artObserver = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          fillArt(entry.target);
+          artObserver.unobserve(entry.target);
+        }
+      });
+    }, { rootMargin: '200px 0px' });
+  }
+  nodes.forEach((n) => {
+    if (n.getAttribute('data-lazy-observed')) return;
+    n.setAttribute('data-lazy-observed', '1');
+    artObserver.observe(n);
+  });
 }
 
 /* ---------------------------------------------------------------------------

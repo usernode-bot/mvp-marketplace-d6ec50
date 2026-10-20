@@ -35,6 +35,9 @@ const SORT_OPTIONS = [
   { id: 'price-desc', labelKey: 'browse.sort.priceDesc' },
 ];
 
+/* Results are revealed a page at a time by the "Load more" button. */
+const PAGE_SIZE = 24;
+
 const PRICE_BUCKETS = [
   { id: 'any', labelKey: 'browse.price.any', min: 0, max: Infinity },
   { id: 'under-20', labelKey: 'browse.price.under20', min: 0, max: 2000 },
@@ -58,8 +61,6 @@ const DISCOUNT_OPTIONS = [
 ];
 
 const GRID_CLASS = 'grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6';
-
-const PAGE_SIZE = 24;
 
 let state = null;
 
@@ -125,6 +126,7 @@ function applySort(list) {
   // generated marketplace products, each group by score.
   if (state.sort === 'recommended') sorted.sort((a, b) => (a.generated ? 1 : 0) - (b.generated ? 1 : 0) || score(b) - score(a));
   else if (state.sort === 'popular') sorted.sort((a, b) => b.sold - a.sold);
+  else if (state.sort === 'top-rated') sorted.sort((a, b) => (b.rating - a.rating) || (b.reviews - a.reviews));
   else if (state.sort === 'newest') sorted.sort((a, b) => a.age - b.age);
   else if (state.sort === 'price-asc') sorted.sort((a, b) => a.price - b.price);
   else if (state.sort === 'price-desc') sorted.sort((a, b) => b.price - a.price);

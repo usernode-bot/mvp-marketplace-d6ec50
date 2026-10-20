@@ -5,12 +5,13 @@
  */
 
 import { icon } from './icons.js';
-import { BANNERS, CATEGORIES, PRODUCTS, TRENDING, discountPct, productById, registerProducts } from './data.js';
+import { BANNERS, CATEGORIES, PRODUCTS, TRENDING, discountPct, matchSearch, productById, registerProducts } from './data.js';
 import { store } from './store.js';
 import {
   emptyState,
   fmtCount,
   fmtPrice,
+  hydrateLazyArt,
   productCard,
   scrollBehavior,
   skeletonBanner,
@@ -271,6 +272,17 @@ export function initFlashNav() {
  * from router.js). The home results section now only serves the "Big deals"
  * banner CTA. */
 
+const PAGE_SIZE = 24;
+let resultsVisible = PAGE_SIZE;
+
+/* "Load more" control shown only while more items remain. */
+function loadMoreHtml(attr, total, shown) {
+  if (shown >= total) return '';
+  return '<div class="col-span-full mt-1 flex justify-center">'
+    + '<button type="button" data-load-more ' + attr + ' class="btn-outline btn-sm">Load more products<span class="text-zinc-400">(' + (total - shown) + ')</span></button>'
+    + '</div>';
+}
+
 /* The shelves from GET /api/catalog/summary, once loaded. */
 let shelvesData = null;
 
@@ -307,7 +319,8 @@ function renderResults() {
 
   const grid = document.getElementById('results-grid');
   const empty = document.getElementById('results-empty');
-  grid.innerHTML = products.map((p) => productCard(p)).join('');
+  resultsVisible = PAGE_SIZE;
+  renderResultsPage(true);
 
   if (products.length) {
     grid.classList.remove('hidden');
@@ -346,6 +359,26 @@ export function clearResults() {
   });
 }
 
+/* Render the Big deals grid up to the current page, appending the rest on
+ * "Load more". Lazy illustrations keep the initial DOM light. */
+function renderResultsPage(resetScroll) {
+  const grid = document.getElementById('results-grid');
+  if (!grid) return;
+  const products = productsForFilter();
+  const slice = products.slice(0, resultsVisible);
+  grid.innerHTML = slice.map((p) => productCard(p, { lazy: true })).join('')
+    + loadMoreHtml('data-results-more', products.length, resultsVisible);
+  hydrateLazyArt(grid);
+  const btn = grid.querySelector('[data-load-more]');
+  if (btn) {
+    btn.addEventListener('click', () => {
+      resultsVisible += PAGE_SIZE;
+      renderResultsPage(false);
+    });
+  }
+  if (resetScroll) window.scrollTo({ top: 0 });
+}
+
 /* ------------------------------------------------------------------ */
 /* Search panel (recents + trending + live suggestions)                */
 /* ------------------------------------------------------------------ */
@@ -374,7 +407,7 @@ function panelRows(q) {
     if (!recent && !trending) return '<p class="p-2 text-sm text-zinc-400">' + esc(t('home.startTyping')) + '</p>';
     return recent + trending;
   }
-  const matches = PRODUCTS.filter((p) => p.name.toLowerCase().includes(term)).slice(0, 6);
+  const matches = PRODUCTS.filter((p) => matchSearch(p, term)).slice(0, 6);
   if (!matches.length) {
     return '<p class="p-2 text-sm text-zinc-500">' + esc(t('home.noMatches', { q })) + '</p>';
   }
