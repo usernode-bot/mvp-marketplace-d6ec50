@@ -37,6 +37,7 @@ function toRow(p) {
   return {
     id: p.id,
     name: p.name,
+    description: p.desc || '',
     cat: p.cat,
     sub: p.sub || '',
     brand: p.brand,
@@ -239,11 +240,19 @@ function parseJsonArray(value, fallback) {
 
 /* One database row back into the client's product shape, so a card, the
  * product page and the cart read the same fields whether the row came from
- * the API or from the bundled catalog. */
+ * the API or from the bundled catalog.
+ *
+ * A localized row answered by the LEFT JOIN in server.js arrives in the
+ * `i18n_*` columns (name / description / specs); when the requested locale
+ * has no row for this product those columns are NULL and the English column
+ * is used, so an untranslated product is never blank. */
 function toProduct(row) {
+  const specs = row.i18n_specs === undefined || row.i18n_specs === null
+    ? row.specs : row.i18n_specs;
   return {
     id: row.id,
-    name: row.name,
+    name: row.i18n_name || row.name,
+    desc: row.i18n_description || row.description || '',
     cat: row.cat,
     sub: row.sub,
     brand: row.brand,
@@ -259,7 +268,7 @@ function toProduct(row) {
     kw: row.kw,
     image: row.image,
     images: parseJsonArray(row.images, row.image ? [row.image] : []),
-    specs: parseJsonArray(row.specs, []),
+    specs: parseJsonArray(specs, []),
     flash: row.flash,
     pct: row.pct,
     // Detail fields, filled for generated marketplace products. `desc` is

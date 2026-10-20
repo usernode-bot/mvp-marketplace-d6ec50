@@ -404,23 +404,23 @@ export function bindFilterControls(root, service) {
   // (that would drop focus and the caret).
   function onSheetInput(e) {
     if (!staged) return;
-    const t = e.target;
-    if (t.matches('[data-price-min]')) {
-      patchStaged({ min: t.value.trim() === '' ? null : parseAmount(t.value) });
+    const el = e.target;
+    if (el.matches('[data-price-min]')) {
+      patchStaged({ min: el.value.trim() === '' ? null : parseAmount(el.value) });
       setPriceMessage();
-    } else if (t.matches('[data-price-max]')) {
-      patchStaged({ max: t.value.trim() === '' ? null : parseAmount(t.value) });
+    } else if (el.matches('[data-price-max]')) {
+      patchStaged({ max: el.value.trim() === '' ? null : parseAmount(el.value) });
       setPriceMessage();
-    } else if (t.matches('[data-loc-search]')) {
-      filterCityList(t.value);
+    } else if (el.matches('[data-loc-search]')) {
+      filterCityList(el.value);
     }
   }
   root.addEventListener('input', onSheetInput);
 
   root.addEventListener('change', (e) => {
     if (!staged) return;
-    const t = e.target;
-    if (t.matches('[data-price-min]') || t.matches('[data-price-max]')) onSheetInput(e);
+    const el = e.target;
+    if (el.matches('[data-price-min]') || el.matches('[data-price-max]')) onSheetInput(e);
   });
 
   // Keyboard support: Escape closes the sheet (and any open menu/popover);

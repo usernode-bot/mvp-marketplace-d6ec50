@@ -83,7 +83,8 @@ export function fmtPrice(cents) {
   return fmtMoney(cents);
 }
 
-/* 12040 -> "12k", 980 -> "980". */
+/* 12040 -> "12k", 980 -> "980". Below 1000 the digits are grouped by the
+ * locale (1.234); above it the compact "k" form stays as the visual budget. */
 export function fmtCount(n) {
   if (n >= 1000) {
     const k = n / 1000;

@@ -51,7 +51,8 @@ export function activeFilterCount(f) {
     + (f.min !== null || f.max !== null ? 1 : 0);
 }
 
-/* "$25" for a whole-dollar amount, "$25.50" otherwise. */
+/* "$25" for a whole-dollar amount, "$25.50" otherwise, in the selected
+ * locale (currency stays USD). */
 function fmtAmount(cents) {
   const d = cents / 100;
   const frac = Number.isInteger(d) ? 0 : 2;
@@ -185,7 +186,7 @@ export function toApiParams(f, extra = {}) {
  *   pushHash(hash)    -> void                    (router goToHash)
  *   extraParams()     -> object                  route params to send too
  *                      (q, cat, sub), read fresh on each request
- *   onError(message)  -> void                    optional
+ *   onError()        -> void                    optional (a toast)
  * ------------------------------------------------------------------------- */
 export function createFilterService(options = {}) {
   const fetcher = options.fetcher;

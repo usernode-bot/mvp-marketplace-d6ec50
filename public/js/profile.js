@@ -206,8 +206,8 @@ function renderCoupons() {
     '<div class="flex items-center gap-3 p-4">'
     + '<span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-50 text-brand-600">' + icon('ticket', 'h-5 w-5') + '</span>'
     + '<div class="min-w-0 flex-1">'
-    + '<p class="text-sm font-semibold text-zinc-900">' + v.code + '</p>'
-    + '<p class="mt-0.5 text-xs text-zinc-500">' + voucherDescription(v) + '</p>'
+    + '<p class="text-sm font-semibold text-zinc-900">' + esc(v.code) + '</p>'
+    + '<p class="mt-0.5 text-xs text-zinc-500">' + esc(voucherDescription(v)) + '</p>'
     + '</div>'
     + '<button type="button" data-nav="cart" class="btn-ghost btn-sm shrink-0">' + esc(t('profile.coupons.use')) + '</button>'
     + '</div>').join('');

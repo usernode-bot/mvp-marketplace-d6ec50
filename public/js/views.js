@@ -3,10 +3,9 @@
  * owns its own view and actions.
  */
 
-import { icon } from './icons.js';
+import { t } from './i18n.js';
 import { CATEGORIES, PRODUCTS } from './data.js';
 import { fetchCatalogSummary } from './api.js';
-import { t } from './i18n.js';
 import { categoryName, esc } from './ui.js';
 
 const CATEGORY_TINTS = {

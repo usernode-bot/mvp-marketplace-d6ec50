@@ -8,7 +8,13 @@
  * no-console-errors check stays green offline. The app's own address (no
  * ?token=) relies on the platform edge adding the header, so we only add it
  * when we actually have one.
+ *
+ * Every request also carries the active language as `Accept-Language`, so a
+ * locale-aware endpoint (GET /api/products) can answer with localized content
+ * and echo the chosen locale back in `Content-Language`.
  */
+
+import { locale } from './i18n.js';
 
 function token() {
   try {
@@ -22,6 +28,7 @@ export async function apiFetch(path, options = {}) {
   const headers = Object.assign({}, options.headers);
   const t = token();
   if (t) headers['x-usernode-token'] = t;
+  if (!headers['accept-language']) headers['accept-language'] = locale();
   if (options.body !== undefined && !headers['content-type']) {
     headers['content-type'] = 'application/json';
   }
