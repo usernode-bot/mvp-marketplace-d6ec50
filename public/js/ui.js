@@ -4,31 +4,116 @@
  * carry their own listeners.
  */
 
-import { icon, productArt } from './icons.js';
+import { icon, productArt, productPlaceholder, sizedImage } from './icons.js';
 import { discountPct } from './data.js';
 import { store } from './store.js';
-import { getLocale, t } from './i18n.js';
+import { t, has, intlLocale, fmtNumber, fmtMoney, locale } from './i18n.js';
 
-/* $12.99 from integer cents. */
+/* ---------------------------------------------------------------------------
+ * Product photos for the generated marketplace catalog.
+ *
+ * Those photos live on Pexels' CDN, which resizes on request, so each surface
+ * asks for the size it shows (card 480, thumbnail 160, gallery 900, zoom
+ * 1800) instead of downloading the 940px original everywhere. Any other URL
+ * (a committed photo, a data URI) is returned unchanged.
+ * ------------------------------------------------------------------------- */
+export { sizedImage };
+
+/* A photo that failed to load: drop the broken <img> and the shimmer, and
+ * show the neutral placeholder in the same fixed box. This is the ONLY time
+ * the fallback appears; while loading, the shimmer shows instead. */
+window.unImgFail = function (img) {
+  const holder = img.parentElement;
+  if (!holder) return;
+  const alt = img.getAttribute('alt') || t('ui.product');
+  img.remove();
+  const shimmer = holder.querySelector('[data-img-shimmer]');
+  if (shimmer) shimmer.remove();
+  if (!holder.querySelector('[data-img-fallback]')) {
+    holder.insertAdjacentHTML('beforeend', '<div data-img-fallback class="absolute inset-0 bg-zinc-100">'
+      + productPlaceholder({ name: alt }, 'absolute inset-0 h-full w-full text-zinc-300') + '</div>');
+  }
+};
+
+window.unImgLoaded = function (img) {
+  const shimmer = img.parentElement && img.parentElement.querySelector('[data-img-shimmer]');
+  if (shimmer) shimmer.remove();
+};
+
+/* One photo in a fixed-aspect box: a pulsing placeholder while it loads, the
+ * photo once it has, the fallback only if it fails. `opts.w` is the pixel
+ * width to request, `opts.eager` skips lazy loading (the detail page's main
+ * photo), `opts.cls` adds classes to the <img> (e.g. the zoom transition). */
+export function photoHtml(url, alt, opts = {}) {
+  const w = opts.w || 480;
+  return '<div data-img-shimmer class="absolute inset-0 bg-zinc-100"></div>'
+    + '<img src="' + esc(sizedImage(url, w)) + '" alt="' + esc(alt) + '" width="' + w + '" height="' + w + '"'
+    + (opts.eager ? ' fetchpriority="high"' : ' loading="lazy"') + ' decoding="async" data-product-image'
+    + ' class="product-img absolute inset-0 h-full w-full ' + (opts.fit === 'contain' ? 'object-contain' : 'object-cover') + (opts.cls ? ' ' + opts.cls : '') + '"'
+    + ' onload="unImgLoaded(this)" onerror="unImgFail(this)">';
+}
+
+/* 'smooth' for user-initiated scrolls, 'auto' for people who asked for less motion. */
+export function scrollBehavior() {
+  return window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
+}
+
+/* Fill a product grid with `items`. When the grid already shows the first n
+ * of them in the same order and language (the "Load more" case), only the new
+ * cards are appended, so the photos already on screen are not destroyed and
+ * redecoded mid-scroll. Anything else (new filters, sort, language, skeletons
+ * on screen) rebuilds the grid. */
+export function syncProductGrid(grid, items, cardFn) {
+  const loc = locale();
+  const have = grid.children.length;
+  let append = have > 0 && have <= items.length && grid.dataset.locale === loc;
+  for (let i = 0; append && i < have; i++) {
+    if (grid.children[i].getAttribute('data-product') !== String(items[i].id)) append = false;
+  }
+  if (append) {
+    if (have < items.length) grid.insertAdjacentHTML('beforeend', items.slice(have).map(cardFn).join(''));
+  } else {
+    grid.innerHTML = items.map(cardFn).join('');
+  }
+  grid.dataset.locale = loc;
+}
+
+/* "$12.99" from integer cents, formatted for the active language. */
 export function fmtPrice(cents) {
-  return '$' + (cents / 100).toFixed(2);
+  return fmtMoney(cents);
 }
 
 /* 12040 -> "12k", 980 -> "980". */
 export function fmtCount(n) {
   if (n >= 1000) {
     const k = n / 1000;
-    return (k >= 10 ? Math.round(k) : Math.round(k * 10) / 10) + 'k';
+    const v = k >= 10 ? Math.round(k) : Math.round(k * 10) / 10;
+    return t('ui.thousands', { n: fmtNumber(v, { maximumFractionDigits: 1 }) });
   }
-  return String(n);
+  return fmtNumber(n);
 }
 
-/* "Oct 2" within the current year, "Oct 2, 2025" otherwise. Formatted in the
- * active locale, so a switch changes dates too. */
+/* Localized display names for the fixed category / subcategory vocabulary
+ * (the data tables keep ids and English names; the shown name comes from
+ * the dictionary by id, falling back to the table's own name). */
+export function categoryName(c) {
+  if (!c) return '';
+  const key = 'ui.cat.' + c.id;
+  return has(key) ? t(key) : (c.name || '');
+}
+
+export function subcategoryLabel(s) {
+  if (!s) return '';
+  if (!s.id) return t('ui.sub.all');
+  const key = 'ui.sub.' + s.id;
+  return has(key) ? t(key) : (s.name || '');
+}
+
+/* "Oct 2" within the current year, "Oct 2, 2025" otherwise. */
 export function fmtDate(ts) {
   const d = new Date(ts);
   const sameYear = d.getFullYear() === new Date().getFullYear();
-  return d.toLocaleDateString(getLocale(), sameYear
+  return d.toLocaleDateString(intlLocale(), sameYear
     ? { month: 'short', day: 'numeric' }
     : { month: 'short', day: 'numeric', year: 'numeric' });
 }
@@ -47,13 +132,14 @@ export function esc(s) {
  * pattern as the cart's remove confirmation); falls back to window.confirm
  * in standalone local runs. Resolves true only when the destructive button
  * was pressed. */
-export function confirmDialog({ title, message, confirmLabel = 'Confirm' }) {
+export function confirmDialog({ title, message, confirmLabel }) {
+  if (confirmLabel === undefined) confirmLabel = t('ui.confirm');
   if (window.unNative && typeof window.unNative.alert === 'function') {
     return window.unNative.alert({
       title,
       message,
       buttons: [
-        { label: t('common.cancel'), style: 'cancel' },
+        { label: t('ui.cancel'), style: 'cancel' },
         { label: confirmLabel, style: 'destructive' },
       ],
     }).then((r) => !!(r && r.button && r.button.style === 'destructive'));
@@ -61,10 +147,9 @@ export function confirmDialog({ title, message, confirmLabel = 'Confirm' }) {
   return Promise.resolve(window.confirm(title + '\n\n' + message));
 }
 
-/* "Tue, Oct 6" from a Date (used for checkout delivery estimates), in the
- * active locale. */
+/* "Tue, Oct 6" from a Date (used for checkout delivery estimates). */
 export function fmtEtaDate(d) {
-  return d.toLocaleDateString(getLocale(), { weekday: 'short', month: 'short', day: 'numeric' });
+  return d.toLocaleDateString(intlLocale(), { weekday: 'short', month: 'short', day: 'numeric' });
 }
 
 /* ---------------------------------------------------------------------------
@@ -82,14 +167,13 @@ export function avatarHtml({
   textSize = 'text-lg',
   badge = false,
   loading = false,
-  alt = null,
+  alt = t('ui.profilePhoto'),
 } = {}) {
   const initial = name ? String(name)[0].toUpperCase() : 'G';
-  const altText = alt || t('avatar.alt');
   const fallback = '<span data-avatar-fallback class="flex h-full w-full items-center justify-center rounded-full bg-brand-100 font-bold text-brand-700 '
     + textSize + '">' + esc(initial) + '</span>';
   const img = url
-    ? '<img data-avatar-img src="' + esc(url) + '" alt="' + esc(altText)
+    ? '<img data-avatar-img src="' + esc(url) + '" alt="' + esc(alt)
       + '" class="absolute inset-0 h-full w-full rounded-full object-cover" onerror="this.remove()">'
     : '';
   const spinner = loading
@@ -113,7 +197,7 @@ export function avatarHtml({
 export function starRow(rating, cls = 'h-3.5 w-3.5') {
   const five = Array.from({ length: 5 }, () => icon('star', cls)).join('');
   const pct = Math.max(0, Math.min(100, (rating / 5) * 100));
-  return '<span class="relative inline-flex shrink-0" role="img" aria-label="' + esc(t('common.ratedAria', { rating })) + '">'
+  return '<span class="relative inline-flex shrink-0" role="img" aria-label="' + esc(t('ui.rated', { rating })) + '">'
     + '<span class="flex text-zinc-200">' + five + '</span>'
     + '<span class="absolute inset-0 flex overflow-hidden text-amber-400" style="width:' + pct + '%">' + five + '</span>'
     + '</span>';
@@ -157,8 +241,8 @@ export function productCard(p, opts = {}) {
 
   const soldBlock = opts.compact
     ? '<div class="mt-1.5"><div class="h-1.5 w-full overflow-hidden rounded-full bg-rose-100"><div class="h-full rounded-full bg-rose-500" style="width:' + (p.pct || 0) + '%"></div></div>'
-      + '<div class="mt-1 text-[11px] font-medium text-zinc-500">' + esc(t('card.sold', { count: fmtCount(p.sold) })) + '</div></div>'
-    : '<span class="text-xs text-zinc-500">' + esc(t('card.sold', { count: fmtCount(p.sold) })) + '</span>';
+      + '<div class="mt-1 text-[11px] font-medium text-zinc-500">' + esc(t('ui.sold', { n: fmtCount(p.sold) })) + '</div></div>'
+    : '<span class="text-xs text-zinc-500">' + esc(t('ui.sold', { n: fmtCount(p.sold) })) + '</span>';
 
   // Card art. A committed product photo (p.image) layers over the generated
   // illustration, which paints instantly behind it as the fallback: if the
@@ -174,12 +258,19 @@ export function productCard(p, opts = {}) {
   // array. The generated illustration stays behind it as the instant first
   // paint and the failure fallback.
   const photo = (p.images && p.images.length) ? p.images[0] : p.image;
+  // Generated marketplace products have no illustration: their box shows a
+  // shimmer while the photo loads and the neutral placeholder only if it
+  // fails (photoHtml). A product with no photo at all gets the placeholder.
   const art = '<div class="relative h-full w-full transition-transform duration-300 group-hover:scale-[1.03]' + (p.oos ? ' opacity-60' : '') + '">'
-    + productArt(p)
-    + (photo
-      ? '<img src="' + esc(photo) + '" alt="' + esc(p.name) + '" loading="lazy" decoding="async" data-product-image'
-        + ' class="product-img absolute inset-0 h-full w-full ' + (p.imageFit === 'contain' ? 'object-contain' : 'object-cover') + '" onerror="this.remove()">'
-      : '')
+    + (p.art
+      ? productArt(p)
+        + (photo
+          ? '<img src="' + esc(photo) + '" alt="' + esc(p.name) + '" width="480" height="480" loading="lazy" decoding="async" data-product-image'
+            + ' class="product-img absolute inset-0 h-full w-full ' + (p.imageFit === 'contain' ? 'object-contain' : 'object-cover') + '" onerror="this.remove()">'
+          : '')
+      : (photo
+        ? photoHtml(photo, p.name, { w: 480, fit: p.imageFit })
+        : '<div class="absolute inset-0 bg-zinc-100">' + productPlaceholder(p, 'absolute inset-0 h-full w-full text-zinc-300') + '</div>'))
     + '</div>';
 
   return '<article class="card product-card group flex cursor-pointer flex-col overflow-hidden" data-product="' + p.id + '">'
@@ -189,15 +280,15 @@ export function productCard(p, opts = {}) {
     // product-page art stays full color.
     + art
     + (disc ? '<span class="badge-sale absolute left-2 top-2">-' + disc + '%</span>' : '')
-    + (p.oos ? '<span class="badge absolute bottom-2 left-2 bg-zinc-900/80 text-white">' + esc(t('card.soldOut')) + '</span>' : '')
-    + '<button type="button" data-fav="' + p.id + '" aria-label="' + esc(t('card.toggleFav')) + '" aria-pressed="' + fav
+    + (p.oos ? '<span class="badge absolute bottom-2 left-2 bg-zinc-900/80 text-white">' + esc(t('ui.soldOut')) + '</span>' : '')
+    + '<button type="button" data-fav="' + p.id + '" aria-label="' + esc(t('ui.toggleFavorite')) + '" aria-pressed="' + fav
     + '" class="fav-btn absolute right-2 top-2' + (fav ? ' fav-btn-on' : '') + '">' + heart + '</button>'
     + '</div>'
     + '<div class="flex flex-1 flex-col p-3">'
     + '<h3 class="line-clamp-2 text-sm font-medium leading-snug text-zinc-800">' + p.name + '</h3>'
     + '<div class="mt-1.5 flex items-center gap-1 text-xs text-zinc-500">'
     + '<span class="text-amber-400">' + icon('star', 'h-3.5 w-3.5') + '</span>'
-    + '<span class="font-semibold text-zinc-700">' + p.rating.toFixed(1) + '</span>'
+    + '<span class="font-semibold text-zinc-700">' + fmtNumber(p.rating, { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + '</span>'
     + '<span>(' + fmtCount(p.reviews) + ')</span>'
     + (opts.compact ? '' : soldBlock)
     + '</div>'
@@ -214,8 +305,8 @@ export function productCard(p, opts = {}) {
     + (p.orig ? '<div class="text-xs tabular-nums text-zinc-400 line-through">' + fmtPrice(p.orig) + '</div>' : '')
     + '</div>'
     + (p.oos
-      ? '<button type="button" disabled aria-label="' + esc(t('card.soldOut')) + '" class="add-btn cursor-not-allowed bg-zinc-300">' + icon('x', 'h-4 w-4') + '</button>'
-      : '<button type="button" data-add="' + p.id + '" aria-label="' + esc(t('card.addToCart')) + '" class="add-btn">' + icon('plus', 'h-4 w-4') + '<span class="hidden lg:inline">' + esc(t('card.add')) + '</span></button>')
+      ? '<button type="button" disabled aria-label="' + esc(t('ui.soldOut')) + '" class="add-btn cursor-not-allowed bg-zinc-300">' + icon('x', 'h-4 w-4') + '</button>'
+      : '<button type="button" data-add="' + p.id + '" aria-label="' + esc(t('ui.addToCart')) + '" class="add-btn">' + icon('plus', 'h-4 w-4') + '<span class="hidden lg:inline">' + esc(t('ui.add')) + '</span></button>')
     + '</div>'
     + '</div>'
     + '</article>';

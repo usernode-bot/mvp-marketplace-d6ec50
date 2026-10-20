@@ -4,28 +4,19 @@
  * these labels) and by the server (server.js orders rows by the same ids), so
  * the label a shopper picks is exactly the order the endpoint applies. The
  * id is the URL value (`#/home?sort=price_asc`); adding an order is a data
- * edit here, not a new branch on either side.
+ * edit here, not a new branch on either side. `label` is the English name
+ * (the server never renders it); `labelKey` is the dictionary key the client
+ * translates at render time (see sortText in filters.js).
  */
 
-import { t } from './i18n.js';
-
-/* Labels are translated lazily (a getter), so the sort menu follows the
- * active locale after a switch without re-importing this module. The server
- * require()s this file only for the ids, so the getter never runs there. */
-const SORTS = [
-  { id: 'recommended', key: 'filter.sort.recommended' },
-  { id: 'price_asc', key: 'filter.sort.price_asc' },
-  { id: 'price_desc', key: 'filter.sort.price_desc' },
-  { id: 'top_rated', key: 'filter.sort.top_rated' },
-  { id: 'best_selling', key: 'filter.sort.best_selling' },
-  { id: 'biggest_discount', key: 'filter.sort.biggest_discount' },
+export const SORT_OPTIONS = [
+  { id: 'recommended', labelKey: 'filters.sort.recommended', label: 'Recommended' },
+  { id: 'price_asc', labelKey: 'filters.sort.price_asc', label: 'Price: Low to High' },
+  { id: 'price_desc', labelKey: 'filters.sort.price_desc', label: 'Price: High to Low' },
+  { id: 'top_rated', labelKey: 'filters.sort.top_rated', label: 'Top rated' },
+  { id: 'best_selling', labelKey: 'filters.sort.best_selling', label: 'Best selling' },
+  { id: 'biggest_discount', labelKey: 'filters.sort.biggest_discount', label: 'Biggest discount' },
 ];
-
-export const SORT_OPTIONS = SORTS.map((o) => ({
-  id: o.id,
-  key: o.key,
-  get label() { return t(o.key); },
-}));
 
 export const DEFAULT_SORT = 'recommended';
 

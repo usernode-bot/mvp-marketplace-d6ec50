@@ -15,9 +15,9 @@ import { hydrateIcons, icon } from './icons.js';
 import { productById } from './data.js';
 import { store } from './store.js';
 import { toast } from './ui.js';
+import { initI18n, t } from './i18n.js';
 import { initTheme, setTheme } from './theme.js';
-import { clearResults, initHome, panelRows, renderHomeStatic, runBannerAction, submitSearch, updateFlashNav } from './home.js';
-import { initI18n, onLocaleChange, t } from './i18n.js';
+import { clearResults, initHome, panelRows, runBannerAction, submitSearch, updateFlashNav } from './home.js';
 import { initOrders } from './orders.js';
 import { renderProfileView, seedDemoAccount } from './profile.js';
 import { initProfilePhoto, loadProfilePhoto } from './profile-photo.js';
@@ -26,33 +26,6 @@ import { initSettings } from './settings.js';
 import { initPayment } from './payment.js';
 import { applyVoucherCode, initCart, removeCartItem, renderCartView } from './cart.js';
 import { goToHash, parseRoute, renderRoute } from './router.js';
-
-/* ------------------------------------------------------------------ */
-/* Static chrome + locale                                              */
-/* ------------------------------------------------------------------ */
-
-function escHtml(s) {
-  return String(s).replace(/[&<>"']/g, (c) => (
-    { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
-  ));
-}
-
-/* Translate the static chrome in index.html: elements carry data-i18n
- * (text), data-i18n-ph (placeholder) and data-i18n-aria (accessible name),
- * and this pass fills them for the active locale. Runs once at boot and
- * again on every locale change. */
-function applyStaticI18n() {
-  document.title = t('app.title');
-  document.querySelectorAll('[data-i18n]').forEach((el) => {
-    el.textContent = t(el.getAttribute('data-i18n'));
-  });
-  document.querySelectorAll('[data-i18n-ph]').forEach((el) => {
-    el.setAttribute('placeholder', t(el.getAttribute('data-i18n-ph')));
-  });
-  document.querySelectorAll('[data-i18n-aria]').forEach((el) => {
-    el.setAttribute('aria-label', t(el.getAttribute('data-i18n-aria')));
-  });
-}
 
 /* ------------------------------------------------------------------ */
 /* Header / nav badges                                                 */
@@ -91,7 +64,7 @@ function handleClick(e) {
   const favId = target.getAttribute('data-fav');
   if (favId) {
     const on = store.toggleFavorite(favId);
-    toast(t(on ? 'toast.favAdded' : 'toast.favRemoved'));
+    toast(t(on ? 'app.favoriteAdded' : 'app.favoriteRemoved'));
     document.querySelectorAll('[data-fav="' + favId + '"]').forEach((btn) => {
       btn.innerHTML = icon(on ? 'heartFilled' : 'heart', 'h-4 w-4');
       btn.classList.toggle('fav-btn-on', on);
@@ -105,14 +78,14 @@ function handleClick(e) {
   if (addId) {
     const product = productById(addId);
     if (product && product.oos) {
-      toast(t('toast.soldOut'));
+      toast(t('app.soldOutToast'));
       return;
     }
     store.addToCart(addId);
-    toast(t('toast.addedToCart'));
+    toast(t('app.addedToCart'));
     // Brief "Added" confirmation on the button that was tapped.
     const original = target.innerHTML;
-    target.innerHTML = icon('check', 'h-4 w-4') + '<span class="hidden lg:inline">' + escHtml(t('toast.addedBtn')) + '</span>';
+    target.innerHTML = icon('check', 'h-4 w-4') + '<span class="hidden lg:inline">' + t('app.added') + '</span>';
     target.disabled = true;
     setTimeout(() => {
       target.innerHTML = original;
@@ -185,7 +158,7 @@ function handleClick(e) {
   }
 
   if (target.hasAttribute('data-soon')) {
-    toast(t('toast.comingSoon'));
+    toast(t('common.comingSoon'));
     return;
   }
 
@@ -224,27 +197,27 @@ function handleClick(e) {
   const save = target.getAttribute('data-cart-save');
   if (save) {
     store.saveForLater(save);
-    toast(t('toast.savedForLater'));
+    toast(t('app.savedForLater'));
     return;
   }
 
   const move = target.getAttribute('data-saved-move');
   if (move) {
     store.moveToCart(move);
-    toast(t('toast.movedToCart'));
+    toast(t('app.movedToCart'));
     return;
   }
 
   const savedRemove = target.getAttribute('data-saved-remove');
   if (savedRemove) {
     store.removeSaved(savedRemove);
-    toast(t('toast.removedSaved'));
+    toast(t('app.removedSaved'));
     return;
   }
 
   if (target.hasAttribute('data-voucher-remove')) {
     store.clearVoucher();
-    toast(t('toast.voucherRemoved'));
+    toast(t('app.voucherRemoved'));
     return;
   }
 
@@ -274,11 +247,10 @@ function handleClick(e) {
 /* ------------------------------------------------------------------ */
 
 function boot() {
-  // Active locale before the first render, so boot paints in the saved (or
-  // platform/device) language rather than flashing English.
+  // Apply the saved language to the static markup before first paint of the
+  // routed view; i18n.js is the single owner of the active language.
   initI18n();
   hydrateIcons();
-  applyStaticI18n();
 
   document.addEventListener('click', handleClick);
   initTheme();
@@ -293,6 +265,13 @@ function boot() {
     renderRoute();
     // The Flash Sale row's scroll offset and visible width change when the
     // home view is shown again, so refresh the arrow buttons' state.
+    updateFlashNav();
+  });
+
+  // Changing the language (Settings, i18n.setLocale) re-renders whatever
+  // screen is showing; static markup was already retranslated by setLocale.
+  window.addEventListener('localechange', () => {
+    renderRoute();
     updateFlashNav();
   });
 
@@ -318,18 +297,6 @@ function boot() {
 
   initHome();
   renderRoute();
-
-  // A language change re-renders everything in the new locale: the static
-  // chrome, the home page's own content, the theme swatch names and the
-  // active route. initHome() is NOT re-run (it would re-mount listeners);
-  // its static output is refreshed through renderHomeStatic().
-  onLocaleChange(() => {
-    applyStaticI18n();
-    initTheme();
-    renderHomeStatic();
-    renderRoute();
-    hydrateIcons();
-  });
   // Hydrate the profile photo in the background; the letter fallback shows
   // until it lands, and the profile view re-renders when it does.
   loadProfilePhoto();

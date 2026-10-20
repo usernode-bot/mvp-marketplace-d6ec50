@@ -19,7 +19,7 @@ const ROUTE_NEW = 'profile/addresses/new';
 
 function pageHeader(title, backRoute) {
   return '<div class="flex items-center gap-1">'
-    + '<button type="button" data-route="' + backRoute + '" class="icon-btn -ml-2" aria-label="' + esc(t('common.back')) + '">'
+    + '<button type="button" data-route="' + backRoute + '" class="icon-btn -ml-2" aria-label="' + esc(t('addresses.back')) + '">'
     + icon('chevronLeft', 'h-5 w-5') + '</button>'
     + '<h1 class="section-title">' + esc(title) + '</h1>'
     + '</div>';
@@ -31,7 +31,7 @@ function pageHeader(title, backRoute) {
 
 function addressCard(a) {
   const defaultBadge = a.isDefault
-    ? '<span class="badge-brand shrink-0">' + esc(t('addresses.defaultBadge')) + '</span>'
+    ? '<span class="badge-brand shrink-0">' + esc(t('addresses.default')) + '</span>'
     : '';
   return '<div class="card p-4" data-address-row="' + a.id + '">'
     + '<div class="flex items-start gap-3">'
@@ -64,8 +64,8 @@ function renderAddressList() {
     ? '<div class="mt-4 flex flex-col gap-3">' + list.map(addressCard).join('') + '</div>'
     : '<div class="card mt-4">' + emptyState({
       icon: 'mapPin',
-      title: t('addresses.empty.title'),
-      body: t('addresses.empty.body'),
+      title: t('addresses.emptyTitle'),
+      body: t('addresses.emptyBody'),
       actionLabel: t('addresses.add'),
       actionAttr: 'data-route="' + ROUTE_NEW + '"',
     }) + '</div>';
@@ -85,7 +85,7 @@ function renderAddressList() {
 
 function fieldRow(label, inputHtml) {
   return '<label class="block">'
-    + '<span class="mb-1.5 block text-xs font-semibold text-zinc-500">' + esc(label) + '</span>'
+    + '<span class="mb-1.5 block text-xs font-semibold text-zinc-500">' + label + '</span>'
     + inputHtml
     + '</label>';
 }
@@ -104,17 +104,17 @@ function renderAddressForm(id) {
     pageHeader(title, ROUTE_LIST)
     + '<form data-address-form' + (editing ? ' data-address-form-id="' + editing.id + '"' : '')
     + ' class="card mt-4 space-y-4 p-4">'
-    + fieldRow(t('addresses.fullName'), '<input name="name" class="field" required maxlength="60" value="' + esc(v.name || '') + '" autocomplete="name">')
-    + fieldRow(t('addresses.phone'), '<input name="phone" type="tel" class="field" required maxlength="30" value="' + esc(v.phone || '') + '" autocomplete="tel">')
-    + fieldRow(t('addresses.street'), '<input name="line1" class="field" required maxlength="120" value="' + esc(v.line1 || '') + '" autocomplete="street-address">')
+    + fieldRow(esc(t('addresses.f.name')), '<input name="name" class="field" required maxlength="60" value="' + esc(v.name || '') + '" autocomplete="name">')
+    + fieldRow(esc(t('addresses.f.phone')), '<input name="phone" type="tel" class="field" required maxlength="30" value="' + esc(v.phone || '') + '" autocomplete="tel">')
+    + fieldRow(esc(t('addresses.f.street')), '<input name="line1" class="field" required maxlength="120" value="' + esc(v.line1 || '') + '" autocomplete="street-address">')
     + '<div class="grid grid-cols-2 gap-3">'
-    + fieldRow(t('addresses.city'), '<input name="city" class="field" required maxlength="60" value="' + esc(v.city || '') + '">')
-    + fieldRow(t('addresses.zip'), '<input name="zip" class="field" required maxlength="12" inputmode="numeric" value="' + esc(v.zip || '') + '" autocomplete="postal-code">')
+    + fieldRow(esc(t('addresses.f.city')), '<input name="city" class="field" required maxlength="60" value="' + esc(v.city || '') + '">')
+    + fieldRow(esc(t('addresses.f.zip')), '<input name="zip" class="field" required maxlength="12" inputmode="numeric" value="' + esc(v.zip || '') + '" autocomplete="postal-code">')
     + '</div>'
     + '<label class="flex items-center gap-3 text-sm font-medium text-zinc-800">'
     + '<input type="checkbox" name="isDefault" class="un-switch"'
     + (editing && editing.isDefault ? ' checked' : '') + '> ' + esc(t('addresses.makeDefault')) + '</label>'
-    + '<button type="submit" class="btn-primary w-full">' + esc(editing ? t('common.saveChanges') : t('addresses.save')) + '</button>'
+    + '<button type="submit" class="btn-primary w-full">' + esc(editing ? t('addresses.saveChanges') : t('addresses.save')) + '</button>'
     + '</form>';
 }
 
@@ -148,8 +148,8 @@ export function initAddresses() {
       const target = store.addressById(remove);
       confirmDialog({
         title: t('addresses.deleteTitle'),
-        message: target ? t('addresses.deleteMessage', { name: target.name }) : t('addresses.deleteMessageGeneric'),
-        confirmLabel: t('common.delete'),
+        message: target ? t('addresses.deleteMsgNamed', { name: target.name }) : t('addresses.deleteMsg'),
+        confirmLabel: t('addresses.delete'),
       }).then((ok) => {
         if (!ok) return;
         store.removeAddress(remove);

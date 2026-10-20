@@ -16,7 +16,7 @@
 import { icon } from './icons.js';
 import { store } from './store.js';
 import { confirmDialog, emptyState, esc, toast } from './ui.js';
-import { t } from './i18n.js';
+import { t, has } from './i18n.js';
 
 /* ------------------------------------------------------------------ */
 /* Config                                                              */
@@ -29,53 +29,64 @@ import { t } from './i18n.js';
 export const PAYMENT_GROUPS = [
   {
     id: 'bank',
-    titleKey: 'payment.group.bank',
+    title: 'Bank Transfer / Virtual Account', // English source; shown via groupTitle()
     methods: [
-      { id: 'bca', name: 'BCA', type: 'bank', icon: null, subtitleKey: 'payment.sub.virtualAccount', badge: 'BCA', color: 'bg-blue-700', requires: 'bank', enabled: true },
-      { id: 'mandiri', name: 'Mandiri', type: 'bank', icon: null, subtitleKey: 'payment.sub.virtualAccount', badge: 'MDR', color: 'bg-blue-900', requires: 'bank', enabled: true },
-      { id: 'bni', name: 'BNI', type: 'bank', icon: null, subtitleKey: 'payment.sub.virtualAccount', badge: 'BNI', color: 'bg-orange-600', requires: 'bank', enabled: true },
-      { id: 'bri', name: 'BRI', type: 'bank', icon: null, subtitleKey: 'payment.sub.virtualAccount', badge: 'BRI', color: 'bg-blue-600', requires: 'bank', enabled: true },
-      { id: 'permata', name: 'Permata', type: 'bank', icon: null, subtitleKey: 'payment.sub.virtualAccount', badge: 'PRM', color: 'bg-teal-600', requires: 'bank', enabled: true },
-      { id: 'cimb', name: 'CIMB Niaga', type: 'bank', icon: null, subtitleKey: 'payment.sub.virtualAccount', badge: 'CIMB', color: 'bg-red-600', requires: 'bank', enabled: true },
+      { id: 'bca', name: 'BCA', type: 'bank', icon: null, subtitle: 'Virtual Account', sub: 'va', badge: 'BCA', color: 'bg-blue-700', requires: 'bank', enabled: true },
+      { id: 'mandiri', name: 'Mandiri', type: 'bank', icon: null, subtitle: 'Virtual Account', sub: 'va', badge: 'MDR', color: 'bg-blue-900', requires: 'bank', enabled: true },
+      { id: 'bni', name: 'BNI', type: 'bank', icon: null, subtitle: 'Virtual Account', sub: 'va', badge: 'BNI', color: 'bg-orange-600', requires: 'bank', enabled: true },
+      { id: 'bri', name: 'BRI', type: 'bank', icon: null, subtitle: 'Virtual Account', sub: 'va', badge: 'BRI', color: 'bg-blue-600', requires: 'bank', enabled: true },
+      { id: 'permata', name: 'Permata', type: 'bank', icon: null, subtitle: 'Virtual Account', sub: 'va', badge: 'PRM', color: 'bg-teal-600', requires: 'bank', enabled: true },
+      { id: 'cimb', name: 'CIMB Niaga', type: 'bank', icon: null, subtitle: 'Virtual Account', sub: 'va', badge: 'CIMB', color: 'bg-red-600', requires: 'bank', enabled: true },
     ],
   },
   {
     id: 'ewallet',
-    titleKey: 'payment.group.ewallet',
+    title: 'E-Wallets',
     methods: [
-      { id: 'dana', name: 'DANA', type: 'ewallet', icon: null, subtitleKey: 'payment.sub.ewallet', badge: 'DANA', color: 'bg-sky-600', requires: 'phone', enabled: true },
-      { id: 'shopeepay', name: 'ShopeePay', type: 'ewallet', icon: null, subtitleKey: 'payment.sub.ewallet', badge: 'SP', color: 'bg-orange-600', requires: 'phone', enabled: true },
-      { id: 'gopay', name: 'GoPay', type: 'ewallet', icon: null, subtitleKey: 'payment.sub.ewallet', badge: 'GO', color: 'bg-emerald-600', requires: 'phone', enabled: true },
-      { id: 'ovo', name: 'OVO', type: 'ewallet', icon: null, subtitleKey: 'payment.sub.ewallet', badge: 'OVO', color: 'bg-violet-700', requires: 'phone', enabled: true },
-      { id: 'linkaja', name: 'LinkAja', type: 'ewallet', icon: null, subtitleKey: 'payment.sub.ewallet', badge: 'LA', color: 'bg-red-600', requires: 'phone', enabled: true },
+      { id: 'dana', name: 'DANA', type: 'ewallet', icon: null, subtitle: 'E-Wallet', sub: 'ewallet', badge: 'DANA', color: 'bg-sky-600', requires: 'phone', enabled: true },
+      { id: 'shopeepay', name: 'ShopeePay', type: 'ewallet', icon: null, subtitle: 'E-Wallet', sub: 'ewallet', badge: 'SP', color: 'bg-orange-600', requires: 'phone', enabled: true },
+      { id: 'gopay', name: 'GoPay', type: 'ewallet', icon: null, subtitle: 'E-Wallet', sub: 'ewallet', badge: 'GO', color: 'bg-emerald-600', requires: 'phone', enabled: true },
+      { id: 'ovo', name: 'OVO', type: 'ewallet', icon: null, subtitle: 'E-Wallet', sub: 'ewallet', badge: 'OVO', color: 'bg-violet-700', requires: 'phone', enabled: true },
+      { id: 'linkaja', name: 'LinkAja', type: 'ewallet', icon: null, subtitle: 'E-Wallet', sub: 'ewallet', badge: 'LA', color: 'bg-red-600', requires: 'phone', enabled: true },
     ],
   },
   {
     id: 'card',
-    titleKey: 'payment.group.card',
+    title: 'Cards',
     methods: [
-      { id: 'card', name: 'Credit / Debit Card', nameKey: 'payment.name.card', type: 'card', icon: 'creditCard', subtitleKey: 'payment.sub.card', badge: '', color: 'bg-brand-600', requires: 'card', enabled: true },
+      { id: 'card', name: 'Credit / Debit Card', type: 'card', icon: 'creditCard', subtitle: 'Visa, Mastercard, JCB', sub: 'card', badge: '', color: 'bg-brand-600', requires: 'card', enabled: true },
     ],
   },
   {
     id: 'other',
-    titleKey: 'payment.group.other',
+    title: 'Other',
     methods: [
-      { id: 'qris', name: 'QRIS', type: 'other', icon: null, subtitleKey: 'payment.sub.qris', badge: 'QR', color: 'bg-rose-600', requires: null, enabled: true },
-      { id: 'cod', name: 'Cash on Delivery', nameKey: 'payment.name.cod', type: 'other', icon: 'banknote', subtitleKey: 'payment.sub.cod', badge: '', color: 'bg-emerald-700', requires: null, enabled: true },
-      { id: 'cvs', name: 'Convenience stores', nameKey: 'payment.name.cvs', type: 'other', icon: 'store', subtitleKey: 'payment.sub.cvs', badge: '', color: 'bg-slate-600', requires: null, enabled: true },
+      { id: 'qris', name: 'QRIS', type: 'other', icon: null, subtitle: 'Scan to pay', sub: 'qris', badge: 'QR', color: 'bg-rose-600', requires: null, enabled: true },
+      { id: 'cod', name: 'Cash on Delivery', type: 'other', icon: 'banknote', subtitle: 'Pay the courier on arrival', sub: 'cod', badge: '', color: 'bg-emerald-700', requires: null, enabled: true },
+      { id: 'cvs', name: 'Convenience stores', type: 'other', icon: 'store', subtitle: 'Indomaret, Alfamart', sub: 'cvs', badge: '', color: 'bg-slate-600', requires: null, enabled: true },
     ],
   },
 ];
 
-/* A method's display name and subtitle come from its keys (brand names like
- * BCA stay literal; generic ones translate). */
+/* Localized labels. Names and subtitles live in the config as English source;
+ * the active language is looked up by id at render time (brand names such as
+ * BCA or DANA have no key and render as is). */
 export function methodName(m) {
-  return m.nameKey ? t(m.nameKey) : m.name;
+  return m && has('payment.name.' + m.id) ? t('payment.name.' + m.id) : (m ? m.name : '');
 }
 
 export function methodSubtitle(m) {
-  return m.subtitleKey ? t(m.subtitleKey) : (m.subtitle || '');
+  return m && m.sub && has('payment.sub.' + m.sub) ? t('payment.sub.' + m.sub) : (m ? m.subtitle : '');
+}
+
+/* Name of a payment method id (including the checkout fallback ids 'bank' and
+ * 'ewallet'), for screens that only kept the id on an order. */
+export function paymentLabel(id) {
+  return has('payment.name.' + id) ? t('payment.name.' + id) : (methodById(id) ? methodById(id).name : String(id || ''));
+}
+
+function groupTitle(group) {
+  return t('payment.group.' + group.id);
 }
 
 export function methodById(id) {
@@ -139,7 +150,7 @@ function methodRow(m) {
     + '<div class="min-w-0 flex-1">'
     + '<div class="flex items-center gap-2">'
     + '<p class="truncate text-sm font-semibold text-zinc-900">' + esc(methodName(m)) + '</p>'
-    + (isDefault ? '<span class="badge-brand shrink-0">' + esc(t('addresses.defaultBadge')) + '</span>' : '')
+    + (isDefault ? '<span class="badge-brand shrink-0">' + esc(t('payment.default')) + '</span>' : '')
     + (linked && !isDefault ? '<span class="badge-soft shrink-0">' + esc(t('payment.saved')) + '</span>' : '')
     + '</div>'
     + '<p class="mt-0.5 truncate text-xs text-zinc-500">' + esc(methodSubtitle(m)) + '</p>'
@@ -152,7 +163,7 @@ function methodRow(m) {
 function groupSection(group) {
   const rows = group.methods.filter((m) => m.enabled).map(methodRow).join('');
   if (!rows) return '';
-  return '<h2 class="mb-2 mt-6 px-1 text-xs font-semibold uppercase tracking-wide text-zinc-400 first:mt-0">' + esc(t(group.titleKey)) + '</h2>'
+  return '<h2 class="mb-2 mt-6 px-1 text-xs font-semibold uppercase tracking-wide text-zinc-400 first:mt-0">' + esc(groupTitle(group)) + '</h2>'
     + '<div class="card divide-y divide-zinc-100 overflow-hidden">' + rows + '</div>';
 }
 
@@ -165,7 +176,7 @@ export function renderPaymentView() {
   const linkedCount = store.payments.length;
 
   const header = '<div class="flex items-center gap-1">'
-    + '<button type="button" data-route="profile" class="icon-btn -ml-2" aria-label="' + esc(t('payment.backAria')) + '">'
+    + '<button type="button" data-route="profile" class="icon-btn -ml-2" aria-label="' + esc(t('payment.back')) + '">'
     + icon('chevronLeft', 'h-5 w-5') + '</button>'
     + '<h1 class="section-title">' + esc(t('payment.title')) + '</h1>'
     + '</div>';
@@ -174,9 +185,9 @@ export function renderPaymentView() {
     ? ''
     : '<div class="card mt-4">' + emptyState({
       icon: 'creditCard',
-      title: t('payment.empty.title'),
-      body: t('payment.empty.body'),
-      actionLabel: t('payment.empty.action'),
+      title: t('payment.emptyTitle'),
+      body: t('payment.emptyBody'),
+      actionLabel: t('payment.add'),
       actionAttr: 'data-pay-add',
     }) + '</div>';
 
@@ -216,7 +227,7 @@ function sheetShell(title, bodyHtml) {
     + '<div class="relative flex max-h-[85vh] w-full flex-col rounded-t-2xl bg-white shadow-card-lg sm:max-w-md sm:rounded-2xl">'
     + '<div class="flex shrink-0 items-center justify-between border-b border-zinc-100 px-4 py-3">'
     + '<h2 class="text-sm font-semibold text-zinc-900">' + esc(title) + '</h2>'
-    + '<button type="button" class="icon-btn h-8 w-8" data-pay-sheet-close aria-label="' + esc(t('common.close')) + '">' + icon('x', 'h-4 w-4') + '</button>'
+    + '<button type="button" class="icon-btn h-8 w-8" data-pay-sheet-close aria-label="' + esc(t('payment.close')) + '">' + icon('x', 'h-4 w-4') + '</button>'
     + '</div>'
     + '<div class="min-h-0 flex-1 overflow-y-auto p-3">' + bodyHtml + '</div>'
     + '<div class="hidden h-2 shrink-0 sm:block"></div>'
@@ -251,11 +262,10 @@ function paintSheet() {
 }
 
 function sheetTitle(m) {
-  const name = methodName(m);
-  if (m.requires === 'bank') return t('payment.addAccount', { name });
-  if (m.requires === 'phone') return t('payment.link', { name });
-  if (m.requires === 'card') return t('payment.addACard');
-  return name;
+  if (m.requires === 'bank') return t('payment.titleBank', { name: methodName(m) });
+  if (m.requires === 'phone') return t('payment.titleWallet', { name: methodName(m) });
+  if (m.requires === 'card') return t('payment.titleCard');
+  return methodName(m);
 }
 
 function sheetList() {
@@ -272,20 +282,20 @@ function sheetList() {
         + '<span class="block truncate text-xs text-zinc-500">' + esc(methodSubtitle(m)) + '</span>'
         + '</span>'
         + (isDefault
-          ? '<span class="badge-brand shrink-0">' + esc(t('addresses.defaultBadge')) + '</span>'
+          ? '<span class="badge-brand shrink-0">' + esc(t('payment.default')) + '</span>'
           : linked
             ? '<span class="shrink-0 text-brand-600">' + icon('check', 'h-5 w-5') + '</span>'
             : '<span class="shrink-0 text-zinc-300">' + icon('plus', 'h-5 w-5') + '</span>')
         + '</button>';
     }).join('');
-    return '<h3 class="mb-1 mt-4 px-1 text-xs font-semibold uppercase tracking-wide text-zinc-400 first:mt-0">' + esc(t(group.titleKey)) + '</h3>'
+    return '<h3 class="mb-1 mt-4 px-1 text-xs font-semibold uppercase tracking-wide text-zinc-400 first:mt-0">' + esc(groupTitle(group)) + '</h3>'
       + '<div class="flex flex-col">' + rows + '</div>';
   }).join('');
 }
 
 function fieldRow(label, inputHtml) {
   return '<label class="block">'
-    + '<span class="mb-1.5 block text-xs font-semibold text-zinc-500">' + esc(label) + '</span>'
+    + '<span class="mb-1.5 block text-xs font-semibold text-zinc-500">' + label + '</span>'
     + inputHtml
     + '</label>';
 }
@@ -293,29 +303,29 @@ function fieldRow(label, inputHtml) {
 function sheetForm(m) {
   let fields = '';
   if (m.requires === 'bank') {
-    fields = fieldRow(t('payment.accountNumber'), '<input name="account" inputmode="numeric" autocomplete="off" maxlength="26" class="field" placeholder="' + esc(t('payment.accountNumberPh')) + '">')
-      + fieldRow(t('payment.accountHolder'), '<input name="holder" maxlength="60" autocomplete="name" class="field" placeholder="' + esc(t('payment.accountHolderPh')) + '">');
+    fields = fieldRow(esc(t('payment.f.account')), '<input name="account" inputmode="numeric" autocomplete="off" maxlength="26" class="field" placeholder="' + esc(t('payment.f.accountPh')) + '">')
+      + fieldRow(esc(t('payment.f.holder')), '<input name="holder" maxlength="60" autocomplete="name" class="field" placeholder="' + esc(t('payment.f.holderPh')) + '">');
   } else if (m.requires === 'phone') {
-    fields = fieldRow(t('payment.phoneNumber'), '<input name="phone" type="tel" autocomplete="tel" maxlength="20" class="field" placeholder="' + esc(t('payment.phonePh')) + '">');
+    fields = fieldRow(esc(t('payment.f.phone')), '<input name="phone" type="tel" autocomplete="tel" maxlength="20" class="field" placeholder="' + esc(t('payment.f.phonePh')) + '">');
   } else if (m.requires === 'card') {
-    fields = fieldRow(t('payment.cardNumber'), '<input name="cardNumber" inputmode="numeric" autocomplete="cc-number" maxlength="23" class="field" placeholder="' + esc(t('payment.cardNumberPh')) + '">')
-      + fieldRow(t('payment.nameOnCard'), '<input name="holder" maxlength="60" autocomplete="cc-name" class="field" placeholder="' + esc(t('payment.nameOnCardPh')) + '">')
+    fields = fieldRow(esc(t('payment.f.card')), '<input name="cardNumber" inputmode="numeric" autocomplete="cc-number" maxlength="23" class="field" placeholder="1234 5678 9012 3456">')
+      + fieldRow(esc(t('payment.f.cardHolder')), '<input name="holder" maxlength="60" autocomplete="cc-name" class="field" placeholder="' + esc(t('payment.f.cardHolderPh')) + '">')
       + '<div class="grid grid-cols-2 gap-3">'
-      + fieldRow(t('payment.expiry'), '<input name="expiry" inputmode="numeric" autocomplete="cc-exp" maxlength="5" class="field" placeholder="MM/YY">')
-      + fieldRow(t('payment.cvv'), '<input name="cvv" inputmode="numeric" autocomplete="cc-csc" maxlength="4" class="field" placeholder="123">')
+      + fieldRow(esc(t('payment.f.expiry')), '<input name="expiry" inputmode="numeric" autocomplete="cc-exp" maxlength="5" class="field" placeholder="' + esc(t('payment.f.expiryPh')) + '">')
+      + fieldRow(esc(t('payment.f.cvv')), '<input name="cvv" inputmode="numeric" autocomplete="cc-csc" maxlength="4" class="field" placeholder="123">')
       + '</div>';
   }
 
   const note = m.requires === 'card'
-    ? '<p class="mt-3 text-xs text-zinc-400">' + esc(t('payment.onlyLastFour')) + ' (' + '•••• 4242). No full card number is stored.</p>'
+    ? '<p class="mt-3 text-xs text-zinc-400">' + esc(t('payment.cardNote')) + '</p>'
     : '';
 
   return '<form data-pay-form data-pay-form-method="' + m.id + '" class="space-y-4">'
     + '<p class="field-msg hidden" data-pay-form-msg></p>'
     + fields
     + note
-    + '<button type="submit" class="btn-primary w-full">' + sheetTitle(m) + '</button>'
-    + '<button type="button" data-pay-back class="btn-ghost w-full">' + esc(t('common.back')) + '</button>'
+    + '<button type="submit" class="btn-primary w-full">' + esc(sheetTitle(m)) + '</button>'
+    + '<button type="button" data-pay-back class="btn-ghost w-full">' + esc(t('payment.back')) + '</button>'
     + '</form>';
 }
 
@@ -352,7 +362,7 @@ function validateForm(m, values) {
     if (values.holder.trim().length < 2) errors.holder = t('payment.err.holder');
   } else if (m.requires === 'card') {
     const digits = (values.cardNumber.match(/\d/g) || []).length;
-    if (digits < 13 || digits > 19) errors.cardNumber = t('payment.err.cardNumber');
+    if (digits < 13 || digits > 19) errors.cardNumber = t('payment.err.card');
     if (values.holder.trim().length < 2) errors.holder = t('payment.err.cardHolder');
     if (!/^(0[1-9]|1[0-2])\/\d{2}$/.test(values.expiry.trim())) errors.expiry = t('payment.err.expiry');
     if (!/^\d{3,4}$/.test(values.cvv.trim())) errors.cvv = t('payment.err.cvv');
@@ -416,12 +426,12 @@ function unlink(id) {
   const detail = m.requires === 'bank' ? maskAccount(p.account) : (m.requires === 'card' ? p.masked : (m.requires === 'phone' ? p.phone : ''));
   confirmDialog({
     title: t('payment.removeTitle', { name: methodName(m) }),
-    message: t('payment.removeMessage', { detail: detail ? t('payment.removeDetail', { detail }) : '' }),
-    confirmLabel: t('common.remove'),
+    message: detail ? t('payment.removeMsgDetail', { detail }) : t('payment.removeMsg'),
+    confirmLabel: t('payment.remove'),
   }).then((ok) => {
     if (!ok) return;
     store.unlinkPayment(id);
-    toast(t('payment.removed', { name: methodName(m) }));
+    toast(t('payment.removedToast', { name: methodName(m) }));
     renderPaymentView();
   });
 }
@@ -461,7 +471,7 @@ export function initPayment() {
       const id = def.getAttribute('data-pay-default');
       const m = methodById(id);
       store.setDefaultPayment(id);
-      toast(t('payment.setDefaultToast', { name: m ? methodName(m) : t('payment.method') }));
+      toast(t('payment.setDefaultToast', { name: m ? methodName(m) : t('payment.methodFallback') }));
       renderPaymentView();
       return;
     }

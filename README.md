@@ -88,6 +88,35 @@ soon") instead of hiding it.
   browser, so the populated cart is reachable from a URL for previews and
   checks; `/#/cart` always shows the real cart.
 
+## Reviews, photos and orders
+
+The product page's Reviews section is driven by real data
+(`public/js/reviews.js`; the page only supplies the mount point):
+
+- **Reviews** are stored in the public `reviews` and `review_images`
+  tables. A shopper may review a product only after a verified purchase —
+  a completed order containing it — and one review per purchased line is
+  allowed (a second attempt edits the first). Owners can edit or delete
+  their own review; nobody else can.
+- **Photos** are picked in the composer (up to 5). Each is resized to a
+  1600px longest edge on a canvas and re-encoded, which strips EXIF/GPS,
+  then uploaded through the platform bridge; only the returned URL is
+  stored. Images render with `loading="lazy"`, a tinted placeholder while
+  they load, and a neutral fallback if they fail. Tapping one opens a
+  keyboard- and swipe-navigable lightbox.
+- **Live updates**: the reviews section subscribes to
+  `GET /api/reviews/stream` (SSE) and applies another shopper's posted,
+  edited or deleted review without a reload, reconciling the author's own
+  optimistic card so it never doubles.
+- **Orders** are mirrored into the `orders` / `order_items` tables at
+  place-order time. The client keeps its local order path (so placing
+  works offline); the server write is best-effort and idempotent. Both
+  tables are `staging:private`, and the reviews tables never carry a
+  foreign key into them.
+- Image moderation is a documented hook, off by default: the "Pending
+  review" chip and the pending-row path are in place, but no photo is sent
+  to the platform LLM proxy yet.
+
 ## Run locally
 
 ```sh

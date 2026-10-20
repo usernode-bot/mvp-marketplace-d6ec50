@@ -16,48 +16,50 @@ import {
   categoryById,
   discountPct,
   matchSearch,
+  registerProducts,
   score,
 } from './data.js';
+import { fetchProducts } from './api.js';
 import { store } from './store.js';
-import { emptyState, esc, productCard, skeletonCard } from './ui.js';
+import { categoryName, emptyState, esc, productCard, skeletonCard, subcategoryLabel, syncProductGrid } from './ui.js';
+import { t } from './i18n.js';
 import { goToHash } from './router.js';
-import { t, tc } from './i18n.js';
 
-function sortLabel(id) {
-  return t('browse.sort.' + id.replace(/-/g, '_'));
-}
-
+/* Option tables keep ids/values; the visible name is looked up through t()
+ * at render time (labelKey), so a language change shows in the next render. */
 const SORT_OPTIONS = [
-  { id: 'recommended' },
-  { id: 'popular' },
-  { id: 'newest' },
-  { id: 'price-asc' },
-  { id: 'price-desc' },
+  { id: 'recommended', labelKey: 'browse.sort.recommended' },
+  { id: 'popular', labelKey: 'browse.sort.popular' },
+  { id: 'newest', labelKey: 'browse.sort.newest' },
+  { id: 'price-asc', labelKey: 'browse.sort.priceAsc' },
+  { id: 'price-desc', labelKey: 'browse.sort.priceDesc' },
 ];
 
 const PRICE_BUCKETS = [
-  { id: 'any', key: 'browse.price.any', min: 0, max: Infinity },
-  { id: 'under-20', key: 'browse.price.under20', min: 0, max: 2000 },
-  { id: '20-100', key: 'browse.price.20to100', min: 2000, max: 10000 },
-  { id: '100-300', key: 'browse.price.100to300', min: 10000, max: 30000 },
-  { id: 'over-300', key: 'browse.price.over300', min: 30000, max: Infinity },
+  { id: 'any', labelKey: 'browse.price.any', min: 0, max: Infinity },
+  { id: 'under-20', labelKey: 'browse.price.under20', min: 0, max: 2000 },
+  { id: '20-100', labelKey: 'browse.price.20to100', min: 2000, max: 10000 },
+  { id: '100-300', labelKey: 'browse.price.100to300', min: 10000, max: 30000 },
+  { id: 'over-300', labelKey: 'browse.price.over300', min: 30000, max: Infinity },
 ];
 
 const RATING_OPTIONS = [
-  { value: 0, key: 'browse.rating.any' },
-  { value: 4.5, key: 'browse.rating.45' },
-  { value: 4, key: 'browse.rating.40' },
-  { value: 3.5, key: 'browse.rating.35' },
+  { value: 0, labelKey: 'browse.rating.any' },
+  { value: 4.5, labelKey: 'browse.rating.45' },
+  { value: 4, labelKey: 'browse.rating.40' },
+  { value: 3.5, labelKey: 'browse.rating.35' },
 ];
 
 const DISCOUNT_OPTIONS = [
-  { value: 0, key: 'browse.discount.any' },
-  { value: 10, key: 'browse.discount.10' },
-  { value: 20, key: 'browse.discount.20' },
-  { value: 30, key: 'browse.discount.30' },
+  { value: 0, labelKey: 'browse.discount.any' },
+  { value: 10, labelKey: 'browse.discount.10' },
+  { value: 20, labelKey: 'browse.discount.20' },
+  { value: 30, labelKey: 'browse.discount.30' },
 ];
 
 const GRID_CLASS = 'grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6';
+
+const PAGE_SIZE = 24;
 
 let state = null;
 
@@ -69,14 +71,39 @@ function defaultFilters() {
 /* Data selection                                                       */
 /* ------------------------------------------------------------------ */
 
-function scopeProducts() {
+/* A page's products are the bundled catalog plus the generated marketplace
+ * products fetched from the server (state.server, see loadServerScope). */
+function inScope(p) {
   if (state.mode === 'category') {
-    let list = PRODUCTS.filter((p) => p.cat === state.id);
-    if (state.sub) list = list.filter((p) => p.sub === state.sub);
-    if (state.inCatQuery) list = list.filter((p) => matchSearch(p, state.inCatQuery));
-    return list;
+    if (p.cat !== state.id) return false;
+    if (state.sub && p.sub !== state.sub) return false;
+    if (state.inCatQuery && !matchSearch(p, state.inCatQuery)) return false;
+    return true;
   }
-  return PRODUCTS.filter((p) => matchSearch(p, state.q));
+  return matchSearch(p, state.q);
+}
+
+function scopeProducts() {
+  return PRODUCTS.concat(state.server).filter(inScope);
+}
+
+/* Pull this page's server products, 100 a request, up to 1,000. Category
+ * pages ask for the category; search pages for the query (the server runs the
+ * same every-word match as matchSearch). The grid redraws when they arrive. */
+async function loadServerScope(sig) {
+  const params = state.mode === 'category' ? { cat: state.id } : { q: state.q };
+  const items = [];
+  for (let page = 1; page <= 10; page++) {
+    const res = await fetchProducts(Object.assign({ limit: 100, page }, params));
+    if (!res.ok || !res.data || !Array.isArray(res.data.items)) break;
+    items.push(...res.data.items.filter((it) => it.generated));
+    if (!res.data.hasMore) break;
+  }
+  if (!state || state.sig !== sig) return;
+  registerProducts(items);
+  state.server = items;
+  state.loading = false;
+  renderGrid();
 }
 
 function applyFilters(list) {
@@ -94,7 +121,9 @@ function applyFilters(list) {
 
 function applySort(list) {
   const sorted = [...list];
-  if (state.sort === 'recommended') sorted.sort((a, b) => score(b) - score(a));
+  // Recommended: the curated catalog leads (as on the home grid), then the
+  // generated marketplace products, each group by score.
+  if (state.sort === 'recommended') sorted.sort((a, b) => (a.generated ? 1 : 0) - (b.generated ? 1 : 0) || score(b) - score(a));
   else if (state.sort === 'popular') sorted.sort((a, b) => b.sold - a.sold);
   else if (state.sort === 'newest') sorted.sort((a, b) => a.age - b.age);
   else if (state.sort === 'price-asc') sorted.sort((a, b) => a.price - b.price);
@@ -146,9 +175,9 @@ function toolbarHtml() {
     + '<span id="filter-badge" class="flex h-4 min-w-4 items-center justify-center rounded-full bg-brand-600 px-1 text-[9px] font-bold leading-none text-white' + (n ? '' : ' hidden') + '">' + n + '</span>'
     + '</button>'
     + '<div class="relative">'
-    + '<button type="button" id="sort-btn" data-sort-toggle class="btn-outline btn-sm" aria-haspopup="menu">' + esc(t('browse.sort')) + ' <span id="sort-label"></span>' + icon('chevronDown', 'h-3.5 w-3.5') + '</button>'
+    + '<button type="button" id="sort-btn" data-sort-toggle class="btn-outline btn-sm" aria-haspopup="menu">' + esc(t('browse.sortPrefix')) + ' <span id="sort-label"></span>' + icon('chevronDown', 'h-3.5 w-3.5') + '</button>'
     + '<div id="sort-menu" class="absolute right-0 top-full z-30 mt-1.5 hidden w-52 rounded-xl border border-zinc-100 bg-white p-1.5 shadow-card-lg" role="menu">'
-    + SORT_OPTIONS.map((o) => '<button type="button" data-sort-item="' + o.id + '" role="menuitem" class="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm text-zinc-700 hover:bg-zinc-50"><span class="check-slot w-4 shrink-0"></span>' + esc(sortLabel(o.id)) + '</button>').join('')
+    + SORT_OPTIONS.map((o) => '<button type="button" data-sort-item="' + o.id + '" role="menuitem" class="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm text-zinc-700 hover:bg-zinc-50"><span class="check-slot w-4 shrink-0"></span>' + esc(t(o.labelKey)) + '</button>').join('')
     + '</div></div></div>';
 }
 
@@ -156,34 +185,34 @@ function filterOverlayHtml() {
   const f = state.filters;
   const brands = brandsInScope();
 
-  const price = sectionHeading(t('browse.section.price'))
+  const price = sectionHeading(t('browse.priceHeading'))
     + '<div class="mt-2 flex flex-wrap gap-2">'
-    + PRICE_BUCKETS.map((b) => chip('price', b.id, t(b.key), f.price === b.id)).join('')
+    + PRICE_BUCKETS.map((b) => chip('price', b.id, t(b.labelKey), f.price === b.id)).join('')
     + '</div>';
 
-  const rating = sectionHeading(t('browse.section.rating'))
+  const rating = sectionHeading(t('browse.rating'))
     + '<div class="mt-2 flex flex-wrap gap-2">'
-    + RATING_OPTIONS.map((o) => chip('rating', String(o.value), t(o.key), f.rating === o.value)).join('')
+    + RATING_OPTIONS.map((o) => chip('rating', String(o.value), t(o.labelKey), f.rating === o.value)).join('')
     + '</div>';
 
-  const brand = sectionHeading(t('browse.section.brand'))
+  const brand = sectionHeading(t('browse.brand'))
     + '<div class="mt-1 divide-y divide-zinc-100">'
     + brands.map((b) => '<label class="flex cursor-pointer items-center gap-3 py-2.5 text-sm text-zinc-700">'
       + '<input type="checkbox" class="h-4 w-4 accent-brand-600" data-filter-brand="' + b.brand + '"' + (f.brands.includes(b.brand) ? ' checked' : '') + '>'
-      + '<span>' + b.brand + '</span>'
+      + '<span>' + esc(b.brand) + '</span>'
       + '<span class="ml-auto text-xs text-zinc-400">' + b.count + '</span>'
       + '</label>').join('')
     + '</div>';
 
-  const discount = sectionHeading(t('browse.section.discount'))
+  const discount = sectionHeading(t('browse.discount'))
     + '<div class="mt-2 flex flex-wrap gap-2">'
-    + DISCOUNT_OPTIONS.map((o) => chip('discount', String(o.value), t(o.key), f.discount === o.value)).join('')
+    + DISCOUNT_OPTIONS.map((o) => chip('discount', String(o.value), t(o.labelKey), f.discount === o.value)).join('')
     + '</div>';
 
-  const availability = sectionHeading(t('browse.section.availability'))
+  const availability = sectionHeading(t('browse.availability'))
     + '<label class="mt-1 flex cursor-pointer items-center justify-between py-2.5 text-sm text-zinc-700">'
-    + '<span>' + esc(t('browse.inStockOnly')) + '</span>'
-    + '<input type="checkbox" class="un-switch" data-filter-stock' + (f.inStock ? ' checked' : '') + ' aria-label="' + esc(t('browse.inStockOnly')) + '">'
+    + '<span>' + esc(t('browse.inStock')) + '</span>'
+    + '<input type="checkbox" class="un-switch" data-filter-stock' + (f.inStock ? ' checked' : '') + ' aria-label="' + esc(t('browse.inStock')) + '">'
     + '</label>';
 
   return '<div class="absolute inset-0 bg-zinc-900/40" data-filter-close></div>'
@@ -195,8 +224,8 @@ function filterOverlayHtml() {
     + '<div class="flex-1 space-y-5 overflow-y-auto px-4 py-4">' + price + rating + brand + discount + availability + '</div>'
     + '<div class="border-t border-zinc-100 p-3" style="padding-bottom: calc(0.75rem + var(--un-safe-inset-bottom, 0px));">'
     + '<div class="flex gap-2">'
-    + '<button type="button" data-filter-reset class="btn-outline flex-1">' + esc(t('common.reset')) + '</button>'
-    + '<button type="button" data-filter-close class="btn-primary flex-1">' + esc(t('common.show')) + ' <span id="filter-show-count"></span></button>'
+    + '<button type="button" data-filter-reset class="btn-outline flex-1">' + esc(t('browse.reset')) + '</button>'
+    + '<button type="button" data-filter-close class="btn-primary flex-1">' + esc(t('browse.show')) + ' <span id="filter-show-count"></span></button>'
     + '</div></div></div>';
 }
 
@@ -204,19 +233,19 @@ function emptyResultsHtml() {
   if (state.mode === 'category') {
     return emptyState({
       icon: 'search',
-      title: t('browse.noResults.title'),
-      body: t('browse.noResults.categoryBody'),
+      title: t('browse.noResults'),
+      body: t('browse.noResultsCategory'),
       actionLabel: t('browse.clearSearchFilters'),
       actionAttr: 'data-browse-reset',
     });
   }
   const suggestions = POPULAR_SEARCHES.slice(0, 4)
-    .map((term) => '<button type="button" data-search-suggest="' + esc(term) + '" class="badge-soft h-8 px-3 text-xs hover:bg-zinc-200">' + esc(term) + '</button>')
+    .map((t) => '<button type="button" data-search-suggest="' + t + '" class="badge-soft h-8 px-3 text-xs hover:bg-zinc-200">' + t + '</button>')
     .join('');
   return emptyState({
     icon: 'search',
-    title: t('browse.noResults.title'),
-    body: esc(t('browse.noResults.searchBody', { q: state.q })),
+    title: t('browse.noResults'),
+    body: t('browse.noResultsQuery', { q: esc(state.q) }),
     actionLabel: t('browse.clearSearch'),
     actionAttr: 'data-browse-clear-search',
   })
@@ -228,7 +257,6 @@ function emptyResultsHtml() {
 /* ------------------------------------------------------------------ */
 
 function searchInputHtml(id, placeholder, value) {
-  // `placeholder` is already a translated string; escape it for attributes.
   return '<div class="relative">'
     + '<span class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400">' + icon('search', 'h-5 w-5') + '</span>'
     + '<input type="search" id="' + id + '" class="input" placeholder="' + esc(placeholder) + '" value="' + esc(value) + '" autocomplete="off" aria-label="' + esc(placeholder) + '">'
@@ -244,58 +272,59 @@ function searchHomeShell() {
     : '';
   const popular = '<section class="mt-6" aria-label="' + esc(t('browse.popularSearches')) + '"><h2 class="text-sm font-semibold text-zinc-900">' + esc(t('browse.popularSearches')) + '</h2>'
     + '<div class="mt-2.5 flex flex-wrap gap-2">'
-    + POPULAR_SEARCHES.map((term) => '<button type="button" data-search-suggest="' + esc(term) + '" class="inline-flex items-center gap-1.5 rounded-full bg-zinc-100 px-3 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-200">' + icon('flame', 'h-3.5 w-3.5') + esc(term) + '</button>').join('')
+    + POPULAR_SEARCHES.map((t) => '<button type="button" data-search-suggest="' + t + '" class="inline-flex items-center gap-1.5 rounded-full bg-zinc-100 px-3 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-200">' + icon('flame', 'h-3.5 w-3.5') + t + '</button>').join('')
     + '</div></section>';
-  return '<h1 class="section-title">' + esc(t('browse.search')) + '</h1>'
-    + '<div class="mt-3">' + searchInputHtml('search-page-input', t('search.placeholder'), '') + '</div>'
+  return '<h1 class="section-title">' + esc(t('browse.searchTitle')) + '</h1>'
+    + '<div class="mt-3">' + searchInputHtml('search-page-input', t('browse.searchPlaceholder'), '') + '</div>'
     + '<div class="card mt-4">' + emptyState({
       icon: 'search',
-      title: t('browse.searchTitle'),
-      body: t('browse.searchBody'),
+      title: t('browse.searchEmptyTitle'),
+      body: t('browse.searchEmptyBody'),
     }) + '</div>'
     + recent + popular;
 }
 
 function categoryShell() {
   const category = categoryById(state.id);
-  const categoryName = category ? t(category.key) : '';
   if (!category) {
     return emptyState({
       icon: 'grid',
-      title: t('browse.categoryNotFound.title'),
-      body: t('browse.categoryNotFound.body'),
+      title: t('browse.catNotFound'),
+      body: t('browse.catNotFoundBody'),
       actionLabel: t('browse.backHome'),
       actionAttr: 'data-nav="home"',
     });
   }
   const subs = SUBCATEGORIES[category.id] || [];
-  const chips = [{ id: '', key: 'browse.all' }].concat(subs)
-    .map((sub) => '<button type="button" data-sub="' + sub.id + '" aria-pressed="' + (state.sub === sub.id)
+  const chips = [{ id: '' }].concat(subs)
+    .map((s) => '<button type="button" data-sub="' + s.id + '" aria-pressed="' + (state.sub === s.id)
       + '" class="h-8 shrink-0 rounded-full px-3.5 text-xs font-semibold transition-colors '
-      + (state.sub === sub.id ? 'bg-brand-600 text-white' : 'border border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50')
-      + '">' + esc(t(sub.key)) + '</button>')
+      + (state.sub === s.id ? 'bg-brand-600 text-white' : 'border border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50')
+      + '">' + esc(subcategoryLabel(s)) + '</button>')
     .join('');
 
   return '<div class="flex items-center gap-1">'
-    + '<button type="button" data-back class="icon-btn -ml-2" aria-label="' + esc(t('common.back')) + '">' + icon('chevronLeft', 'h-5 w-5') + '</button>'
-    + '<h1 class="section-title">' + esc(categoryName) + '</h1>'
+    + '<button type="button" data-back class="icon-btn -ml-2" aria-label="' + esc(t('browse.back')) + '">' + icon('chevronLeft', 'h-5 w-5') + '</button>'
+    + '<h1 class="section-title">' + esc(categoryName(category)) + '</h1>'
     + '</div>'
     + '<div id="sub-chips" class="no-scrollbar -mx-4 mt-3 flex gap-2 overflow-x-auto px-4 pb-1">' + chips + '</div>'
-    + '<div class="mt-2">' + searchInputHtml('cat-search', t('browse.searchIn', { category: categoryName }), state.inCatQuery) + '</div>'
+    + '<div class="mt-2">' + searchInputHtml('cat-search', t('browse.searchIn', { name: categoryName(category) }), state.inCatQuery) + '</div>'
     + toolbarHtml()
     + '<div id="browse-grid" class="mt-3 ' + GRID_CLASS + '"></div>'
+    + '<div id="browse-more" class="mt-4 flex justify-center"></div>'
     + '<div id="browse-empty" class="hidden"></div>'
     + filterOverlay();
 }
 
 function searchResultsShell() {
   return '<div class="flex min-w-0 items-center gap-2">'
-    + '<button type="button" data-back class="icon-btn -ml-2 shrink-0" aria-label="' + esc(t('common.back')) + '">' + icon('chevronLeft', 'h-5 w-5') + '</button>'
+    + '<button type="button" data-back class="icon-btn -ml-2 shrink-0" aria-label="' + esc(t('browse.back')) + '">' + icon('chevronLeft', 'h-5 w-5') + '</button>'
     + '<h1 class="section-title truncate">' + esc(t('browse.resultsFor', { q: state.q })) + '</h1>'
     + '</div>'
-    + '<div class="mt-2">' + searchInputHtml('search-page-input', t('search.placeholder'), state.q) + '</div>'
+    + '<div class="mt-2">' + searchInputHtml('search-page-input', t('browse.searchPlaceholder'), state.q) + '</div>'
     + toolbarHtml()
     + '<div id="browse-grid" class="mt-3 ' + GRID_CLASS + '"></div>'
+    + '<div id="browse-more" class="mt-4 flex justify-center"></div>'
     + '<div id="browse-empty" class="hidden"></div>'
     + filterOverlay();
 }
@@ -315,7 +344,7 @@ function shellHtml() {
 
 function syncSortMenu() {
   const label = document.getElementById('sort-label');
-  if (label) label.textContent = sortLabel((SORT_OPTIONS.find((o) => o.id === state.sort) || SORT_OPTIONS[0]).id);
+  if (label) label.textContent = t((SORT_OPTIONS.find((o) => o.id === state.sort) || SORT_OPTIONS[0]).labelKey);
   document.querySelectorAll('#sort-menu [data-sort-item]').forEach((btn) => {
     btn.querySelector('.check-slot').innerHTML = btn.dataset.sortItem === state.sort ? icon('check', 'h-4 w-4 text-brand-600') : '';
   });
@@ -326,20 +355,43 @@ function renderGrid() {
   const grid = document.getElementById('browse-grid');
   const empty = document.getElementById('browse-empty');
   const count = document.getElementById('browse-count');
+  const more = document.getElementById('browse-more');
   const badge = document.getElementById('filter-badge');
   const showCount = document.getElementById('filter-show-count');
 
-  if (count) count.textContent = tc('common.item_one', 'common.item_many', list.length);
+  // Back to the first page whenever the sort, a filter or the scope changes.
+  const pageKey = JSON.stringify([state.sort, state.filters, state.sub, state.inCatQuery]);
+  if (state.pageKey !== pageKey) {
+    state.pageKey = pageKey;
+    state.shown = PAGE_SIZE;
+  }
+  // In the default order every curated product stays on the first page and
+  // the paging applies to the generated ones after them; any other sort pages
+  // the whole list.
+  const lead = state.sort === 'recommended' ? list.filter((p) => !p.generated).length : 0;
+  const visible = list.slice(0, lead + state.shown);
+  if (count) count.textContent = t(state.loading ? 'browse.itemsSoFar' : 'browse.items', { count: list.length });
   if (badge) {
     const n = activeFilterCount();
     badge.textContent = String(n);
     badge.classList.toggle('hidden', n === 0);
   }
-  if (showCount) showCount.textContent = tc('common.product_one', 'common.product_many', list.length);
+  if (showCount) showCount.textContent = t('browse.products', { count: list.length });
   if (!grid || !empty) return;
 
-  if (list.length) {
-    grid.innerHTML = list.map((p) => productCard(p)).join('');
+  if (more) {
+    more.innerHTML = list.length > visible.length
+      ? '<button type="button" data-browse-more class="btn-outline">' + esc(t('browse.showMore', { n: list.length - visible.length })) + '</button>'
+      : '';
+  }
+
+  if (!list.length && state.loading) {
+    // The server's products are still on their way: skeletons, not "no results".
+    grid.innerHTML = Array.from({ length: 8 }, () => skeletonCard()).join('');
+    grid.classList.remove('hidden');
+    empty.classList.add('hidden');
+  } else if (list.length) {
+    syncProductGrid(grid, visible, (p) => productCard(p));
     grid.classList.remove('hidden');
     empty.classList.add('hidden');
     empty.innerHTML = '';
@@ -355,8 +407,8 @@ function renderShell() {
   view.innerHTML = shellHtml();
   const cat = state.mode === 'category' ? categoryById(state.id) : null;
   document.title = state.mode === 'category' && cat
-    ? t(cat.key) + ' · ' + t('app.title')
-    : t('browse.search') + ' · ' + t('app.title');
+    ? t('browse.titleCategory', { name: categoryName(cat) })
+    : t('browse.titleSearch');
 
   // Sort menu + filter overlay reflect current state.
   syncSortMenu();
@@ -402,7 +454,12 @@ export function renderBrowse(route) {
       inCatQuery: '',
       sort: 'recommended',
       filters: defaultFilters(),
+      server: [],
+      loading: !!(route.mode === 'category' || route.q),
+      shown: PAGE_SIZE,
+      pageKey: '',
     };
+    if (state.loading) loadServerScope(sig);
   } else if (route.sub) {
     state.sub = route.sub;
   }
@@ -452,8 +509,14 @@ function bindBrowseEvents() {
   if (!view) return;
 
   view.addEventListener('click', (e) => {
-    const target = e.target.closest('[data-sub], [data-sort-toggle], [data-sort-item], [data-filter-open], [data-filter-close], [data-filter-reset], [data-filter-price], [data-filter-rating], [data-filter-discount], [data-browse-reset], [data-browse-clear-search]');
+    const target = e.target.closest('[data-sub], [data-sort-toggle], [data-sort-item], [data-filter-open], [data-filter-close], [data-filter-reset], [data-filter-price], [data-filter-rating], [data-filter-discount], [data-browse-reset], [data-browse-clear-search], [data-browse-more]');
     if (!target) return;
+
+    if (target.hasAttribute('data-browse-more')) {
+      state.shown += PAGE_SIZE;
+      renderGrid();
+      return;
+    }
 
     const sub = target.getAttribute('data-sub');
     if (sub !== null && target.hasAttribute('data-sub')) {

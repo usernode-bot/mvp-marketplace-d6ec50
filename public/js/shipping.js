@@ -17,6 +17,12 @@
  * at placement, so later edits here never rewrite order history.
  */
 
+import { t } from './i18n.js';
+
+/* `name`, `service` and `eta` below are the English source values; every label
+ * shown to the shopper goes through the helpers at the bottom of the config
+ * (countryLabel, courierLabel, courierService, courierEta), which look the
+ * text up by id in the active language. Ids stay stable on placed orders. */
 export const COUNTRIES = [
   {
     id: 'us',
@@ -95,6 +101,43 @@ export const COUNTRIES = [
 ];
 
 const COUNTRY_LOOKUP = Object.fromEntries(COUNTRIES.map((c) => [c.id, c]));
+
+/* Localized country name for a country code ('us', 'id', ...). */
+export function countryLabel(code) {
+  const c = COUNTRY_LOOKUP[code];
+  return t('shipping.country.' + code) || (c ? c.name : String(code || ''));
+}
+
+function courierLookup(courierId) {
+  for (const c of COUNTRIES) {
+    const found = c.couriers.find((x) => x.id === courierId);
+    if (found) return found;
+  }
+  return null;
+}
+
+/* Localized service name of a courier id ('Ground', 'Darat', ...). */
+export function courierService(courierId) {
+  const o = courierLookup(courierId);
+  return t('shipping.service.' + courierId) || (o ? o.service : '');
+}
+
+/* "UPS Ground": the courier brand and its localized service, or just the
+ * brand when the two already read the same. */
+export function courierLabel(courierId) {
+  const o = courierLookup(courierId);
+  if (!o) return '';
+  const service = courierService(courierId);
+  return service && service.toLowerCase() !== o.name.toLowerCase() ? o.name + ' ' + service : o.name;
+}
+
+/* Localized estimated transit time ("2-4 business days") from etaDays. */
+export function courierEta(courierId) {
+  const o = courierLookup(courierId);
+  if (!o) return '';
+  const [min, max] = o.etaDays;
+  return min === 1 && max === 1 ? t('shipping.eta.oneDay') : t('shipping.eta.range', { min, max });
+}
 
 export function countryById(id) {
   return COUNTRY_LOOKUP[id] || null;

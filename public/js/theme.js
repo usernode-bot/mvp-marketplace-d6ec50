@@ -12,21 +12,20 @@
  */
 
 import { t } from './i18n.js';
-import { esc } from './ui.js';
 
 export const THEMES = [
-  { id: 'purple', key: 'theme.purple' },
-  { id: 'ocean', key: 'theme.ocean' },
-  { id: 'sunset', key: 'theme.sunset' },
-  { id: 'mint', key: 'theme.mint' },
-  { id: 'midnight', key: 'theme.midnight' },
+  { id: 'purple' },
+  { id: 'ocean' },
+  { id: 'sunset' },
+  { id: 'mint' },
+  { id: 'midnight' },
 ];
 
 const STORAGE_KEY = 'bazario:theme';
 const DEFAULT_THEME = 'purple';
 
 function isValid(id) {
-  return THEMES.some((t) => t.id === id);
+  return THEMES.some((th) => th.id === id);
 }
 
 export function getTheme() {
@@ -67,8 +66,12 @@ export function setTheme(id) {
 }
 
 export function themeName(id) {
-  const theme = THEMES.find((x) => x.id === id) || THEMES[0];
-  return t(theme.key);
+  return t('theme.' + (THEMES.some((th) => th.id === id) ? id : DEFAULT_THEME));
+}
+
+/* Minimal attribute escape (theme.js stays free of ui.js imports). */
+function attr(v) {
+  return String(v).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
 }
 
 /* The swatch buttons themselves, shared by the header group (desktop) and
@@ -76,11 +79,11 @@ export function themeName(id) {
  * compiler sees them. */
 export function swatchButtons() {
   const current = getTheme();
-  return THEMES.map((sw) => {
-    const name = t(sw.key);
-    return '<button type="button" class="theme-swatch theme-swatch-' + sw.id + '" data-theme-swatch="' + sw.id + '"'
-      + ' role="radio" aria-checked="' + (sw.id === current) + '"'
-      + ' aria-label="' + esc(t('theme.switchTo', { name })) + '" title="' + esc(name) + '"></button>';
+  return THEMES.map((th) => {
+    const name = attr(themeName(th.id));
+    return '<button type="button" class="theme-swatch theme-swatch-' + th.id + '" data-theme-swatch="' + th.id + '"'
+      + ' role="radio" aria-checked="' + (th.id === current) + '"'
+      + ' aria-label="' + attr(t('theme.switchTo', { name: themeName(th.id) })) + '" title="' + name + '"></button>';
   }).join('');
 }
 

@@ -17,9 +17,11 @@
 
 import { icon, productArt } from './icons.js';
 import { store } from './store.js';
-import { fmtEtaDate, fmtPrice, emptyState, toast } from './ui.js';
+import { fmtPrice, emptyState, scrollBehavior, toast } from './ui.js';
+import { t, has, intlLocale } from './i18n.js';
+import { createOrder } from './api.js';
+import { reserveFlashLines } from './flash-sale.js';
 import { methodById, methodName, methodSubtitle } from './payment.js';
-import { t, tc } from './i18n.js';
 import {
   COUNTRIES,
   countryById,
@@ -27,20 +29,30 @@ import {
   countryMatch,
   courierById,
   defaultCourierId,
+  countryLabel,
+  courierLabel,
+  courierEta,
 } from './shipping.js';
 
 const view = document.getElementById('view-checkout');
 const ADDRESS_KEY = 'bazario:address';
 
 /* Mock voucher codes. The hint under the input names one so a tester can
- * exercise the flow without guessing. */
+ * exercise the flow without guessing. The label is built at render time. */
 const VOUCHERS = {
-  MVP10: { kind: 'pct', value: 10, labelKey: 'voucher.demo.MVP10' },
-  WELCOME5: { kind: 'flat', value: 500, labelKey: 'voucher.demo.WELCOME5' },
+  MVP10: { kind: 'pct', value: 10 },
+  WELCOME5: { kind: 'flat', value: 500 },
 };
 
 function voucherLabel(v) {
-  return t(v.labelKey);
+  return v.kind === 'pct'
+    ? t('checkout.voucher.pct', { value: v.value })
+    : t('checkout.voucher.flat', { amount: fmtPrice(v.value) });
+}
+
+/* Day-and-month label for an estimated delivery date, in the active language. */
+function fmtEtaDate(d) {
+  return d.toLocaleDateString(intlLocale(), { weekday: 'short', month: 'short', day: 'numeric' });
 }
 
 /* Quick options offered when the shopper has not saved anything yet (a
@@ -48,10 +60,10 @@ function voucherLabel(v) {
  * those saved methods are offered here instead. */
 function fallbackMethods() {
   return [
-    { id: 'card', name: t('payment.name.card'), icon: 'creditCard', desc: t('payment.name.cardDesc') },
-    { id: 'bank', name: t('payment.name.bankTransfer'), icon: 'bank', desc: t('payment.sub.virtualAccount') },
-    { id: 'ewallet', name: t('payment.name.ewallet'), icon: 'smartphone', desc: t('payment.name.ewalletDesc') },
-    { id: 'cod', name: t('payment.name.cod'), icon: 'banknote', desc: t('payment.name.codDesc') },
+    { id: 'card', name: t('payment.name.card'), icon: 'creditCard', desc: t('payment.sub.card') },
+    { id: 'bank', name: t('payment.name.bank'), icon: 'bank', desc: t('payment.sub.va') },
+    { id: 'ewallet', name: t('payment.name.ewallet'), icon: 'smartphone', desc: 'DANA, GoPay, OVO' },
+    { id: 'cod', name: t('payment.name.cod'), icon: 'banknote', desc: t('payment.sub.cod') },
   ];
 }
 
@@ -79,25 +91,22 @@ function payAvatar(m) {
   return '<span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-zinc-100 text-zinc-500">' + icon(m.icon || 'creditCard', 'h-5 w-5') + '</span>';
 }
 
+/* Labels and placeholders are looked up by `key` at render time
+ * (checkout.field.<key>, checkout.ph.<key>); a phone has no placeholder key. */
 const FIELDS = [
-  { key: 'name', labelKey: 'checkout.field.name', type: 'text', placeholderKey: 'checkout.ph.name', autocomplete: 'name' },
-  { key: 'phone', labelKey: 'checkout.field.phone', type: 'tel', placeholderKey: 'checkout.ph.phone', autocomplete: 'tel' },
-  { key: 'address', labelKey: 'checkout.field.address', type: 'text', placeholderKey: 'checkout.ph.address', autocomplete: 'street-address' },
-  { key: 'city', labelKey: 'checkout.field.city', type: 'text', placeholderKey: 'checkout.ph.city', autocomplete: 'address-level2' },
-  { key: 'postal', labelKey: 'checkout.field.postal', type: 'text', placeholderKey: 'checkout.ph.postal', autocomplete: 'postal-code' },
+  { key: 'name', type: 'text', autocomplete: 'name' },
+  { key: 'phone', type: 'tel', placeholder: '+1 555 010 2233', autocomplete: 'tel' },
+  { key: 'address', type: 'text', autocomplete: 'street-address' },
+  { key: 'city', type: 'text', autocomplete: 'address-level2' },
+  { key: 'postal', type: 'text', autocomplete: 'postal-code' },
 ];
 
 /* Mock variant per category: the catalog has no real variants yet, and the
  * checkout asks for one to be shown per line. */
-const VARIANTS = {
-  electronics: 'checkout.variant.electronics',
-  fashion: 'checkout.variant.fashion',
-  beauty: 'checkout.variant.beauty',
-  home: 'checkout.variant.home',
-  sports: 'checkout.variant.sports',
-  groceries: 'checkout.variant.groceries',
-  accessories: 'checkout.variant.home',
-};
+function variantLabel(cat) {
+  const key = 'checkout.variant.' + cat;
+  return has(key) ? t(key) : t('checkout.variant.default');
+}
 
 /* Mock payment timing: two simulated stages before the success screen. */
 const LOADING_MS = 900;
@@ -181,14 +190,6 @@ function etaLabel(opt) {
   return fmtEtaDate(new Date(now + opt.etaDays[0] * day)) + ' – ' + fmtEtaDate(new Date(now + opt.etaDays[1] * day));
 }
 
-/* "UPS Ground" — the courier name and its service, or just the name when the
- * two already read the same. */
-function courierLabel(c) {
-  return c.service && c.service.toLowerCase() !== c.name.toLowerCase()
-    ? c.name + ' ' + c.service
-    : c.name;
-}
-
 /* ------------------------------------------------------------------ */
 /* Rendering                                                           */
 /* ------------------------------------------------------------------ */
@@ -196,16 +197,16 @@ function courierLabel(c) {
 function sectionHead(iconName, title, extra = '') {
   return '<div class="flex items-center gap-2">'
     + '<span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-zinc-100 text-zinc-600">' + icon(iconName, 'h-4 w-4') + '</span>'
-    + '<h2 class="text-sm font-semibold text-zinc-900">' + esc(title) + '</h2>'
+    + '<h2 class="text-sm font-semibold text-zinc-900">' + title + '</h2>'
     + extra
     + '</div>';
 }
 
 function fieldHtml(f, value) {
   return '<div' + (f.key === 'address' ? ' class="sm:col-span-2"' : '') + '>'
-    + '<label class="mb-1 block text-xs font-medium text-zinc-600" for="co-' + f.key + '">' + esc(t(f.labelKey)) + '</label>'
+    + '<label class="mb-1 block text-xs font-medium text-zinc-600" for="co-' + f.key + '">' + esc(t('checkout.field.' + f.key)) + '</label>'
     + '<input id="co-' + f.key + '" data-field="' + f.key + '" type="' + f.type + '" class="field" '
-    + 'placeholder="' + esc(t(f.placeholderKey)) + '" autocomplete="' + f.autocomplete + '" value="' + esc(value) + '">'
+    + 'placeholder="' + esc(f.placeholder || t('checkout.ph.' + f.key)) + '" autocomplete="' + f.autocomplete + '" value="' + esc(value) + '">'
     + '<p class="field-msg hidden" data-field-msg="' + f.key + '"></p>'
     + '</div>';
 }
@@ -228,7 +229,7 @@ function addressSection() {
       + '</div>'
       + '<button type="button" class="btn-secondary btn-sm mt-3" data-addr-save>' + esc(t('checkout.saveAddress')) + '</button>';
   }
-  return '<section class="card p-4" aria-label="' + esc(t('checkout.shippingAddress')) + '">' + sectionHead('mapPin', t('checkout.shippingAddress')) + body + '</section>';
+  return '<section class="card p-4" aria-label="' + esc(t('checkout.shippingAddress')) + '">' + sectionHead('mapPin', esc(t('checkout.shippingAddress'))) + body + '</section>';
 }
 
 function productsSection(entries) {
@@ -239,8 +240,8 @@ function productsSection(entries) {
       + '<div class="min-w-0 flex-1">'
       + '<h3 class="truncate text-sm font-medium text-zinc-800">' + p.name + '</h3>'
       + '<div class="mt-1 flex flex-wrap items-center gap-1.5">'
-      + '<span class="badge-soft">' + esc(t(VARIANTS[p.cat] || 'checkout.variant.home')) + '</span>'
-      + '<span class="text-xs text-zinc-500">' + esc(t('common.qty', { count: e.item.qty })) + '</span>'
+      + '<span class="badge-soft">' + esc(variantLabel(p.cat)) + '</span>'
+      + '<span class="text-xs text-zinc-500">' + esc(t('checkout.qty', { count: e.item.qty })) + '</span>'
       + '</div></div>'
       + '<div class="text-right">'
       + '<div class="text-sm font-bold tabular-nums text-zinc-900">' + fmtPrice(p.price * e.item.qty) + '</div>'
@@ -248,7 +249,7 @@ function productsSection(entries) {
       + '</div></div>';
   }).join('');
   return '<section class="card p-4" aria-label="' + esc(t('checkout.products')) + '" data-checkout-products>'
-    + sectionHead('bag', t('checkout.products'), '<span class="badge-soft ml-auto">' + entries.length + '</span>')
+    + sectionHead('bag', esc(t('checkout.products')), '<span class="badge-soft ml-auto">' + entries.length + '</span>')
     + '<div class="mt-1 divide-y divide-zinc-100">' + rows + '</div>'
     + '</section>';
 }
@@ -260,9 +261,9 @@ function shippingSection() {
   const c = country();
   const selected = ship();
 
-  const countryField = '<label class="mb-1 block text-xs font-medium text-zinc-600" for="co-country">' + esc(t('checkout.destinationCountry')) + '</label>'
-    + '<select id="co-country" data-country-select class="field" aria-label="' + esc(t('checkout.destinationCountry')) + '">'
-    + COUNTRIES.map((x) => '<option value="' + x.id + '"' + (x.id === c.id ? ' selected' : '') + '>' + esc(x.name) + '</option>').join('')
+  const countryField = '<label class="mb-1 block text-xs font-medium text-zinc-600" for="co-country">' + esc(t('checkout.destCountry')) + '</label>'
+    + '<select id="co-country" data-country-select class="field" aria-label="' + esc(t('checkout.destCountry')) + '">'
+    + COUNTRIES.map((x) => '<option value="' + x.id + '"' + (x.id === c.id ? ' selected' : '') + '>' + esc(countryLabel(x.id)) + '</option>').join('')
     + '</select>';
 
   const rows = c.couriers.map((o) => {
@@ -272,14 +273,14 @@ function shippingSection() {
       + (sel ? 'border-brand-500 bg-brand-50/50' : 'border-zinc-200 hover:bg-zinc-50') + '">'
       + '<span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full '
       + (sel ? 'bg-brand-100 text-brand-700' : 'bg-zinc-100 text-zinc-500') + '">' + icon('truck', 'h-4 w-4') + '</span>'
-      + '<span class="min-w-0 flex-1"><span class="block text-sm font-semibold text-zinc-900">' + esc(courierLabel(o)) + '</span>'
-      + '<span class="block text-xs text-zinc-500">' + esc(o.eta) + '</span></span>'
+      + '<span class="min-w-0 flex-1"><span class="block text-sm font-semibold text-zinc-900">' + esc(courierLabel(o.id)) + '</span>'
+      + '<span class="block text-xs text-zinc-500">' + esc(courierEta(o.id)) + '</span></span>'
       + '<span class="text-sm font-bold tabular-nums ' + (sel ? 'text-brand-700' : 'text-zinc-900') + '">' + fmtPrice(o.price) + '</span>'
       + '</button>';
   }).join('');
 
   return '<section class="card p-4" aria-label="' + esc(t('checkout.shipping')) + '">'
-    + sectionHead('truck', t('checkout.shipping'), '<span class="badge-soft ml-auto" data-courier-count>' + c.couriers.length + '</span>')
+    + sectionHead('truck', esc(t('checkout.shipping')), '<span class="badge-soft ml-auto" data-courier-count>' + c.couriers.length + '</span>')
     + '<div class="mt-3">' + countryField + '</div>'
     + '<p class="mb-2 mt-4 text-xs font-medium text-zinc-500">' + esc(t('checkout.courier')) + '</p>'
     + '<div class="flex flex-col gap-2" data-courier-list>' + rows + '</div>'
@@ -291,19 +292,19 @@ function voucherSection() {
   if (state.voucher) {
     body = '<div class="mt-3 flex items-center gap-3 rounded-xl border border-green-200 bg-green-50 px-3 py-2.5">'
       + '<span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-green-600">' + icon('ticket', 'h-4 w-4') + '</span>'
-      + '<div class="min-w-0 flex-1"><p class="text-sm font-semibold text-zinc-900">' + esc(state.voucher.code) + '</p>'
+      + '<div class="min-w-0 flex-1"><p class="text-sm font-semibold text-zinc-900">' + state.voucher.code + '</p>'
       + '<p class="text-xs text-zinc-500">' + esc(voucherLabel(state.voucher)) + '</p></div>'
-      + '<button type="button" class="btn-ghost btn-sm" data-voucher-remove>' + esc(t('common.remove')) + '</button>'
+      + '<button type="button" class="btn-ghost btn-sm" data-voucher-remove>' + esc(t('checkout.remove')) + '</button>'
       + '</div>';
   } else {
     body = '<div class="mt-3 flex items-start gap-2">'
-      + '<input data-voucher-input type="text" class="field" placeholder="' + esc(t('checkout.voucherPlaceholder')) + '" aria-label="' + esc(t('checkout.voucherPlaceholder')) + '" value="' + esc(state.voucherDraft) + '">'
-      + '<button type="button" class="btn-secondary" data-voucher-apply>' + esc(t('common.apply')) + '</button>'
+      + '<input data-voucher-input type="text" class="field" placeholder="' + esc(t('checkout.voucherCode')) + '" aria-label="' + esc(t('checkout.voucherCode')) + '" value="' + esc(state.voucherDraft) + '">'
+      + '<button type="button" class="btn-secondary" data-voucher-apply>' + esc(t('checkout.apply')) + '</button>'
       + '</div>'
       + '<p class="field-msg hidden" data-voucher-msg></p>'
-      + '<p class="mt-2 text-xs text-zinc-400">' + esc(t('checkout.tryVoucher')) + '</p>';
+      + '<p class="mt-2 text-xs text-zinc-400">' + esc(t('checkout.voucherHint')) + '</p>';
   }
-  return '<section class="card p-4" aria-label="' + esc(t('checkout.voucher')) + '">' + sectionHead('ticket', t('checkout.voucher')) + body + '</section>';
+  return '<section class="card p-4" aria-label="' + esc(t('checkout.voucherTitle')) + '">' + sectionHead('ticket', esc(t('checkout.voucherTitle'))) + body + '</section>';
 }
 
 function paymentSection() {
@@ -312,28 +313,28 @@ function paymentSection() {
   if (m) {
     body = '<div class="mt-3 flex items-center gap-3 rounded-xl border border-brand-200 bg-brand-50/50 px-3 py-2.5">'
       + payAvatar(m)
-      + '<div class="min-w-0 flex-1"><p class="text-sm font-semibold text-zinc-900">' + esc(m.name) + '</p>'
-      + '<p class="truncate text-xs text-zinc-500">' + esc(m.desc) + '</p></div>'
+      + '<div class="min-w-0 flex-1"><p class="text-sm font-semibold text-zinc-900">' + m.name + '</p>'
+      + '<p class="truncate text-xs text-zinc-500">' + m.desc + '</p></div>'
       + '<span class="text-brand-600">' + icon('check', 'h-4 w-4') + '</span>'
       + '</div>'
       + '<button type="button" class="btn-ghost btn-sm mt-2 -ml-1" data-payment-open>' + esc(t('checkout.changePayment')) + '</button>';
   } else {
     body = '<button type="button" class="btn-secondary mt-3 w-full" data-payment-open>' + esc(t('checkout.choosePayment')) + '</button>'
-      + '<p class="field-msg hidden" data-payment-msg>' + esc(t('checkout.paymentMsg')) + '</p>';
+      + '<p class="field-msg hidden" data-payment-msg>' + esc(t('checkout.choosePaymentMsg')) + '</p>';
   }
-  return '<section class="card p-4" aria-label="' + esc(t('checkout.paymentMethod')) + '">' + sectionHead('creditCard', t('checkout.paymentMethod')) + body + '</section>';
+  return '<section class="card p-4" aria-label="' + esc(t('checkout.paymentMethod')) + '">' + sectionHead('creditCard', esc(t('checkout.paymentMethod'))) + body + '</section>';
 }
 
-function summarySection(sum) {
+function summarySection(tt) {
   const s = ship();
   const c = country();
   return '<h2 class="text-sm font-semibold text-zinc-900">' + esc(t('checkout.orderSummary')) + '</h2>'
-    + '<div class="mt-3 flex justify-between text-sm text-zinc-600"><span>' + esc(t('checkout.subtotal')) + '</span><span class="font-medium tabular-nums text-zinc-900">' + fmtPrice(sum.subtotal) + '</span></div>'
-    + '<div class="mt-1.5 flex justify-between gap-3 text-sm text-zinc-600"><span>' + esc(t('checkout.shipping')) + '</span><span class="text-right font-medium text-zinc-900"><span class="tabular-nums">' + fmtPrice(sum.shipping) + '</span><span class="block text-xs font-normal text-zinc-500">' + esc(c.name) + ' · ' + esc(courierLabel(s)) + '</span></span></div>'
-    + (sum.discount ? '<div class="mt-1.5 flex justify-between text-sm text-zinc-600"><span>' + esc(t('checkout.discount')) + '</span><span class="font-medium tabular-nums text-green-600">-' + fmtPrice(sum.discount) + '</span></div>' : '')
-    + '<div class="mt-3 flex justify-between border-t border-zinc-100 pt-3 text-sm font-semibold text-zinc-900"><span>' + esc(t('checkout.total')) + '</span><span class="tabular-nums">' + fmtPrice(sum.total) + '</span></div>'
+    + '<div class="mt-3 flex justify-between text-sm text-zinc-600"><span>' + esc(t('checkout.subtotal')) + '</span><span class="font-medium tabular-nums text-zinc-900">' + fmtPrice(tt.subtotal) + '</span></div>'
+    + '<div class="mt-1.5 flex justify-between gap-3 text-sm text-zinc-600"><span>' + esc(t('checkout.shipping')) + '</span><span class="text-right font-medium text-zinc-900"><span class="tabular-nums">' + fmtPrice(tt.shipping) + '</span><span class="block text-xs font-normal text-zinc-500">' + esc(countryLabel(c.id)) + ' · ' + esc(courierLabel(s.id)) + '</span></span></div>'
+    + (tt.discount ? '<div class="mt-1.5 flex justify-between text-sm text-zinc-600"><span>' + esc(t('checkout.discount')) + '</span><span class="font-medium tabular-nums text-green-600">-' + fmtPrice(tt.discount) + '</span></div>' : '')
+    + '<div class="mt-3 flex justify-between border-t border-zinc-100 pt-3 text-sm font-semibold text-zinc-900"><span>' + esc(t('checkout.total')) + '</span><span class="tabular-nums">' + fmtPrice(tt.total) + '</span></div>'
     + '<button type="button" class="btn-primary mt-4 w-full" data-place-order><span>' + esc(t('checkout.placeOrder')) + '</span></button>'
-    + '<p class="mt-2 text-center text-xs text-zinc-400">' + esc(t('checkout.mock')) + '</p>';
+    + '<p class="mt-2 text-center text-xs text-zinc-400">' + esc(t('checkout.mockNote')) + '</p>';
 }
 
 export function renderCheckoutView() {
@@ -367,22 +368,22 @@ export function renderCheckoutView() {
       + '<h1 class="section-title">' + esc(t('checkout.title')) + '</h1></div>'
       + '<div class="card mt-4">' + emptyState({
         icon: 'cart',
-        title: t('checkout.empty.title'),
-        body: t('checkout.empty.body'),
+        title: t('checkout.emptyTitle'),
+        body: t('checkout.emptyBody'),
         actionLabel: t('checkout.continueShopping'),
         actionAttr: 'data-nav="home"',
       }) + '</div>';
     return;
   }
 
-  const sum = totals();
+  const tot = totals();
   const items = store.cartCount();
 
   view.innerHTML =
     '<div class="flex items-center gap-2">'
     + '<button type="button" class="icon-btn -ml-2" data-nav="cart" aria-label="' + esc(t('checkout.backToCart')) + '">' + icon('chevronLeft', 'h-5 w-5') + '</button>'
     + '<h1 class="section-title">' + esc(t('checkout.title')) + '</h1>'
-    + '<span class="badge-soft ml-1">' + esc(tc('common.item_one', 'common.item_many', items)) + '</span>'
+    + '<span class="badge-soft ml-1">' + esc(t('checkout.items', { count: items })) + '</span>'
     + '</div>'
     + '<div class="mt-4 grid gap-6 lg:grid-cols-3">'
     + '<div class="flex flex-col gap-4 lg:col-span-2">'
@@ -392,7 +393,7 @@ export function renderCheckoutView() {
     + voucherSection()
     + paymentSection()
     + '</div>'
-    + '<div class="lg:col-span-1"><div class="card p-4 lg:sticky lg:top-24">' + summarySection(sum) + '</div></div>'
+    + '<div class="lg:col-span-1"><div class="card p-4 lg:sticky lg:top-24">' + summarySection(tot) + '</div></div>'
     + '</div>';
 }
 
@@ -445,7 +446,7 @@ function collectForm() {
 function scrollFirstError(errors) {
   const first = FIELDS.find((f) => errors[f.key]);
   const el = first && view.querySelector('[data-field="' + first.key + '"]');
-  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  if (el) el.scrollIntoView({ behavior: scrollBehavior(), block: 'center' });
 }
 
 /* ------------------------------------------------------------------ */
@@ -481,15 +482,15 @@ function applyVoucher() {
   const input = view.querySelector('[data-voucher-input]');
   const code = (input ? input.value : state.voucherDraft).trim().toUpperCase();
   if (!code) {
-    showVoucherError(t('checkout.enterVoucher'));
+    showVoucherError(t('checkout.err.voucherEmpty'));
     return;
   }
   const v = VOUCHERS[code];
   if (!v) {
-    showVoucherError(t('checkout.invalidVoucher'));
+    showVoucherError(t('checkout.err.voucherInvalid'));
     return;
   }
-  state.voucher = { code, kind: v.kind, value: v.value, labelKey: v.labelKey };
+  state.voucher = { code, kind: v.kind, value: v.value };
   state.voucherDraft = '';
   toast(t('checkout.voucherApplied', { label: voucherLabel(v) }));
   renderCheckoutView();
@@ -508,7 +509,7 @@ function updatePlaceButton() {
 function completeOrder(entries) {
   const s = ship();
   const c = country();
-  const sum = totals();
+  const tot = totals();
   const method = paymentOptions().find((x) => x.id === state.paymentId);
   const order = {
     number: 'BZ-' + Math.floor(100000 + Math.random() * 900000),
@@ -516,25 +517,41 @@ function completeOrder(entries) {
     status: 'Processing',
     etaLabel: etaLabel(s),
     countryId: c.id,
-    countryName: c.name,
+    countryName: countryLabel(c.id),
     shippingId: s.id,
     shippingName: s.name,
     shippingService: s.service || '',
-    courierName: courierLabel(s),
+    courierName: courierLabel(s.id),
     paymentId: method ? method.id : null,
     paymentName: method ? method.name : '',
     address: { ...state.address },
     items: entries.map((e) => ({ id: e.product.id, name: e.product.name, qty: e.item.qty, price: e.product.price })),
-    subtotal: sum.subtotal,
-    shipping: sum.shipping,
-    discount: sum.discount,
-    total: sum.total,
+    subtotal: tot.subtotal,
+    shipping: tot.shipping,
+    discount: tot.discount,
+    total: tot.total,
   };
   store.addOrder(order);
   store.clearCart();
   state.phase = 'idle';
   state.draft = null;
   renderSuccess(order);
+
+  // Mirror the order into Postgres so a verified-purchase look-up has
+  // something to find later. Best effort and non-blocking: placing an order
+  // must succeed even offline, so a failed mirror only toasts.
+  const lineItems = order.items.map((it) => ({ id: it.id, name: it.name, qty: it.qty, price: it.price }));
+  createOrder({
+    number: order.number,
+    status: order.status,
+    total: order.total,
+    currency: 'USD',
+    shipping: { courier: order.courierName, country: order.countryName, eta: order.etaLabel },
+    address: order.address,
+    items: lineItems,
+  }).then((res) => {
+    if (!res.ok) toast(t('checkout.syncFailed'));
+  });
 }
 
 function placeOrder() {
@@ -549,7 +566,7 @@ function placeOrder() {
     if (Object.keys(errors).length) {
       showFieldErrors(errors);
       scrollFirstError(errors);
-      toast(t('checkout.checkHighlighted'));
+      toast(t('checkout.checkFields'));
       return;
     }
     state.address = values;
@@ -562,25 +579,46 @@ function placeOrder() {
     const msg = view.querySelector('[data-payment-msg]');
     if (msg) {
       msg.classList.remove('hidden');
-      msg.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      msg.scrollIntoView({ behavior: scrollBehavior(), block: 'center' });
     }
     toast(t('checkout.choosePaymentToast'));
     return;
   }
 
-  // Mock payment: two simulated stages, no real provider is contacted.
   state.phase = 'loading';
   updatePlaceButton();
-  setTimeout(() => {
+
+  // Flash Sale lines are checked (campaign still running, stock, price) and
+  // reserved with the server before any payment step starts. A refusal stops
+  // the order and redraws the cart at what the server now says.
+  reserveFlashLines(entries).then((check) => {
     if (state.phase !== 'loading') return;
-    state.phase = 'processing';
-    updatePlaceButton();
-  }, LOADING_MS);
-  setTimeout(() => {
-    if (state.phase !== 'processing') return;
-    completeOrder(entries);
-  }, LOADING_MS + PROCESSING_MS);
+    if (!check.ok) {
+      state.phase = 'idle';
+      renderCheckoutView();
+      if (check.code !== 'account_required') toast(t(FLASH_REFUSALS[check.code] || 'checkout.flashFailed'));
+      return;
+    }
+    // Mock payment: two simulated stages, no real provider is contacted.
+    setTimeout(() => {
+      if (state.phase !== 'loading') return;
+      state.phase = 'processing';
+      updatePlaceButton();
+    }, LOADING_MS);
+    setTimeout(() => {
+      if (state.phase !== 'processing') return;
+      completeOrder(entries);
+    }, LOADING_MS + PROCESSING_MS);
+  });
 }
+
+const FLASH_REFUSALS = {
+  campaign_ended: 'checkout.flashEnded',
+  not_in_campaign: 'checkout.flashEnded',
+  price_changed: 'checkout.flashPrice',
+  out_of_stock: 'checkout.flashStock',
+  unavailable: 'checkout.flashStock',
+};
 
 /* ------------------------------------------------------------------ */
 /* Payment modal                                                       */
@@ -594,9 +632,9 @@ function payRow(m) {
     + '" class="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition-colors hover:bg-zinc-50'
     + (sel ? ' bg-brand-50' : '') + '">'
     + payAvatar(m)
-    + '<span class="min-w-0 flex-1"><span class="flex items-center gap-2"><span class="block truncate text-sm font-semibold text-zinc-900">' + esc(m.name) + '</span>'
-    + (m.isDefault ? '<span class="badge-brand shrink-0">' + esc(t('addresses.defaultBadge')) + '</span>' : '') + '</span>'
-    + '<span class="block truncate text-xs text-zinc-500">' + esc(m.desc) + '</span></span>'
+    + '<span class="min-w-0 flex-1"><span class="flex items-center gap-2"><span class="block truncate text-sm font-semibold text-zinc-900">' + m.name + '</span>'
+    + (m.isDefault ? '<span class="badge-brand shrink-0">' + esc(t('checkout.default')) + '</span>' : '') + '</span>'
+    + '<span class="block truncate text-xs text-zinc-500">' + m.desc + '</span></span>'
     + (sel
       ? '<span class="text-brand-600">' + icon('check', 'h-5 w-5') + '</span>'
       : '<span class="h-5 w-5 shrink-0 rounded-full border-2 border-zinc-200"></span>')
@@ -633,14 +671,14 @@ function openPaymentModal() {
   modalEl.id = 'payment-modal';
   modalEl.setAttribute('role', 'dialog');
   modalEl.setAttribute('aria-modal', 'true');
-  modalEl.setAttribute('aria-label', t('checkout.choosePayment'));
+  modalEl.setAttribute('aria-label', t('checkout.choosePaymentAria'));
   modalEl.className = 'fixed inset-0 z-50 flex items-end justify-center sm:items-center';
   modalEl.innerHTML =
     '<div class="absolute inset-0 bg-zinc-900/40" data-payment-close></div>'
     + '<div class="relative w-full rounded-t-2xl bg-white shadow-card-lg sm:max-w-md sm:rounded-2xl">'
     + '<div class="flex items-center justify-between border-b border-zinc-100 px-4 py-3">'
     + '<h2 class="text-sm font-semibold text-zinc-900">' + esc(t('checkout.paymentMethod')) + '</h2>'
-    + '<button type="button" class="icon-btn h-8 w-8" data-payment-close aria-label="' + esc(t('common.close')) + '">' + icon('x', 'h-4 w-4') + '</button>'
+    + '<button type="button" class="icon-btn h-8 w-8" data-payment-close aria-label="' + esc(t('checkout.close')) + '">' + icon('x', 'h-4 w-4') + '</button>'
     + '</div>'
     + '<div class="p-3">' + paymentOptions().map(payRow).join('') + '</div>'
     + '<div class="hidden sm:block h-2"></div>'
@@ -668,15 +706,15 @@ function renderSuccess(order) {
     '<div class="card mx-auto mt-8 max-w-md p-6 text-center">'
     + '<span class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-green-100 text-green-600">' + icon('check', 'h-8 w-8') + '</span>'
     + '<h1 class="mt-4 text-xl font-bold tracking-tight text-zinc-900">' + esc(t('checkout.success.title')) + '</h1>'
-    + '<p class="mt-1 text-sm text-zinc-500">' + esc(t('checkout.success.order', { number: order.number })) + '</p>'
+    + '<p class="mt-1 text-sm text-zinc-500">' + esc(t('checkout.success.order', { number: '\u0000' })).replace('\u0000', '<span class="font-semibold text-zinc-900">' + esc(order.number) + '</span>') + '</p>'
     + '<div class="mt-5 rounded-xl bg-zinc-50 p-4 text-left text-sm">'
-    + '<div class="flex justify-between gap-3"><span class="text-zinc-600">' + esc(t('checkout.success.estimatedDelivery')) + '</span><span class="font-medium text-zinc-900">' + esc(order.etaLabel) + '</span></div>'
-    + '<div class="mt-2 flex justify-between gap-3"><span class="text-zinc-600">' + esc(t('checkout.success.courier')) + '</span><span class="text-right font-medium text-zinc-900">' + esc(order.courierName || order.shippingName) + '<span class="block text-xs font-normal text-zinc-500">' + esc(order.countryName || '') + '</span></span></div>'
+    + '<div class="flex justify-between gap-3"><span class="text-zinc-600">' + esc(t('checkout.success.eta')) + '</span><span class="font-medium text-zinc-900">' + esc(order.etaLabel) + '</span></div>'
+    + '<div class="mt-2 flex justify-between gap-3"><span class="text-zinc-600">' + esc(t('checkout.success.courier')) + '</span><span class="text-right font-medium text-zinc-900">' + esc(order.shippingId ? courierLabel(order.shippingId) : (order.courierName || order.shippingName)) + '<span class="block text-xs font-normal text-zinc-500">' + esc(order.countryId ? countryLabel(order.countryId) : (order.countryName || '')) + '</span></span></div>'
     + '<div class="mt-2 flex justify-between gap-3"><span class="text-zinc-600">' + esc(t('checkout.success.payment')) + '</span><span class="font-medium text-zinc-900">' + esc(order.paymentName) + '</span></div>'
-    + '<div class="mt-2 flex justify-between gap-3 border-t border-zinc-200 pt-2"><span class="text-zinc-600">' + esc(t('checkout.success.total')) + '</span><span class="font-semibold tabular-nums text-zinc-900">' + fmtPrice(order.total) + '</span></div>'
+    + '<div class="mt-2 flex justify-between gap-3 border-t border-zinc-200 pt-2"><span class="text-zinc-600">' + esc(t('checkout.total')) + '</span><span class="font-semibold tabular-nums text-zinc-900">' + fmtPrice(order.total) + '</span></div>'
     + '</div>'
     + '<button type="button" class="btn-primary mt-5 w-full" data-nav="orders">' + esc(t('checkout.success.viewOrder')) + '</button>'
-    + '<button type="button" class="btn-outline mt-2 w-full" data-nav="home">' + esc(t('checkout.success.continue')) + '</button>'
+    + '<button type="button" class="btn-outline mt-2 w-full" data-nav="home">' + esc(t('checkout.continueShopping')) + '</button>'
     + '</div>';
 }
 

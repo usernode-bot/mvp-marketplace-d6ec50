@@ -9,7 +9,15 @@
       "reason": "Find products shipping from a city near you"
     }
   ],
-  "secrets": [],
+  "secrets": [
+    {
+      "key": "MARKETPLACE_TIMEZONE",
+      "description": "IANA timezone the marketplace runs on (for example Asia/Jakarta). The Flash Sale day starts and ends at local midnight here.",
+      "required": false,
+      "private": false,
+      "default": "Asia/Jakarta"
+    }
+  ],
   "tests": [
     {
       "id": "home.filters-toolbar",
@@ -42,7 +50,7 @@
       "name": "Selecting two cities keeps products from both",
       "path": "/#/home?city=Bandung,Bekasi",
       "expectSelector": "#recommended-chips [data-result-count]",
-      "expectText": "14 products"
+      "expectText": "64 products"
     },
     {
       "id": "home.filter-city-card",
@@ -205,10 +213,26 @@
     },
     {
       "id": "home.flash-images",
-      "name": "Flash Sale cards show detailed product illustrations",
+      "name": "Flash Sale cards show product images",
       "path": "/",
-      "expectSelector": "#flash-row .product-card svg.product-img",
+      "expectSelector": "#flash-row .product-card .product-img",
       "expectText": "Flash Sale"
+    },
+    {
+      "id": "home.flash-today",
+      "name": "Flash Sale shows today's campaign label, date and a running countdown",
+      "path": "/",
+      "expectSelector": "#flash-label:not(.hidden)",
+      "expectText": "Today's Flash Sale",
+      "visual": true,
+      "impact": ["public/js/flash-sale.js", "public/js/flash-sale-core.js", "public/js/flash-demo.js", "public/js/home.js", "src/flash-sale.cjs", "public/index.html", "server.js"]
+    },
+    {
+      "id": "home.flash-countdown",
+      "name": "Flash Sale countdown shows hours, minutes and seconds",
+      "path": "/",
+      "expectSelector": "#flash-timer[data-ms-left] .chip",
+      "expectText": "Ends in"
     },
     {
       "id": "home.flash-nav",
@@ -479,6 +503,53 @@
       "name": "Search query with quotes and angle brackets renders as text",
       "path": "/?q=wireless%20%22pro%22%20%3Ctest%3E",
       "expectText": "Nothing matches \"wireless \"pro\" <test>\" right now"
-    }
+    },
+    {
+      "id": "product.reviews-photos",
+      "name": "A product's reviews render with real photos and the verified-purchase badge",
+      "path": "/#/product/p09",
+      "expectSelector": "#pdp-reviews [data-review-photo]",
+      "expectText": "Verified purchase",
+      "visual": true,
+      "impact": ["public/js/reviews.js", "public/js/product.js", "public/index.html", "styles/tailwind-input.css", "server.js"]
+    },
+    {
+      "id": "product.reviews-empty",
+      "name": "A product with no reviews shows the empty state",
+      "path": "/#/product/p27",
+      "expectText": "No reviews yet."
+    },
+    {
+      "id": "product.review-composer",
+      "name": "The reviews section offers the reviewer action for the signed-in viewer",
+      "path": "/#/product/p09",
+      "expectSelector": "#pdp-reviews [data-review-cta]"
+    },
+    {
+      "id": "product.reviews-live",
+      "name": "The reviews section opens its live-updates stream",
+      "path": "/#/product/p09",
+      "expectSelector": "[data-reviews-live]"
+    },
+    {
+      "id": "orders.server-mirror",
+      "name": "Checkout still renders and can place an order after the order mirror",
+      "path": "/?demo=checkout#/checkout",
+      "expectSelector": "[data-place-order]",
+      "expectText": "Order summary"
+    },
+    {"id": "product.catalog-detail", "name": "A marketplace product page shows stock, variants, key features and a specifications table", "path": "/#/product/staging-demo-gx-0001", "expectSelector": "#view-product [data-stock-status] ~ div [data-variant-opt]", "expectText": "Key features", "visual": true, "impact": ["public/js/product.js", "public/js/ui.js", "public/js/api.js", "server.js", "src/products.cjs", "src/schema.cjs", "src/catalog-rows.cjs"]},
+    {"name": "Marketplace product page has a zoomable photo gallery with thumbnails", "path": "/#/product/staging-demo-gx-0041", "expectSelector": "#view-product [data-zoom-area] img[data-product-image]"},
+    {"name": "Marketplace product page lists its specifications table", "path": "/#/product/staging-demo-gx-0001", "expectSelector": "#view-product dl", "expectText": "Driver size"},
+    {"name": "Home shows Featured, Trending and Deals shelves computed from the catalog", "path": "/", "expectSelector": "#featured-row [data-product]", "expectText": "Trending now"},
+    {"name": "Categories tab shows category counts from the catalog table", "path": "/#/categories", "expectSelector": "[data-category-count='electronics']", "expectText": "products"},
+    {"name": "Category browse merges the marketplace catalog from the server", "path": "/#/category/electronics", "expectSelector": "#browse-grid [data-product^='staging-demo-']"},
+    {"name": "Search finds a marketplace product by brand name", "path": "/#/search?q=Primere", "expectSelector": "#browse-grid [data-product='staging-demo-gx-0001']"},
+    {"id": "product.review-breakdown", "name": "A marketplace product page shows the 5 to 1 star breakdown and review sorting", "path": "/#/product/mx-0003", "expectSelector": "#pdp-reviews [data-review-breakdown] [data-review-bar='5'] [data-review-bar-count]", "expectText": "Most helpful", "visual": true, "impact": ["public/js/reviews.js", "public/js/product.js", "server.js", "src/marketplace.cjs", "data/marketplace/**"]},
+    {"name": "A negative marketplace review shows the seller's reply", "path": "/#/product/mx-0005", "expectSelector": "#pdp-reviews [data-review-reply]", "expectText": "Seller reply"},
+    {"name": "A sold out marketplace product says so on its page", "path": "/#/product/mx-0019", "expectSelector": "#view-product [data-stock-status]", "expectText": "Sold out"},
+    {"name": "Search finds a new marketplace product by brand name", "path": "/#/search?q=Zanvale", "expectSelector": "#browse-grid [data-product='mx-0003']", "expectText": "Zanvale Dew Z570 Pro Face Serum"},
+    {"id": "home.marketplace-load-more", "name": "A filtered home grid shows its first page of 24 and the remaining count on Load more", "path": "/#/home?city=Batam", "expectSelector": "#recommended-more-btn", "expectText": "(18)"},
+    {"name": "Unknown product id shows the not-found state", "path": "/#/product/gx-does-not-exist", "expectText": "Product not found", "allowConsoleErrors": true}
   ]
 }

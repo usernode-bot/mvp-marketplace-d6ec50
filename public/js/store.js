@@ -9,7 +9,8 @@
  * server-side; this module is the single seam for that swap.
  */
 
-import { PRODUCTS } from './data.js';
+import { productById, rememberProduct } from './data.js';
+import { effectiveProduct } from './flash-sale.js';
 
 const KEYS = {
   favorites: 'bazario:favorites',
@@ -36,7 +37,6 @@ const DEFAULT_PREFS = () => ({
   locale: 'en',
 });
 
-const PRODUCT_LOOKUP = Object.fromEntries(PRODUCTS.map((p) => [p.id, p]));
 
 function load(key, fallback) {
   try {
@@ -110,7 +110,7 @@ function entryKey(id, color, size) {
 
 function normalizeCart(raw) {
   return (Array.isArray(raw) ? raw : [])
-    .filter((e) => e && PRODUCT_LOOKUP[e.id])
+    .filter((e) => e && productById(e.id))
     .map((e) => ({
       id: e.id,
       qty: Math.max(1, Number(e.qty) || 1),
@@ -150,6 +150,7 @@ export const store = {
       this.favorites.delete(id);
     } else {
       this.favorites.add(id);
+      rememberProduct(id);
     }
     save(KEYS.favorites, [...this.favorites]);
     emit();
@@ -169,6 +170,7 @@ export const store = {
     const color = opts.color || '';
     const size = opts.size || '';
     const key = entryKey(id, color, size);
+    rememberProduct(id);
     const item = this.cart.find((i) => i.key === key);
     if (item) item.qty += qty;
     else this.cart.push({ id, qty, color, size, key, selected: true });
@@ -262,7 +264,7 @@ export const store = {
   },
 
   savedItems() {
-    return [...this.saved].map((id) => PRODUCT_LOOKUP[id]).filter(Boolean);
+    return [...this.saved].map((id) => productById(id)).filter(Boolean);
   },
 
   setVoucher(code) {
@@ -279,8 +281,10 @@ export const store = {
     // Resolved against the product list at render time, so stale ids from an
     // older data set drop out instead of breaking the cart view.
     return this.cart
-      .map((item) => ({ item, product: PRODUCT_LOOKUP[item.id] }))
-      .filter((entry) => entry.product);
+      .map((item) => ({ item, product: productById(item.id) }))
+      .filter((entry) => entry.product)
+      // A product in today's Flash Sale is priced at its campaign price.
+      .map((entry) => ({ item: entry.item, product: effectiveProduct(entry.product) }));
   },
 
   cartTotal() {
@@ -479,13 +483,14 @@ export const store = {
   },
 
   addRecentlyViewed(id) {
-    if (!PRODUCT_LOOKUP[id]) return;
+    if (!productById(id)) return;
+    rememberProduct(id);
     this.viewed = [id, ...this.viewed.filter((v) => v !== id)].slice(0, 10);
     save(KEYS.viewed, this.viewed);
   },
 
   recentlyViewed() {
-    return this.viewed.map((id) => PRODUCT_LOOKUP[id]).filter(Boolean);
+    return this.viewed.map((id) => productById(id)).filter(Boolean);
   },
 
   subscribe(fn) {

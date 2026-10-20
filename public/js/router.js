@@ -16,6 +16,7 @@
 import { applyHomeRoute } from './home.js';
 import { renderBrowse } from './browse.js';
 import { renderProduct } from './product.js';
+import { closeStream, unmountReviews } from './reviews.js';
 import { renderCategoriesView } from './views.js';
 import { renderOrdersView } from './orders.js';
 import { renderProfileView } from './profile.js';
@@ -53,6 +54,13 @@ export function goToHash(hash) {
 }
 
 function showView(name) {
+  // Leaving the product screen ends its live updates and clears the mounted
+  // review state, so a return visit starts clean. A re-render of the SAME
+  // product goes through renderProduct again, which re-mounts the section.
+  if (name !== 'product') {
+    closeStream();
+    unmountReviews();
+  }
   VIEW_NAMES.forEach((v) => {
     const el = document.querySelector('[data-view="' + v + '"]');
     if (el) el.classList.toggle('hidden', v !== name);
