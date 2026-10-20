@@ -1,0 +1,15 @@
+export default {
+  'common.appName': 'MVP Marketplace',
+  'common.save': 'Simpan',
+  'common.cancel': 'Batal',
+  'common.back': 'Kembali',
+  'common.close': 'Tutup',
+  'common.confirm': 'Konfirmasi',
+  'common.delete': 'Hapus',
+  'common.edit': 'Ubah',
+  'common.done': 'Selesai',
+  'common.loading': 'Memuat...',
+  'common.retry': 'Coba lagi',
+  'common.ok': 'OK',
+  'common.comingSoon': 'Segera hadir di tahap berikutnya',
+};

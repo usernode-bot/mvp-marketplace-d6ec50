@@ -9,7 +9,8 @@
  * server-side; this module is the single seam for that swap.
  */
 
-import { PRODUCTS } from './data.js';
+import { productById, rememberProduct } from './data.js';
+import { effectiveProduct } from './flash-sale.js';
 
 const KEYS = {
   favorites: 'bazario:favorites',
@@ -21,6 +22,7 @@ const KEYS = {
   voucher: 'bazario:voucher',
   orderOverrides: 'bazario:order-overrides',
   addresses: 'bazario:addresses',
+  payments: 'bazario:payments',
   profile: 'bazario:profile',
   prefs: 'bazario:prefs',
 };
@@ -35,7 +37,6 @@ const DEFAULT_PREFS = () => ({
   locale: 'en',
 });
 
-const PRODUCT_LOOKUP = Object.fromEntries(PRODUCTS.map((p) => [p.id, p]));
 
 function load(key, fallback) {
   try {
@@ -59,6 +60,35 @@ function normalizeVoucher(v) {
   return typeof v === 'string' && v.trim() ? v.trim().toUpperCase() : null;
 }
 
+/* A linked payment method. `id` names the config entry in
+ * public/js/payment.js; the extra fields hold what the user entered when
+ * linking (phone for e-wallets, account number + holder name for banks).
+ * Card numbers are never stored in full — `masked` keeps only the last
+ * four digits. */
+function normalizePayment(p) {
+  if (!p || typeof p.id !== 'string') return null;
+  return {
+    id: p.id,
+    phone: typeof p.phone === 'string' ? p.phone : '',
+    account: typeof p.account === 'string' ? p.account : '',
+    holder: typeof p.holder === 'string' ? p.holder : '',
+    masked: typeof p.masked === 'string' ? p.masked : '',
+    linkedAt: Number(p.linkedAt) || Date.now(),
+  };
+}
+
+function normalizePayments(raw) {
+  const blob = raw && typeof raw === 'object' ? raw : {};
+  const list = (Array.isArray(blob.list) ? blob.list : [])
+    .map(normalizePayment)
+    .filter(Boolean);
+  const ids = new Set(list.map((p) => p.id));
+  const def = ids.has(blob.defaultPayment) ? blob.defaultPayment : (list[0] ? list[0].id : null);
+  return { list, defaultPayment: def };
+}
+
+const PAYMENTS = normalizePayments(load(KEYS.payments, {}));
+
 const listeners = new Set();
 
 function emit() {
@@ -80,7 +110,7 @@ function entryKey(id, color, size) {
 
 function normalizeCart(raw) {
   return (Array.isArray(raw) ? raw : [])
-    .filter((e) => e && PRODUCT_LOOKUP[e.id])
+    .filter((e) => e && productById(e.id))
     .map((e) => ({
       id: e.id,
       qty: Math.max(1, Number(e.qty) || 1),
@@ -104,6 +134,10 @@ export const store = {
   // persists so a reload keeps the cancelled state.
   orderOverrides: load(KEYS.orderOverrides, {}),
   addresses: load(KEYS.addresses, []), // [{ id, name, phone, line1, city, zip, isDefault }]
+  // Linked payment methods, keyed by the config id in public/js/payment.js.
+  // `defaultPayment` names the single default method (null = none).
+  payments: PAYMENTS.list,
+  defaultPayment: PAYMENTS.defaultPayment,
   profile: load(KEYS.profile, null), // { name, phone, email } or null
   prefs: Object.assign(DEFAULT_PREFS(), load(KEYS.prefs, {})),
 
@@ -116,6 +150,7 @@ export const store = {
       this.favorites.delete(id);
     } else {
       this.favorites.add(id);
+      rememberProduct(id);
     }
     save(KEYS.favorites, [...this.favorites]);
     emit();
@@ -135,6 +170,7 @@ export const store = {
     const color = opts.color || '';
     const size = opts.size || '';
     const key = entryKey(id, color, size);
+    rememberProduct(id);
     const item = this.cart.find((i) => i.key === key);
     if (item) item.qty += qty;
     else this.cart.push({ id, qty, color, size, key, selected: true });
@@ -228,7 +264,7 @@ export const store = {
   },
 
   savedItems() {
-    return [...this.saved].map((id) => PRODUCT_LOOKUP[id]).filter(Boolean);
+    return [...this.saved].map((id) => productById(id)).filter(Boolean);
   },
 
   setVoucher(code) {
@@ -245,8 +281,10 @@ export const store = {
     // Resolved against the product list at render time, so stale ids from an
     // older data set drop out instead of breaking the cart view.
     return this.cart
-      .map((item) => ({ item, product: PRODUCT_LOOKUP[item.id] }))
-      .filter((entry) => entry.product);
+      .map((item) => ({ item, product: productById(item.id) }))
+      .filter((entry) => entry.product)
+      // A product in today's Flash Sale is priced at its campaign price.
+      .map((entry) => ({ item: entry.item, product: effectiveProduct(entry.product) }));
   },
 
   cartTotal() {
@@ -309,6 +347,62 @@ export const store = {
   },
 
   /* ------------------------------------------------------------------
+   * Payment methods (Phase: Payment). Invariant: when the list is
+   * non-empty, `defaultPayment` names exactly one linked method.
+   * ------------------------------------------------------------------ */
+
+  isPaymentLinked(id) {
+    return this.payments.some((p) => p.id === id);
+  },
+
+  paymentById(id) {
+    return this.payments.find((p) => p.id === id) || null;
+  },
+
+  /* Direct (no-input) methods: bank transfers, QRIS and COD. Linking one
+   * makes it the default when there is no default yet. */
+  linkPayment(id) {
+    if (!id || this.isPaymentLinked(id)) return;
+    const entry = { id, phone: '', account: '', holder: '', masked: '', linkedAt: Date.now() };
+    this.payments = this.payments.concat(entry);
+    if (!this.defaultPayment) this.defaultPayment = id;
+    this._savePayments();
+  },
+
+  /* Methods that need details (e-wallet phone, bank account + holder). */
+  linkPaymentDetails(id, details) {
+    if (!id) return;
+    const entry = Object.assign(
+      { id, phone: '', account: '', holder: '', masked: '', linkedAt: Date.now() },
+      details || {},
+    );
+    const existing = this.paymentById(id);
+    if (existing) Object.assign(existing, entry);
+    else this.payments = this.payments.concat(entry);
+    if (!this.defaultPayment) this.defaultPayment = id;
+    this._savePayments();
+  },
+
+  unlinkPayment(id) {
+    const wasDefault = this.defaultPayment === id;
+    this.payments = this.payments.filter((p) => p.id !== id);
+    if (wasDefault) this.defaultPayment = this.payments[0] ? this.payments[0].id : null;
+    this._savePayments();
+  },
+
+  /* Set one linked method as the default; no-op for an unlinked id. */
+  setDefaultPayment(id) {
+    if (!this.isPaymentLinked(id)) return;
+    this.defaultPayment = id;
+    this._savePayments();
+  },
+
+  _savePayments() {
+    save(KEYS.payments, { list: this.payments, defaultPayment: this.defaultPayment });
+    emit();
+  },
+
+  /* ------------------------------------------------------------------
    * Account profile and settings (Phase 5).
    * ------------------------------------------------------------------ */
 
@@ -351,6 +445,8 @@ export const store = {
     this.voucher = null;
     this.orderOverrides = {};
     this.addresses = [];
+    this.payments = [];
+    this.defaultPayment = null;
     this.profile = null;
     this.prefs = DEFAULT_PREFS();
     this.orders = [];
@@ -387,13 +483,14 @@ export const store = {
   },
 
   addRecentlyViewed(id) {
-    if (!PRODUCT_LOOKUP[id]) return;
+    if (!productById(id)) return;
+    rememberProduct(id);
     this.viewed = [id, ...this.viewed.filter((v) => v !== id)].slice(0, 10);
     save(KEYS.viewed, this.viewed);
   },
 
   recentlyViewed() {
-    return this.viewed.map((id) => PRODUCT_LOOKUP[id]).filter(Boolean);
+    return this.viewed.map((id) => productById(id)).filter(Boolean);
   },
 
   subscribe(fn) {

@@ -9,10 +9,15 @@ Advanced Features → Production.
 ## Phase 1 — scope
 
 - **Design system**: typography scale, buttons, cards, badges, inputs,
-  spacing/radii/shadows and a single brand accent (`brand`, violet) with
-  rose reserved for sale urgency and amber for ratings. Tokens live in
+  spacing/radii/shadows and a single brand accent (`brand`) with rose
+  reserved for sale urgency and amber for ratings. Tokens live in
   `tailwind.config.js`; reusable component classes in
   `styles/tailwind-input.css`.
+- **Color themes**: five switchable background themes (Purple Dream by
+  default, plus Ocean Breeze, Sunset Glow, Fresh Mint and the dark
+  Midnight), driven by CSS variables in `styles/tailwind-input.css` and
+  switched from the header swatches (desktop) or the Profile page (mobile);
+  the choice persists on the device under the `bazario:` prefix.
 - **App shell**: sticky header (logo, search, notification + cart), mobile
   bottom navigation (Home, Categories, Cart, Orders, Profile) and a desktop
   top navigation on wider screens.
@@ -82,6 +87,35 @@ soon") instead of hiding it.
 - **Demo state**: `/?demo=1#/cart` seeds a representative cart once per
   browser, so the populated cart is reachable from a URL for previews and
   checks; `/#/cart` always shows the real cart.
+
+## Reviews, photos and orders
+
+The product page's Reviews section is driven by real data
+(`public/js/reviews.js`; the page only supplies the mount point):
+
+- **Reviews** are stored in the public `reviews` and `review_images`
+  tables. A shopper may review a product only after a verified purchase —
+  a completed order containing it — and one review per purchased line is
+  allowed (a second attempt edits the first). Owners can edit or delete
+  their own review; nobody else can.
+- **Photos** are picked in the composer (up to 5). Each is resized to a
+  1600px longest edge on a canvas and re-encoded, which strips EXIF/GPS,
+  then uploaded through the platform bridge; only the returned URL is
+  stored. Images render with `loading="lazy"`, a tinted placeholder while
+  they load, and a neutral fallback if they fail. Tapping one opens a
+  keyboard- and swipe-navigable lightbox.
+- **Live updates**: the reviews section subscribes to
+  `GET /api/reviews/stream` (SSE) and applies another shopper's posted,
+  edited or deleted review without a reload, reconciling the author's own
+  optimistic card so it never doubles.
+- **Orders** are mirrored into the `orders` / `order_items` tables at
+  place-order time. The client keeps its local order path (so placing
+  works offline); the server write is best-effort and idempotent. Both
+  tables are `staging:private`, and the reviews tables never carry a
+  foreign key into them.
+- Image moderation is a documented hook, off by default: the "Pending
+  review" chip and the pending-row path are in place, but no photo is sent
+  to the platform LLM proxy yet.
 
 ## Run locally
 

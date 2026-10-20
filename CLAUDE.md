@@ -106,6 +106,121 @@ soon" on those entry points rather than hiding them.
 - Client state (favorites, cart, recent searches) persists in localStorage
   under the `bazario:` prefix and is deliberately NOT keyed per user, so an
   offline load without a token never destroys the user's data.
-- The app is light-theme only by design; do not add dark-mode variants.
-- Product artwork is generated SVG (`public/js/icons.js`), never external
-  image URLs and never image bytes in the database.
+- The app ships five switchable background color themes (Purple Dream
+  default, Ocean Breeze, Sunset Glow, Fresh Mint and the dark Midnight).
+  The theme CSS variables and the Midnight dark overrides live in
+  `styles/tailwind-input.css` (one shared place); switching and persistence
+  (`bazario:theme`, Purple Dream fallback) live in `public/js/theme.js`.
+  Sale/discount/countdown elements stay red/orange in every theme. Do not
+  add per-page dark variants outside Midnight's scoped override block.
+- Product cards render a committed product photo (`image` on each catalog
+  record, a file under `public/images/products/`) layered over the generated
+  SVG (`public/js/icons.js`). The SVG stays behind the photo as an instant
+  first paint and the fallback: a record with no `image`, or a photo that
+  fails to load, shows the illustration. Photos are files in the repo (no
+  external image URLs at runtime, no image bytes in the database); set
+  `imageFit: 'contain'` on a record whose photo cropping would ruin. Keep
+  photos free of brand logos or wordmarks.
+- Every catalog record carries an ordered `images` array (photo basenames under
+  `public/images/products/`), built at load time in `public/js/data.js`; entry 0 is
+  the photo the listing card shows and the whole array is the product detail
+  gallery photo order. Describe per-colour photos with `variantImages`
+  (keyed by colour name) and per-product spec rows with `specs`
+  (`{ label, value }`), both optional. `image` is kept as an alias of
+  `images[0]` for back-compat. Add a product by writing these fields (plus
+  `brand`, `art`, `cat`); a record with no photo at all renders a neutral
+  placeholder, so no product needs placeholder art added by hand.
+- The **profile photo** is the one deliberate exception to "generated SVG
+  only": a user-uploaded avatar. It goes to platform file storage through
+  the bridge (`usernode.uploadFile`, see `public/js/profile-photo.js`);
+  this app's `user_profiles` table keeps only the returned `avatar_url` +
+  `avatar_file_id` against the platform user id (`req.user.id`). Never
+  store image bytes in Postgres and never build disk storage. The table is
+  public (a public avatar URL, no sensitive fields); staging starts empty,
+  and the letter placeholder is the real empty state. `GET /api/profile`
+  serves a staging-only demo avatar behind `?demo=1` for the check.
+- **Reviews** live in `public/js/reviews.js`; the product page only supplies
+  the `#pdp-reviews` mount point. `reviews` and `review_images` are public
+  tables (a review and its photos are public content); the `reviews` table
+  carries an opaque `order_ref`/`order_item_ref` and never a foreign key into
+  a private table. A review is allowed only for a verified purchase: one
+  completed `order_items` row for that product under the reviewer's
+  `user_id`, checked server-side; the badge is that same check. One review
+  per purchased line is enforced by a partial unique index, so posting again
+  edits the first row.
+- **Review photos** go through the same platform-file path as the profile
+  avatar: the browser resizes each pick to a 1600px longest edge on a canvas
+  and re-encodes it (which is what strips EXIF, GPS included), then uploads
+  the bytes with `usernode.uploadFile` and persists only the returned URL.
+  The server never decodes an image; it validates the URL shape (https +
+  `/app-files/`, or a data URI in staging only) exactly like the avatar.
+  Uploads are authenticated; guests get the platform's `account_required`
+  sheet. Attach at most 5 photos per review.
+- **Orders** are mirrored into Postgres at place-order time (`orders` /
+  `order_items`, both `staging:private` — a buyer and what they bought).
+  The localStorage order path stays the source of truth for the Orders tab
+  and keeps working offline; the server write is best-effort and idempotent
+  on (user, order number). It exists so a verified-purchase look-up has
+  something to find.
+- Review live updates are an in-process `EventEmitter` fanned out per product
+  over SSE (`GET /api/reviews/stream`). It assumes a single container; the
+  client opens the stream only after the page has settled, because a pending
+  EventSource otherwise stops a headless page from ever reaching
+  network-idle. Image moderation is a documented hook, off by default: the
+  "Pending review" chip and the `status = 'pending'` path are in place, but
+  no image is sent to the platform LLM proxy yet. Turning it on means
+  calling `POST ${USERNODE_LLM_PROXY_URL}/v1/messages` with the app token
+  and the reviewer's forwarded iframe token, keeping a refusal pending, and
+  failing open to published on any proxy error.
+- The **generated marketplace catalog** (about 1,000 products with fictional brands) is the one exception
+  to "photos are files in the repo": it is built by three one-command steps, `npm run generate:products`
+  (offline, deterministic, writes `data/generated/products.json`), `npm run fetch:images` (needs
+  `PEXELS_API_KEY` in the environment; writes `image-mapping.json` and the reports beside it) and
+  `npm run seed:products` (needs `DATABASE_URL`; idempotent batches of 100). `npm run preview:sample` and
+  `npm run verify:catalog` check it without a key. Those products live only in the `products` table
+  (`generated = true`, ids `gx-0001`...), not in `public/js/data.js`; their photos are Pexels CDN URLs
+  with the photographer credit kept in `image_credits`, shown on the product page. The client looks
+  them up through `registerProducts()` / `productById()` in `data.js`. Staging gets 21 fake
+  `staging-demo-gx-*` rows instead (see `seedStagingDemo` in `server.js`). The category and
+  subcategory counts live in `scripts/lib/taxonomy.mjs`.
+- Shipping/expedition options live in `public/js/shipping.js`: a typed
+  `COUNTRIES` config where every country offers at least three couriers
+  (`{ id, name, service, eta, etaDays, price }`) and names a
+  `defaultCourier`. Checkout lets the shopper pick the destination country
+  and one of its couriers; the chosen country + courier are snapshotted onto
+  the placed order so the Orders tab shows them again. Adding a courier or
+  country is a data edit there, not a new rendering branch. Prices are
+  integer cents.
+
+## Marketplace expansion catalog (500 products, `mx-` ids)
+
+- A second generated catalog of about 500 products (ids `mx-0001`...) with 4,300 customer reviews. It lives
+  in **data files**, not UI code: `data/marketplace/products.json`, `reviews.json` and `image-mapping.json`.
+  `src/marketplace.cjs` upserts them into `products` / `reviews` on **every boot in every environment** (it is
+  catalog content, not a staging fixture); edit the JSON (or re-run the steps) and the next boot applies it.
+- Build steps: `npm run mx:generate` (offline, deterministic: products and reviews), `npm run mx:images`
+  (searches Wikimedia Commons, no API key; cached under `.cache/commons`), `npm run mx:validate` (HEAD-checks every
+  photo URL, swaps a failed one for another photo of the same product type, and only as a last resort uses
+  `public/images/placeholders/<category>.svg`; writes `data/marketplace/image-report.json`), `npm run mx:verify`
+  (offline invariants: counts, unique names, discount 10-50%, ratings equal the review average, image rules).
+- A product's `rating` and `reviews` are the average (rounded half up to 0.1) and number of its reviews. Never
+  edit them by hand: `refreshMarketplaceRatings` recomputes them from `reviews` after seeding and after a shopper
+  adds, edits or removes a review of an `mx-` product.
+- Seeded reviews use fake reviewer ids (`seed:<product>:<n>`) and ids from 2,000,000 up. They never touch the
+  verified-purchase check (`order_items`) and never appear as the viewer's own review. `reviews` gained `title`,
+  `helpful`, `seller_reply`, `seller_reply_at`.
+- Photo rules (checked by `mx:verify`): 3-4 distinct photos per product, a photo on at most 2 products, never on two
+  categories. Photos are Wikimedia Commons thumbnails; the product page credits author and licence.
+- Seller cities are the 10 listed in `scripts/generate-marketplace.mjs`; Jakarta is one of the app's five Jakarta
+  districts because the location list has no plain "Jakarta".
+- The product page's rating breakdown is counted from the reviews for `mx-` products (`summary.exact` from
+  `GET /api/products/:id/reviews`); the bundled catalog keeps its own aggregate bars. Review sorting (Newest, Most
+  helpful, Highest rating, Lowest rating) is client-side over the loaded list. Home loads 24 products per batch.
+
+## Daily Flash Sale
+
+- The Home Flash Sale row is a persisted daily campaign, not `flash: true` on the bundled catalog (that column is now legacy). `src/flash-sale.cjs` owns the tables `flash_campaigns` (one per marketplace day, unique `date_key`) and `flash_campaign_items` (primary key `(campaign_id, product_id)`, so no duplicates; flash price, original price, flash stock and sold are frozen at creation). The first request of a day creates it; a product can also be assigned by hand with an insert. Both tables are public.
+- The rules (date key, timezone, eligibility, selection) live once in `public/js/flash-sale-core.js`, shared by the server and the offline demo fallback (`public/js/flash-demo.js`, used only when `GET /api/flash-sale` fails; delete it when no longer wanted). Selection: order eligible products by `hash32(date_key|id)`, take 12, and use the previous day's picks only to top up a short pool.
+- The marketplace timezone is the `MARKETPLACE_TIMEZONE` setting (default `Asia/Jakarta`); the day, the label date and the countdown end all follow it. "Now" comes from `req.now` (staging preview moments) on the server and from the server clock on the client.
+- `products.active` and `products.flash_eligible` (default true) are the manual switches. Only products with a positive `stock` and `orig > price` qualify, which in practice means the generated (`gx-`) and expansion (`mx-`) catalogs, not the bundled `p`/`r` ones.
+- Checkout calls `POST /api/flash-sale/purchase` before payment: it checks the campaign is running, the price and the stock, and reserves the units in one transaction.

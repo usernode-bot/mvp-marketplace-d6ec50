@@ -13,8 +13,10 @@
  * same term twice) by re-dispatching the hashchange event.
  */
 
+import { applyHomeRoute } from './home.js';
 import { renderBrowse } from './browse.js';
 import { renderProduct } from './product.js';
+import { closeStream, unmountReviews } from './reviews.js';
 import { renderCategoriesView } from './views.js';
 import { renderOrdersView } from './orders.js';
 import { renderProfileView } from './profile.js';
@@ -31,16 +33,16 @@ export function parseRoute() {
   const query = new URLSearchParams(qIndex === -1 ? '' : raw.slice(qIndex + 1));
   const seg = path.split('/').filter(Boolean);
   if (seg[0] === 'category' && seg[1]) {
-    return { view: 'browse', mode: 'category', id: seg[1], sub: query.get('sub') || '' };
+    return { view: 'browse', mode: 'category', id: seg[1], sub: query.get('sub') || '', query };
   }
   if (seg[0] === 'search') {
-    return { view: 'browse', mode: 'search', q: query.get('q') || '' };
+    return { view: 'browse', mode: 'search', q: query.get('q') || '', query };
   }
   if (seg[0] === 'product' && seg[1]) {
     return { view: 'product', id: seg[1] };
   }
-  if (TABS.includes(seg[0])) return { view: seg[0] };
-  return { view: 'home' };
+  if (TABS.includes(seg[0])) return { view: seg[0], query };
+  return { view: 'home', query };
 }
 
 export function goToHash(hash) {
@@ -52,6 +54,13 @@ export function goToHash(hash) {
 }
 
 function showView(name) {
+  // Leaving the product screen ends its live updates and clears the mounted
+  // review state, so a return visit starts clean. A re-render of the SAME
+  // product goes through renderProduct again, which re-mounts the section.
+  if (name !== 'product') {
+    closeStream();
+    unmountReviews();
+  }
   VIEW_NAMES.forEach((v) => {
     const el = document.querySelector('[data-view="' + v + '"]');
     if (el) el.classList.toggle('hidden', v !== name);
@@ -70,6 +79,7 @@ function showView(name) {
   const bottomNav = document.getElementById('bottom-nav');
   if (bottomNav) bottomNav.classList.toggle('hidden', name === 'product');
 
+  if (name === 'home') applyHomeRoute(parseRoute());
   if (name === 'categories') renderCategoriesView();
   if (name === 'cart') renderCartView();
   if (name === 'checkout') renderCheckoutView();

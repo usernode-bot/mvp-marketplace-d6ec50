@@ -15,11 +15,15 @@ import { hydrateIcons, icon } from './icons.js';
 import { productById } from './data.js';
 import { store } from './store.js';
 import { toast } from './ui.js';
-import { clearResults, initHome, panelRows, runBannerAction, submitSearch } from './home.js';
+import { initI18n, t } from './i18n.js';
+import { initTheme, setTheme } from './theme.js';
+import { clearResults, initHome, panelRows, runBannerAction, submitSearch, updateFlashNav } from './home.js';
 import { initOrders } from './orders.js';
-import { renderProfileView } from './profile.js';
+import { renderProfileView, seedDemoAccount } from './profile.js';
+import { initProfilePhoto, loadProfilePhoto } from './profile-photo.js';
 import { initAddresses } from './addresses.js';
 import { initSettings } from './settings.js';
+import { initPayment } from './payment.js';
 import { applyVoucherCode, initCart, removeCartItem, renderCartView } from './cart.js';
 import { goToHash, parseRoute, renderRoute } from './router.js';
 
@@ -48,13 +52,19 @@ function reopenSearchPanel(box, input) {
 }
 
 function handleClick(e) {
-  const target = e.target.closest('[data-fav], [data-add], [data-category], [data-nav], [data-route], [data-banner-action], [data-recent], [data-recent-remove], [data-recent-clear], [data-suggest], [data-search-suggest], [data-soon], [data-cart-plus], [data-cart-minus], [data-cart-remove], [data-cart-select], [data-cart-select-all], [data-cart-save], [data-saved-move], [data-saved-remove], [data-voucher-pick], [data-voucher-remove], [data-results-clear], [data-back], [data-product]');
+  const target = e.target.closest('[data-fav], [data-add], [data-category], [data-nav], [data-route], [data-banner-action], [data-recent], [data-recent-remove], [data-recent-clear], [data-suggest], [data-search-suggest], [data-soon], [data-cart-plus], [data-cart-minus], [data-cart-remove], [data-cart-select], [data-cart-select-all], [data-cart-save], [data-saved-move], [data-saved-remove], [data-voucher-pick], [data-voucher-remove], [data-results-clear], [data-back], [data-theme-swatch], [data-product]');
   if (!target) return;
+
+  const themeId = target.getAttribute('data-theme-swatch');
+  if (themeId) {
+    setTheme(themeId);
+    return;
+  }
 
   const favId = target.getAttribute('data-fav');
   if (favId) {
     const on = store.toggleFavorite(favId);
-    toast(on ? 'Added to favorites' : 'Removed from favorites');
+    toast(t(on ? 'app.favoriteAdded' : 'app.favoriteRemoved'));
     document.querySelectorAll('[data-fav="' + favId + '"]').forEach((btn) => {
       btn.innerHTML = icon(on ? 'heartFilled' : 'heart', 'h-4 w-4');
       btn.classList.toggle('fav-btn-on', on);
@@ -68,14 +78,14 @@ function handleClick(e) {
   if (addId) {
     const product = productById(addId);
     if (product && product.oos) {
-      toast('This item is sold out');
+      toast(t('app.soldOutToast'));
       return;
     }
     store.addToCart(addId);
-    toast('Added to cart');
+    toast(t('app.addedToCart'));
     // Brief "Added" confirmation on the button that was tapped.
     const original = target.innerHTML;
-    target.innerHTML = icon('check', 'h-4 w-4') + '<span class="hidden lg:inline">Added</span>';
+    target.innerHTML = icon('check', 'h-4 w-4') + '<span class="hidden lg:inline">' + t('app.added') + '</span>';
     target.disabled = true;
     setTimeout(() => {
       target.innerHTML = original;
@@ -148,7 +158,7 @@ function handleClick(e) {
   }
 
   if (target.hasAttribute('data-soon')) {
-    toast('Coming in a later phase');
+    toast(t('common.comingSoon'));
     return;
   }
 
@@ -187,27 +197,27 @@ function handleClick(e) {
   const save = target.getAttribute('data-cart-save');
   if (save) {
     store.saveForLater(save);
-    toast('Saved for later');
+    toast(t('app.savedForLater'));
     return;
   }
 
   const move = target.getAttribute('data-saved-move');
   if (move) {
     store.moveToCart(move);
-    toast('Moved to cart');
+    toast(t('app.movedToCart'));
     return;
   }
 
   const savedRemove = target.getAttribute('data-saved-remove');
   if (savedRemove) {
     store.removeSaved(savedRemove);
-    toast('Removed from saved items');
+    toast(t('app.removedSaved'));
     return;
   }
 
   if (target.hasAttribute('data-voucher-remove')) {
     store.clearVoucher();
-    toast('Voucher removed');
+    toast(t('app.voucherRemoved'));
     return;
   }
 
@@ -237,25 +247,46 @@ function handleClick(e) {
 /* ------------------------------------------------------------------ */
 
 function boot() {
+  // Apply the saved language to the static markup before first paint of the
+  // routed view; i18n.js is the single owner of the active language.
+  initI18n();
   hydrateIcons();
 
   document.addEventListener('click', handleClick);
+  initTheme();
   initCart();
   initOrders();
   initAddresses();
   initSettings();
+  initPayment();
+  initProfilePhoto();
 
-  window.addEventListener('hashchange', renderRoute);
+  window.addEventListener('hashchange', () => {
+    renderRoute();
+    // The Flash Sale row's scroll offset and visible width change when the
+    // home view is shown again, so refresh the arrow buttons' state.
+    updateFlashNav();
+  });
+
+  // Changing the language (Settings, i18n.setLocale) re-renders whatever
+  // screen is showing; static markup was already retranslated by setLocale.
+  window.addEventListener('localechange', () => {
+    renderRoute();
+    updateFlashNav();
+  });
 
   store.subscribe(updateBadges);
   store.subscribe(() => {
     if (parseRoute().view === 'cart') renderCartView();
   });
 
-  // Demo seed for proposal checks and staging screenshots: ?demo=checkout
+  // Demo seed for proposal checks and staging screenshots. ?demo=1 fills
+  // the account (wishlist, addresses, payment methods); ?demo=checkout also
   // fills the cart with a few mock items, in memory only (they persist only
   // if the shopper then changes something). Plain routes never hit this.
-  if (new URLSearchParams(window.location.search).get('demo') === 'checkout') {
+  const demoParam = new URLSearchParams(window.location.search).get('demo');
+  if (demoParam) seedDemoAccount();
+  if (demoParam === 'checkout') {
     store.cart = ['p01|1', 'p14|2', 'p26|1'].map((spec) => {
       const [id, qty] = spec.split('|');
       return { id, qty: Number(qty), color: '', size: '', key: id + '||', selected: true };
@@ -266,6 +297,9 @@ function boot() {
 
   initHome();
   renderRoute();
+  // Hydrate the profile photo in the background; the letter fallback shows
+  // until it lands, and the profile view re-renders when it does.
+  loadProfilePhoto();
 
   // Shareable deep links: /?q=... opens search results, /?cat=... opens a
   // category page. They become plain hash routes so the address bar carries

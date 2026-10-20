@@ -5,18 +5,34 @@
  */
 
 import { icon } from './icons.js';
-import { BANNERS, CATEGORIES, PRODUCTS, TRENDING, discountPct } from './data.js';
+import { BANNERS, CATEGORIES, PRODUCTS, TRENDING, discountPct, productById, registerProducts } from './data.js';
 import { store } from './store.js';
 import {
   emptyState,
   fmtCount,
   fmtPrice,
   productCard,
+  scrollBehavior,
   skeletonBanner,
   skeletonCard,
   skeletonCategoryTile,
+  syncProductGrid,
+  toast,
+  categoryName,
 } from './ui.js';
+import { t, has, intlLocale } from './i18n.js';
+import { flashSnapshot, subscribeFlash, loadFlashSale, expireIfDue, msUntilEnd } from './flash-sale.js';
 import { goToHash } from './router.js';
+import { createFilterService, parseFilterParams, filterParams, hasActiveFilters } from './filters.js';
+import { fetchCatalogSummary, fetchProducts } from './api.js';
+import { localProductPage } from './product-query.js';
+import {
+  activeFilterChipsHtml,
+  bindFilterControls,
+  filterBarHtml,
+  resultCountHtml,
+  updateFilterBar,
+} from './filter-ui.js';
 
 /* Escape a user-typed string for use inside markup and attribute values
  * (recent searches and typed queries end up in innerHTML-built panels). */
@@ -56,18 +72,25 @@ const TILE_HOVER = 'transition duration-200 hover:scale-105 hover:shadow-card-lg
 /* Banners                                                             */
 /* ------------------------------------------------------------------ */
 
+/* Banner copy is UI vocabulary keyed by banner id (data.js keeps the English
+ * source text, which is the fallback when a key is missing). */
+function bannerText(b, field) {
+  const key = 'home.banner.' + b.id + '.' + field;
+  return has(key) ? t(key) : b[field];
+}
+
 function bannerHtml(b, i) {
   return '<article class="banner relative flex h-40 w-[86%] shrink-0 snap-center flex-col justify-between overflow-hidden rounded-2xl p-4 sm:h-48 sm:w-96 sm:p-5 lg:w-[26rem] '
     + BANNER_TONES[b.tone] + '" data-banner="' + b.id + '">'
     + '<span class="pointer-events-none absolute -right-6 -top-10 h-36 w-36 rounded-full bg-white/15"></span>'
     + '<span class="pointer-events-none absolute -bottom-14 right-16 h-28 w-28 rounded-full bg-white/10"></span>'
     + '<span class="pointer-events-none absolute bottom-2 right-3 opacity-25">' + icon(b.icon, 'h-20 w-20') + '</span>'
-    + '<span class="badge ' + (b.tone === 'slate' ? 'bg-white/15 text-white' : 'bg-white/20 text-white') + '">' + icon('gift', 'h-3 w-3') + 'Limited time</span>'
+    + '<span class="badge ' + (b.tone === 'slate' ? 'bg-white/15 text-white' : 'bg-white/20 text-white') + '">' + icon('gift', 'h-3 w-3') + esc(t('home.limitedTime')) + '</span>'
     + '<div class="relative max-w-[75%]">'
-    + '<h3 class="text-lg font-bold leading-tight sm:text-xl">' + b.title + '</h3>'
-    + '<p class="mt-1 text-xs leading-snug text-white/85 sm:text-sm">' + b.subtitle + '</p>'
+    + '<h3 class="text-lg font-bold leading-tight sm:text-xl">' + esc(bannerText(b, 'title')) + '</h3>'
+    + '<p class="mt-1 text-xs leading-snug text-white/85 sm:text-sm">' + esc(bannerText(b, 'subtitle')) + '</p>'
     + '</div>'
-    + '<div class="relative"><button type="button" data-banner-action="' + i + '" class="inline-flex h-8 items-center gap-1 rounded-full bg-white px-3.5 text-xs font-semibold text-zinc-900 transition-colors hover:bg-zinc-100">' + b.cta + icon('chevronRight', 'h-3.5 w-3.5') + '</button></div>'
+    + '<div class="relative"><button type="button" data-banner-action="' + i + '" class="inline-flex h-8 items-center gap-1 rounded-full bg-white px-3.5 text-xs font-semibold text-zinc-900 transition-colors hover:bg-zinc-100">' + esc(bannerText(b, 'cta')) + icon('chevronRight', 'h-3.5 w-3.5') + '</button></div>'
     + '</article>';
 }
 
@@ -83,11 +106,11 @@ function tileLink(name, t) {
 }
 
 function categoryTile(c) {
-  return tileLink(c.name, CATEGORY_TILES[c.id]);
+  return tileLink(esc(categoryName(c)), CATEGORY_TILES[c.id]);
 }
 
 function moreTile() {
-  return tileLink('More', CATEGORY_TILES.more);
+  return tileLink(esc(t('home.more')), CATEGORY_TILES.more);
 }
 
 /* ------------------------------------------------------------------ */
@@ -95,12 +118,7 @@ function moreTile() {
 /* ------------------------------------------------------------------ */
 
 let timerHandle = null;
-
-function flashDeadline() {
-  const t = new Date();
-  t.setHours(24, 0, 0, 0); // next local midnight
-  return t.getTime();
-}
+let retryHandle = null;
 
 function renderTimer(msLeft) {
   const el = document.getElementById('flash-timer');
@@ -112,14 +130,137 @@ function renderTimer(msLeft) {
   el.innerHTML = '<span class="chip">' + hh + '</span><span class="text-xs font-bold text-zinc-400">:</span>'
     + '<span class="chip">' + mm + '</span><span class="text-xs font-bold text-zinc-400">:</span>'
     + '<span class="chip">' + ss + '</span>';
+  el.setAttribute('data-ms-left', String(msLeft));
+}
+
+/* The countdown runs to the campaign's end instant, read from the server's
+ * clock on every tick, so re-rendering the page or the row never restarts it.
+ * When it reaches zero the campaign is marked ended (purchases stop) and the
+ * next campaign is requested, retrying every 15 seconds until one is there. */
+function tick() {
+  const snap = flashSnapshot();
+  renderTimer(snap.campaign ? msUntilEnd() : 0);
+  if (expireIfDue()) scheduleNextCampaign(0);
+}
+
+function scheduleNextCampaign(delay) {
+  clearTimeout(retryHandle);
+  retryHandle = setTimeout(async () => {
+    await loadFlashSale();
+    if (flashSnapshot().status !== 'active') scheduleNextCampaign(15000);
+  }, delay);
 }
 
 function startCountdown() {
   if (timerHandle) return;
-  const deadline = flashDeadline();
-  const tick = () => renderTimer(deadline - Date.now());
   tick();
   timerHandle = setInterval(tick, 1000);
+}
+
+/* "Today's Flash Sale" label with the campaign date, in the marketplace
+ * timezone's calendar day (not the device's). */
+function flashLabelText(campaign) {
+  if (!campaign) return '';
+  const [y, m, d] = campaign.dateKey.split('-').map(Number);
+  const date = new Intl.DateTimeFormat(intlLocale(), { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' })
+    .format(new Date(Date.UTC(y, m - 1, d, 12)));
+  return t('flash.today') + ' \u00b7 ' + date;
+}
+
+function nextStartLabel(campaign) {
+  if (!campaign) return '';
+  return new Intl.DateTimeFormat(intlLocale(), { hour: 'numeric', minute: '2-digit', timeZone: campaign.timezone })
+    .format(new Date(campaign.endsAt));
+}
+
+function flashMessage(title, body) {
+  return '<div class="w-full rounded-xl bg-zinc-50 p-4 text-center" data-flash-state>'
+    + '<div class="text-sm font-semibold text-zinc-800">' + esc(title) + '</div>'
+    + '<div class="mt-1 text-xs text-zinc-500">' + esc(body) + '</div></div>';
+}
+
+/* The Flash Sale row, label and timer for the current campaign state. */
+function renderFlash() {
+  const row = document.getElementById('flash-row');
+  if (!row) return;
+  const snap = flashSnapshot();
+  const label = document.getElementById('flash-label');
+  if (label) {
+    label.textContent = flashLabelText(snap.campaign);
+    label.classList.toggle('hidden', !snap.campaign);
+  }
+  const keep = row.scrollLeft;
+  if (snap.status === 'loading') {
+    row.innerHTML = Array.from({ length: 5 }, () =>
+      '<div class="w-40 shrink-0 snap-start sm:w-44">' + skeletonCard(true) + '</div>').join('');
+  } else if (snap.status === 'active') {
+    row.innerHTML = snap.items.map((p) =>
+      '<div class="w-40 shrink-0 snap-start sm:w-44">' + productCard(p, { compact: true }) + '</div>').join('');
+  } else if (snap.status === 'ended') {
+    row.innerHTML = flashMessage(t('flash.endedTitle'), t('flash.endedBody', { time: nextStartLabel(snap.campaign) }));
+  } else {
+    row.innerHTML = flashMessage(t('flash.emptyTitle'), t('flash.emptyBody'));
+  }
+  row.scrollLeft = keep;
+  tick();
+  updateFlashNav();
+}
+
+/* ------------------------------------------------------------------ */
+/* Flash Sale scroll arrows                                            */
+/* ------------------------------------------------------------------ */
+
+/* Cards to nudge per click. The step is capped at the row's visible width
+ * so a wide desktop row does not jump far more than a screenful. */
+const FLASH_CARDS_PER_CLICK = 3;
+const FLASH_GAP_PX = 12; // matches the row's gap-3
+
+/* Show the button that can still scroll, hide the one that cannot, and
+ * disable it for keyboard/screen-reader users. Runs on every scroll (manual
+ * swipe/trackpad/drag included) and on resize. */
+export function updateFlashNav() {
+  const row = document.getElementById('flash-row');
+  const prev = document.getElementById('flash-prev');
+  const next = document.getElementById('flash-next');
+  if (!row || !prev || !next) return;
+
+  const maxScroll = row.scrollWidth - row.clientWidth;
+  const atStart = row.scrollLeft <= 1;
+  const atEnd = row.scrollLeft >= maxScroll - 1;
+
+  prev.classList.toggle('hidden', atStart);
+  prev.disabled = atStart || maxScroll <= 1;
+  next.classList.toggle('hidden', atEnd);
+  next.disabled = atEnd || maxScroll <= 1;
+}
+
+function flashStep(row) {
+  const card = row.firstElementChild;
+  const cardW = card ? card.offsetWidth : 0;
+  const byCards = (cardW + FLASH_GAP_PX) * FLASH_CARDS_PER_CLICK;
+  return byCards > 0 ? Math.min(byCards, row.clientWidth) : row.clientWidth;
+}
+
+export function initFlashNav() {
+  const row = document.getElementById('flash-row');
+  const prev = document.getElementById('flash-prev');
+  const next = document.getElementById('flash-next');
+  if (!row || !prev || !next) return;
+
+  // One layout read per frame however many scroll/resize events fire.
+  let scheduled = false;
+  const schedule = () => {
+    if (scheduled) return;
+    scheduled = true;
+    requestAnimationFrame(() => { scheduled = false; updateFlashNav(); });
+  };
+  row.addEventListener('scroll', schedule, { passive: true });
+  window.addEventListener('resize', schedule, { passive: true });
+
+  prev.addEventListener('click', () => row.scrollBy({ left: -flashStep(row), behavior: scrollBehavior() }));
+  next.addEventListener('click', () => row.scrollBy({ left: flashStep(row), behavior: scrollBehavior() }));
+
+  updateFlashNav();
 }
 
 /* ------------------------------------------------------------------ */
@@ -130,17 +271,39 @@ function startCountdown() {
  * from router.js). The home results section now only serves the "Big deals"
  * banner CTA. */
 
+/* The shelves from GET /api/catalog/summary, once loaded. */
+let shelvesData = null;
+
 function productsForFilter() {
-  return PRODUCTS.filter((p) => discountPct(p) >= 30);
+  const bundled = PRODUCTS.filter((p) => discountPct(p) >= 30);
+  // Plus the deepest discounts among the generated marketplace products.
+  const deals = shelvesData ? shelvesData.deals.filter((p) => p.generated && discountPct(p) >= 30) : [];
+  return bundled.concat(deals);
 }
+
+/* Whether the Big deals results view is on screen (so a language change can
+ * redraw it in place). */
+let resultsOpen = false;
 
 function openResults() {
   closePanels();
+  resultsOpen = true;
+  renderResults();
+
+  // Swap the home sections for the results view.
+  ['promo', 'categories', 'flash', 'featured', 'trending', 'deals', 'recommended'].forEach((id) => {
+    const el = document.getElementById('section-' + id);
+    if (el) el.classList.add('hidden');
+  });
+  document.getElementById('results-section').classList.remove('hidden');
+  window.scrollTo({ top: 0 });
+}
+
+function renderResults() {
   const products = productsForFilter();
-  const section = document.getElementById('results-section');
-  document.getElementById('results-title').textContent = 'Big deals';
+  document.getElementById('results-title').textContent = t('home.bigDeals');
   const count = document.getElementById('results-count');
-  count.textContent = products.length + (products.length === 1 ? ' item' : ' items');
+  count.textContent = t('home.items', { count: products.length });
 
   const grid = document.getElementById('results-grid');
   const empty = document.getElementById('results-empty');
@@ -154,33 +317,32 @@ function openResults() {
     grid.classList.add('hidden');
     empty.classList.remove('hidden');
     const suggestions = TRENDING.slice(0, 4)
-      .map((t) => '<button type="button" data-search-suggest="' + t + '" class="badge-soft h-8 px-3 text-xs hover:bg-zinc-200">' + t + '</button>')
+      .map((term) => '<button type="button" data-search-suggest="' + esc(term) + '" class="badge-soft h-8 px-3 text-xs hover:bg-zinc-200">' + esc(term) + '</button>')
       .join('');
     empty.innerHTML = emptyState({
       icon: 'search',
-      title: 'No results found',
-      body: 'No discounted products right now. Try a trending search instead.',
-      actionLabel: 'Clear search',
+      title: esc(t('home.noResults')),
+      body: esc(t('home.noDeals')),
+      actionLabel: esc(t('home.clearSearch')),
       actionAttr: 'data-results-clear',
     })
       // Suggestion chips below the empty-state action.
       + '<div class="-mt-6 flex flex-wrap justify-center gap-2 pb-8">' + suggestions + '</div>';
   }
-
-  // Swap the home sections for the results view.
-  ['promo', 'categories', 'flash', 'recommended'].forEach((id) => {
-    const el = document.getElementById('section-' + id);
-    if (el) el.classList.add('hidden');
-  });
-  section.classList.remove('hidden');
-  window.scrollTo({ top: 0 });
 }
 
 export function clearResults() {
+  resultsOpen = false;
   document.getElementById('results-section').classList.add('hidden');
-  ['promo', 'categories', 'flash', 'recommended'].forEach((id) => {
+  ['promo', 'categories', 'flash', 'featured', 'trending', 'deals', 'recommended'].forEach((id) => {
     const el = document.getElementById('section-' + id);
     if (el) el.classList.remove('hidden');
+  });
+  // A shelf with nothing in it (the request failed or is still pending) stays hidden.
+  ['featured', 'trending', 'deals'].forEach((id) => {
+    const row = document.getElementById(id + '-row');
+    const el = document.getElementById('section-' + id);
+    if (el && row && !row.children.length) el.classList.add('hidden');
   });
 }
 
@@ -196,25 +358,25 @@ function panelRows(q) {
   const term = q.trim().toLowerCase();
   if (!term) {
     const recent = store.recent.length
-      ? '<div class="flex items-center justify-between px-1 pb-1"><span class="text-xs font-semibold uppercase tracking-wide text-zinc-400">Recent searches</span>'
-        + '<button type="button" data-recent-clear class="text-xs font-medium text-brand-700 hover:underline">Clear all</button></div>'
+      ? '<div class="flex items-center justify-between px-1 pb-1"><span class="text-xs font-semibold uppercase tracking-wide text-zinc-400">' + esc(t('home.recentSearches')) + '</span>'
+        + '<button type="button" data-recent-clear class="text-xs font-medium text-brand-700 hover:underline">' + esc(t('home.clearAll')) + '</button></div>'
         + '<div class="flex flex-wrap gap-2 pb-1">'
         + store.recent.map((r) => '<span class="inline-flex items-center gap-1 rounded-full bg-zinc-100 pl-3 pr-1.5 text-xs font-medium text-zinc-700">'
           + '<button type="button" data-recent="' + esc(r) + '" class="py-1.5 hover:text-zinc-900">' + esc(r) + '</button>'
-          + '<button type="button" data-recent-remove="' + esc(r) + '" aria-label="Remove ' + esc(r) + ' from recent searches" class="flex h-4 w-4 items-center justify-center rounded-full text-zinc-400 hover:bg-zinc-200 hover:text-zinc-600">' + icon('x', 'h-3 w-3') + '</button>'
+          + '<button type="button" data-recent-remove="' + esc(r) + '" aria-label="' + esc(t('home.removeRecent', { term: r })) + '" class="flex h-4 w-4 items-center justify-center rounded-full text-zinc-400 hover:bg-zinc-200 hover:text-zinc-600">' + icon('x', 'h-3 w-3') + '</button>'
           + '</span>').join('')
         + '</div>'
       : '';
-    const trending = '<div class="px-1 pb-1 pt-1 text-xs font-semibold uppercase tracking-wide text-zinc-400">Trending searches</div>'
+    const trending = '<div class="px-1 pb-1 pt-1 text-xs font-semibold uppercase tracking-wide text-zinc-400">' + esc(t('home.trendingSearches')) + '</div>'
       + '<div class="flex flex-wrap gap-2">'
-      + TRENDING.map((t) => '<button type="button" data-recent="' + t + '" class="inline-flex items-center gap-1.5 rounded-full bg-zinc-100 px-3 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-200">' + icon('search', 'h-3 w-3') + t + '</button>').join('')
+      + TRENDING.map((term) => '<button type="button" data-recent="' + esc(term) + '" class="inline-flex items-center gap-1.5 rounded-full bg-zinc-100 px-3 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-200">' + icon('search', 'h-3 w-3') + esc(term) + '</button>').join('')
       + '</div>';
-    if (!recent && !trending) return '<p class="p-2 text-sm text-zinc-400">Start typing to search.</p>';
+    if (!recent && !trending) return '<p class="p-2 text-sm text-zinc-400">' + esc(t('home.startTyping')) + '</p>';
     return recent + trending;
   }
   const matches = PRODUCTS.filter((p) => p.name.toLowerCase().includes(term)).slice(0, 6);
   if (!matches.length) {
-    return '<p class="p-2 text-sm text-zinc-500">No matches for "' + esc(q) + '". Press Enter to search anyway.</p>';
+    return '<p class="p-2 text-sm text-zinc-500">' + esc(t('home.noMatches', { q })) + '</p>';
   }
   return matches.map((p) => '<button type="button" data-suggest="' + p.name + '" class="flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-left text-sm text-zinc-700 hover:bg-zinc-50">'
     + '<span class="text-zinc-400">' + icon('search', 'h-4 w-4') + '</span>'
@@ -293,7 +455,7 @@ function goTo(i) {
   const n = carouselCount();
   if (!track || !n) return;
   carousel.index = ((i % n) + n) % n;
-  track.scrollTo({ left: track.children[carousel.index].offsetLeft, behavior: 'smooth' });
+  track.scrollTo({ left: track.children[carousel.index].offsetLeft, behavior: scrollBehavior() });
   setDots();
 }
 
@@ -301,10 +463,12 @@ function initCarousel() {
   const track = document.getElementById('promo-carousel');
   if (!track) return;
 
-  let raf = null;
+  let scheduled = false;
   track.addEventListener('scroll', () => {
-    if (raf) cancelAnimationFrame(raf);
-    raf = requestAnimationFrame(() => {
+    if (scheduled) return;
+    scheduled = true;
+    requestAnimationFrame(() => {
+      scheduled = false;
       const n = carouselCount();
       const mid = track.scrollLeft + track.clientWidth / 2;
       let nearest = 0;
@@ -340,34 +504,247 @@ function initCarousel() {
 }
 
 /* ------------------------------------------------------------------ */
+/* Recommended grid + filter bar                                       */
+/* ------------------------------------------------------------------ */
+
+/* Products added per "Load more" click. The list itself is paged by the
+ * server; the grid renders one page and grows by one page. */
+const REC_PAGE = 24;
+
+let recommendedSection = null;
+
+/* The hash for the current filter set on the home route. */
+function recommendedHash(f) {
+  const qs = filterParams(f).toString();
+  return '#/home' + (qs ? '?' + qs : '');
+}
+
+function renderRecommendedLoading() {
+  const grid = document.getElementById('recommended-grid');
+  const more = document.getElementById('recommended-more');
+  if (grid) grid.innerHTML = Array.from({ length: REC_PAGE }, () => skeletonCard()).join('');
+  if (more) more.innerHTML = '';
+  const empty = document.getElementById('recommended-empty');
+  if (empty) { empty.classList.add('hidden'); empty.innerHTML = ''; }
+}
+
+/* One render per state change. Keeps the toolbar, the chips, the count, the
+ * grid, the empty state and Load more all in step with the service. */
+function renderRecommended() {
+  const s = recommendedService;
+  const grid = document.getElementById('recommended-grid');
+  const more = document.getElementById('recommended-more');
+  const empty = document.getElementById('recommended-empty');
+  const chips = document.getElementById('recommended-chips');
+  if (!s || !grid) return;
+
+  if (recommendedSection) updateFilterBar(recommendedSection, s.filters);
+  if (chips) {
+    chips.innerHTML = resultCountHtml(s.total) + activeFilterChipsHtml(s.filters);
+  }
+
+  if (s.loading && !s.items.length && !s.error) {
+    renderRecommendedLoading();
+    return;
+  }
+
+  if (s.items.length) {
+    syncProductGrid(grid, s.items, (p) => productCard(p));
+    grid.classList.remove('hidden');
+    if (empty) { empty.classList.add('hidden'); empty.innerHTML = ''; }
+    if (more) {
+      const remaining = s.total - s.items.length;
+      more.innerHTML = remaining > 0
+        ? '<button type="button" id="recommended-more-btn" class="btn-outline btn-sm"'
+          + (s.loading ? ' disabled' : '') + '>' + esc(t('home.loadMore')) + '<span class="text-zinc-400">(' + remaining + ')</span></button>'
+        : '';
+    }
+  } else {
+    grid.innerHTML = '';
+    grid.classList.add('hidden');
+    if (more) more.innerHTML = '';
+    if (empty) {
+      empty.innerHTML = emptyState({
+        icon: 'search',
+        title: esc(t('home.noProducts')),
+        body: esc(hasActiveFilters(s.filters) ? t('home.tryFilters') : t('home.nothingNow')),
+        actionLabel: hasActiveFilters(s.filters) ? esc(t('home.clearAll')) : '',
+        actionAttr: 'data-filter-clear',
+      });
+      empty.classList.remove('hidden');
+    }
+  }
+}
+
+function bindRecommended() {
+  const more = document.getElementById('recommended-more');
+  if (!more) return;
+  more.addEventListener('click', (e) => {
+    if (!e.target.closest('#recommended-more-btn')) return;
+    if (recommendedService) recommendedService.loadMore();
+  });
+}
+
+/* The Recommended list. GET /api/products is the real path; when it cannot
+ * be reached (a container restart, a standalone run with no database) the
+ * bundled catalog answers the same filters in memory, so a filtered home
+ * still renders. The server is retried on the next filter change. */
+async function recommendedFetcher(params) {
+  const res = await fetchProducts(params);
+  if (res.ok && res.data && Array.isArray(res.data.items)) return res;
+  const fallback = localProductPage(params, { base: 'recommended' });
+  return { ok: true, status: res.status, data: fallback };
+}
+
+/* Feed the home route's filter params to the service. Called by the router
+ * every time the home tab renders, so a reload, a shared link or a back
+ * button all reconstruct the same filtered list. */
+export function applyHomeRoute(route) {
+  if (!recommendedService) return;
+  const query = (route && route.query) || new URLSearchParams();
+  recommendedService.adoptRoute(parseFilterParams(query));
+}
+
+/* The home grid's filter service. It pages the catalog from GET /api/products
+ * (with the bundled catalog as an offline fallback) and keeps its state in
+ * the home route's hash query. */
+const recommendedService = createFilterService({
+  fetcher: recommendedFetcher,
+  buildHash: recommendedHash,
+  pushHash: (hash) => goToHash(hash),
+  extraParams: () => ({}),
+  limit: REC_PAGE,
+  onError: (msg) => toast(msg || t('filters.loadError')),
+});
+
+/* ------------------------------------------------------------------ */
+/* Featured, Trending and Deals shelves                                */
+/* ------------------------------------------------------------------ */
+
+/* All three rows come from one request that computes them in SQL from the
+ * live products table (best rating weighted by reviews, sales per day since
+ * listing, deepest discounts). A bundled product is drawn from its bundled
+ * record (richer than a table row); a failed request leaves the shelves
+ * hidden, since there is nothing honest to show in them. */
+async function loadShelves() {
+  const res = await fetchCatalogSummary();
+  if (!res.ok || !res.data) return;
+  shelvesData = res.data;
+  renderShelves(true);
+}
+
+/* Draw the three shelf rows from the loaded summary. `reveal` un-hides a
+ * shelf the first time it has rows; a redraw (language change) keeps each
+ * row's horizontal scroll and leaves hidden shelves hidden. */
+function renderShelves(reveal) {
+  if (!shelvesData) return;
+  const data = shelvesData;
+  [['featured', data.featured], ['trending', data.trending], ['deals', data.deals]].forEach(([id, rows]) => {
+    const section = document.getElementById('section-' + id);
+    const row = document.getElementById(id + '-row');
+    if (!section || !row || !rows.length) return;
+    const list = rows.map((r) => productById(r.id) || r);
+    registerProducts(list);
+    const left = row.scrollLeft;
+    row.innerHTML = list.map((p) =>
+      '<div class="w-40 shrink-0 snap-start sm:w-44">' + productCard(p, { compact: false }) + '</div>').join('');
+    row.scrollLeft = left;
+    if (reveal) section.classList.remove('hidden');
+  });
+}
+
+/* ------------------------------------------------------------------ */
 /* Boot                                                                */
 /* ------------------------------------------------------------------ */
+
+/* The banners, category tiles and Flash Sale row. Drawn once after the
+ * skeleton delay and again, in place, when the language changes. */
+let staticReady = false;
+
+function renderStaticSections() {
+  document.getElementById('promo-carousel').innerHTML = BANNERS.map(bannerHtml).join('');
+  document.getElementById('category-grid').innerHTML =
+    CATEGORIES.map(categoryTile).join('') + moreTile();
+  renderFlash();
+}
+
+/* Language changed: redraw every language-dependent piece of the home page
+ * in place, keeping scroll positions, the filters (they live in the hash and
+ * the service) and whatever was typed in the search box. */
+function onLocaleChange() {
+  // Carousel dots (aria-labels only) exist from the first render.
+  document.querySelectorAll('#promo-dots [data-dot]').forEach((d) => {
+    d.setAttribute('aria-label', t('home.goToBanner', { n: Number(d.dataset.dot) + 1 }));
+  });
+
+  if (staticReady) {
+    const track = document.getElementById('promo-carousel');
+    const flash = document.getElementById('flash-row');
+    const trackLeft = track ? track.scrollLeft : 0;
+    const flashLeft = flash ? flash.scrollLeft : 0;
+    renderStaticSections();
+    if (track) track.scrollLeft = trackLeft;
+    if (flash) flash.scrollLeft = flashLeft;
+    updateFlashNav();
+  }
+  renderShelves(false);
+
+  // Filter toolbar (labels, sort menu), chips, count, grid and empty state.
+  const bar = document.getElementById('recommended-filterbar');
+  if (bar) {
+    const menuOpen = !!bar.querySelector('[data-sort-menu]:not(.hidden)');
+    bar.innerHTML = filterBarHtml(recommendedService.filters);
+    if (menuOpen) {
+      bar.querySelector('[data-sort-menu]').classList.remove('hidden');
+      bar.querySelector('[data-sort-toggle]').setAttribute('aria-expanded', 'true');
+    }
+  }
+  renderRecommended();
+
+  if (resultsOpen) renderResults();
+
+  // An open search panel: redraw its rows for the text already typed.
+  document.querySelectorAll('.search-box').forEach((box) => {
+    const input = box.querySelector('input');
+    const panel = box.querySelector('.search-panel');
+    if (input && panel && !panel.classList.contains('hidden')) panel.innerHTML = panelRows(input.value);
+  });
+}
 
 export function initHome() {
   // 1. Skeletons immediately, so the shell never shows an empty grid.
   document.getElementById('promo-carousel').innerHTML = skeletonBanner() + skeletonBanner() + skeletonBanner();
   document.getElementById('promo-dots').innerHTML = [0, 1, 2].map((i) =>
-    '<button type="button" data-dot="' + i + '" aria-label="Go to banner ' + (i + 1) + '" class="un-touch-target h-2 w-2 rounded-full bg-zinc-300 transition-all"></button>').join('');
+    '<button type="button" data-dot="' + i + '" aria-label="' + esc(t('home.goToBanner', { n: i + 1 })) + '" class="un-touch-target h-2 w-2 rounded-full bg-zinc-300 transition-all"></button>').join('');
   document.getElementById('category-grid').innerHTML = CATEGORIES.concat([{ id: 'more' }]).map(() => skeletonCategoryTile()).join('');
   document.getElementById('flash-row').innerHTML = Array.from({ length: 5 }, () =>
     '<div class="w-40 shrink-0 snap-start sm:w-44">' + skeletonCard(true) + '</div>').join('');
   document.getElementById('recommended-grid').innerHTML = Array.from({ length: 8 }, () => skeletonCard()).join('');
 
-  // 2. Real content shortly after. The data is static, so this is only long
-  //    enough for the skeleton state to be visible (and testable).
+  // 2. The Recommended filter bar: the toolbar renders at once (from the
+  //    default filter set), then the service fills the grid from the URL.
+  recommendedSection = document.getElementById('section-recommended');
+  const bar = document.getElementById('recommended-filterbar');
+  if (bar) bar.innerHTML = filterBarHtml(recommendedService.filters);
+  recommendedService.subscribe(renderRecommended);
+  bindFilterControls(recommendedSection, recommendedService);
+  bindRecommended();
+
+  // 3. Static home content shortly after. This is only long enough for the
+  //    skeleton state to be visible (and testable).
   setTimeout(() => {
-    document.getElementById('promo-carousel').innerHTML = BANNERS.map(bannerHtml).join('');
-    document.getElementById('category-grid').innerHTML =
-      CATEGORIES.map(categoryTile).join('') + moreTile();
-    document.getElementById('flash-row').innerHTML =
-      PRODUCTS.filter((p) => p.flash).map((p) =>
-        '<div class="w-40 shrink-0 snap-start sm:w-44">' + productCard(p, { compact: true }) + '</div>').join('');
-    document.getElementById('recommended-grid').innerHTML =
-      PRODUCTS.map((p) => productCard(p)).join('');
+    renderStaticSections();
+    staticReady = true;
     initCarousel();
+    initFlashNav();
   }, 450);
 
+  window.addEventListener('localechange', onLocaleChange);
+
+  loadShelves();
   startCountdown();
+  subscribeFlash(() => { if (staticReady) renderFlash(); });
+  loadFlashSale();
   bindSearch();
 }
 
@@ -380,7 +757,7 @@ export function runBannerAction(i) {
   if (b.action.type === 'scroll') {
     clearResults();
     const el = document.getElementById('section-flash');
-    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (el) el.scrollIntoView({ behavior: scrollBehavior(), block: 'start' });
     return;
   }
   if (b.action.type === 'deals') {

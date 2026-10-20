@@ -20,8 +20,9 @@ module.exports = {
   // extractor cannot see them. Prefer whole literals in the markup instead.
   safelist: [],
 
-  // Matches the <html class="dark"> in public/index.html: dark: variants key
-  // off that class rather than the OS colour-scheme preference.
+  // This app does not use Tailwind's dark: variants; its five background
+  // color themes (see styles/tailwind-input.css) are driven by CSS variables
+  // swapped through the data-theme attribute on <html>.
   darkMode: 'class',
 
   // Stops hover: styles sticking after a tap on touch screens. Required by
@@ -30,35 +31,44 @@ module.exports = {
 
   theme: {
     extend: {
-      // Design-system tokens. `brand` is the app's single accent (a violet
-      // ramp, deliberately not any existing marketplace's color). `sale` is
-      // the warm orange/red reserved for sale, discount and countdown
-      // elements: 500 (#FF4D2E) is the pure accent for bars, fills, borders
-      // and icons; 600 (#C7360F) is the darkened AA-safe shade for small
-      // white-on-color text (raw 500 under white is ~3.3:1, below the 4.5:1
-      // small-text threshold); 50 (#FFF1F0) doubles as the Flash Sale tint.
-      // `page` is the layered page base, `line` the panel hairline. Amber
-      // stays the ratings color; spacing and radii use the default 4px scale.
+      // Design-system tokens. `brand` is the app's single accent. It is NOT
+      // a fixed violet ramp any more: every shade reads an --accent-*-rgb
+      // CSS variable defined per theme in styles/tailwind-input.css (Purple
+      // Dream default = the original violet values). Themes follow the
+      // codebase's two-shade pattern: --accent-500 is the vivid identity
+      // accent (bars, dots, rings), --accent-600 the darkened AA-safe shade
+      // for white-on-color button fills — same rationale as sale-600 below.
+      // The <alpha-value> placeholder keeps slash-opacity variants like
+      // bg-brand-50/50 working.
+      //
+      // `sale` is the warm orange/red reserved for sale, discount and
+      // countdown elements, and stays literal in every theme: 500 (#FF4D2E)
+      // is the pure accent for bars, fills, borders and icons; 600 (#C7360F)
+      // is the darkened AA-safe shade for small white-on-color text (raw 500
+      // under white is ~3.3:1, below the 4.5:1 small-text threshold);
+      // 50 (#FFF1F0) is the Purple Dream Flash Sale tint. `page` is the
+      // layered page base, `line` the panel hairline. Amber stays the
+      // ratings color; spacing and radii use the default 4px scale.
       colors: {
         brand: {
-          50: '#F5F3FF',
-          100: '#EDE9FE',
-          200: '#DDD6FE',
-          300: '#C4B5FD',
-          400: '#A78BFA',
-          500: '#8B5CF6',
-          600: '#7C3AED',
-          700: '#6D28D9',
-          800: '#5B21B6',
-          900: '#4C1D95',
+          50: 'rgb(var(--accent-50-rgb) / <alpha-value>)',
+          100: 'rgb(var(--accent-100-rgb) / <alpha-value>)',
+          200: 'rgb(var(--accent-200-rgb) / <alpha-value>)',
+          300: 'rgb(var(--accent-300-rgb) / <alpha-value>)',
+          400: 'rgb(var(--accent-400-rgb) / <alpha-value>)',
+          500: 'rgb(var(--accent-500-rgb) / <alpha-value>)',
+          600: 'rgb(var(--accent-600-rgb) / <alpha-value>)',
+          700: 'rgb(var(--accent-700-rgb) / <alpha-value>)',
+          800: 'rgb(var(--accent-800-rgb) / <alpha-value>)',
+          900: 'rgb(var(--accent-900-rgb) / <alpha-value>)',
         },
         sale: {
           50: '#FFF1F0',
           500: '#FF4D2E',
           600: '#C7360F',
         },
-        page: '#F5F6FA',
-        line: '#ECEDF3',
+        page: 'rgb(var(--page-rgb) / <alpha-value>)',
+        line: 'rgb(var(--line-rgb) / <alpha-value>)',
       },
       boxShadow: {
         card: '0 1px 2px rgba(24, 24, 27, 0.06), 0 1px 3px rgba(24, 24, 27, 0.08)',

@@ -1,0 +1,98 @@
+/* Color themes (Purple Dream, Ocean Breeze, Sunset Glow, Fresh Mint,
+ * Midnight). The variables themselves live in styles/tailwind-input.css —
+ * this module only switches them: it validates the saved id, toggles the
+ * data-theme attribute on <html>, persists the choice and keeps every
+ * swatch's selected state in sync (the header group on desktop, the Profile
+ * "Color theme" row on mobile).
+ *
+ * The theme persists under one app-level localStorage key, deliberately NOT
+ * keyed on the signed-in user (same policy as store.js). Purple Dream is
+ * the fallback whenever nothing valid is saved; the CSS :root variables ARE
+ * Purple Dream, so an unset data-theme attribute renders the default.
+ */
+
+import { t } from './i18n.js';
+
+export const THEMES = [
+  { id: 'purple' },
+  { id: 'ocean' },
+  { id: 'sunset' },
+  { id: 'mint' },
+  { id: 'midnight' },
+];
+
+const STORAGE_KEY = 'bazario:theme';
+const DEFAULT_THEME = 'purple';
+
+function isValid(id) {
+  return THEMES.some((th) => th.id === id);
+}
+
+export function getTheme() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return isValid(raw) ? raw : DEFAULT_THEME;
+  } catch {
+    // Storage refused (private mode, cross-origin WebView): default theme.
+    return DEFAULT_THEME;
+  }
+}
+
+function applyTheme(id) {
+  if (id === DEFAULT_THEME) {
+    document.documentElement.removeAttribute('data-theme');
+  } else {
+    document.documentElement.setAttribute('data-theme', id);
+  }
+}
+
+/* Mark the active swatch everywhere it is rendered. */
+export function syncSwatches() {
+  const current = getTheme();
+  document.querySelectorAll('[data-theme-swatch]').forEach((btn) => {
+    btn.setAttribute('aria-checked', String(btn.getAttribute('data-theme-swatch') === current));
+  });
+}
+
+export function setTheme(id) {
+  if (!isValid(id)) return;
+  try {
+    localStorage.setItem(STORAGE_KEY, id);
+  } catch {
+    // Storage refused: the theme still applies for this session.
+  }
+  applyTheme(id);
+  syncSwatches();
+}
+
+export function themeName(id) {
+  return t('theme.' + (THEMES.some((th) => th.id === id) ? id : DEFAULT_THEME));
+}
+
+/* Minimal attribute escape (theme.js stays free of ui.js imports). */
+function attr(v) {
+  return String(v).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+}
+
+/* The swatch buttons themselves, shared by the header group (desktop) and
+ * the Profile row (mobile). Whole-literal class names so the Tailwind
+ * compiler sees them. */
+export function swatchButtons() {
+  const current = getTheme();
+  return THEMES.map((th) => {
+    const name = attr(themeName(th.id));
+    return '<button type="button" class="theme-swatch theme-swatch-' + th.id + '" data-theme-swatch="' + th.id + '"'
+      + ' role="radio" aria-checked="' + (th.id === current) + '"'
+      + ' aria-label="' + attr(t('theme.switchTo', { name: themeName(th.id) })) + '" title="' + name + '"></button>';
+  }).join('');
+}
+
+/* Boot: apply the saved theme (the inline head bootstrap has usually already
+ * set it before first paint; this is the authoritative pass) and fill the
+ * static header container. */
+export function initTheme() {
+  applyTheme(getTheme());
+  const header = document.getElementById('theme-swatches');
+  if (header) header.innerHTML = swatchButtons();
+  syncSwatches();
+}
