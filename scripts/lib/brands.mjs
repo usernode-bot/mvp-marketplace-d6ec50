@@ -19,11 +19,11 @@ const REAL = new Set(['sony', 'bose', 'apple', 'samsung', 'dell', 'nike', 'adida
   'cartier', 'pandora', 'swarovski', 'samsonite', 'tumi', 'yeti', 'hydroflask', 'northface', 'patagonia', 'columbia', 'wilson',
   'spalding', 'molten', 'mikasa', 'lululemon', 'gopro', 'dji', 'tcl', 'hisense', 'vizio', 'roku', 'ring', 'nest', 'wyze']);
 
-export function makeBrandPools(sizes, taken = []) {
+export function makeBrandPools(sizes, taken = [], seedPrefix = 'brands:') {
   const used = new Set([...REAL, ...taken.map((b) => String(b).toLowerCase())]);
   const pools = {};
   for (const cat of Object.keys(sizes)) {
-    const rng = makeRng('brands:' + cat);
+    const rng = makeRng(seedPrefix + cat);
     pools[cat] = [];
     let guard = 0;
     while (pools[cat].length < sizes[cat] && guard++ < 5000) {

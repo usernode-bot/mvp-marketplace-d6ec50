@@ -61,7 +61,14 @@
   /* Product cards lift slightly on hover, matching the category tiles'
    * TILE_HOVER motion; still for reduced-motion users. */
   .product-card {
-    @apply transition duration-200 hover:-translate-y-0.5 hover:shadow-card-lg motion-reduce:transition-none motion-reduce:hover:translate-y-0;
+    @apply transition-shadow duration-200 motion-reduce:transition-none;
+  }
+  /* Hover lift only on devices that really hover: a tap on a phone must not
+   * leave a card stuck lifted (and repainted). */
+  @media (hover: hover) {
+    .product-card {
+      @apply transition duration-200 hover:-translate-y-0.5 hover:shadow-card-lg motion-reduce:hover:translate-y-0;
+    }
   }
 
   /* Round ghost button for header actions (bell, cart, back). */
@@ -77,7 +84,7 @@
    * the arrows never cover them. Sized down on small screens and stilled
    * for reduced-motion users. */
   .flash-nav {
-    @apply absolute top-1/2 z-10 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-white/40 bg-zinc-900/45 text-white shadow-card backdrop-blur-sm transition duration-200 hover:scale-110 hover:border-brand-400 hover:bg-brand-600 focus-visible:ring-offset-0 motion-reduce:transition-none motion-reduce:hover:scale-100 sm:h-9 sm:w-9;
+    @apply absolute top-1/2 z-10 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-white/40 bg-zinc-900/70 text-white shadow-card transition duration-200 hover:scale-110 hover:border-brand-400 hover:bg-brand-600 focus-visible:ring-offset-0 motion-reduce:transition-none motion-reduce:hover:scale-100 sm:h-9 sm:w-9;
   }
   .flash-nav-prev { @apply left-1 sm:left-2; }
   .flash-nav-next { @apply right-1 sm:right-2; }
@@ -224,7 +231,7 @@
    * carries .product-img. The animation gives freshly-built grids a short
    * fade instead of a hard pop; reduced-motion users see the art instantly. */
   .product-img {
-    animation: product-img-fade 250ms ease-out both;
+    animation: product-img-fade 150ms ease-out both;
   }
 
   @keyframes product-img-fade {
@@ -284,6 +291,13 @@
   }
   .no-scrollbar::-webkit-scrollbar {
     display: none;
+  }
+  /* Horizontal rows: a sideways swipe stays in the row instead of chaining
+   * into the browser's back gesture, while vertical movement still scrolls
+   * the page. Native scrolling is untouched. */
+  .h-scroll-row {
+    overscroll-behavior-x: contain;
+    touch-action: pan-x pan-y;
   }
 }
 
@@ -570,3 +584,58 @@ html[data-theme='midnight'] {
 html[data-theme='midnight'] .un-popover {
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.35);
 }
+
+/* ---------------------------------------------------------------------------
+ * Languages: fonts and right-to-left layout.
+ *
+ * Latin keeps the stack the app already used; Noto Sans plus common system
+ * fonts back it up for Arabic, Chinese, Korean and Japanese so no glyph
+ * shows as an empty box (the Noto webfonts are fetched by i18n.js only when
+ * such a language is chosen). Arabic sets dir="rtl" on <html>: flex rows
+ * and text already follow it, so this block only mirrors the physical
+ * margin / padding / offset utilities the markup uses, text alignment, and
+ * the directional chevron icons. Nothing here changes the LTR look.
+ * ------------------------------------------------------------------------- */
+html[lang='ar'] body { font-family: 'Noto Sans Arabic', 'Segoe UI', Tahoma, system-ui, sans-serif; }
+html[lang='zh'] body { font-family: system-ui, 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', 'Hiragino Sans GB', sans-serif; }
+html[lang='ko'] body { font-family: system-ui, 'Noto Sans KR', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; }
+html[lang='ja'] body { font-family: system-ui, 'Noto Sans JP', 'Hiragino Sans', 'Yu Gothic', Meiryo, sans-serif; }
+html[lang='ar'] input, html[lang='ar'] button, html[lang='ar'] textarea, html[lang='ar'] select { font-family: inherit; }
+html[lang='zh'] input, html[lang='zh'] button, html[lang='zh'] textarea, html[lang='zh'] select,
+html[lang='ko'] input, html[lang='ko'] button, html[lang='ko'] textarea, html[lang='ko'] select,
+html[lang='ja'] input, html[lang='ja'] button, html[lang='ja'] textarea, html[lang='ja'] select { font-family: inherit; }
+
+/* Language picker: a long list scrolls inside the sheet. */
+.un-action-sheet .un-action-card:first-of-type { max-height: 60vh; overflow-y: auto; overscroll-behavior: contain; }
+.lang-check-slot { display: inline-block; width: 1.25rem; height: 1.25rem; }
+
+html[dir='rtl'] .rtl-flip { transform: scaleX(-1); }
+html[dir='rtl'] .text-left { text-align: right; }
+html[dir='rtl'] .text-right { text-align: left; }
+html[dir='rtl'] .un-popover, html[dir='rtl'] .un-popover-item { text-align: right; }
+html[dir='rtl'] .flash-nav-prev { left: auto; right: 0.25rem; }
+html[dir='rtl'] .flash-nav-next { right: auto; left: 0.25rem; }
+html[dir='rtl'] .input { padding-left: 0.75rem; padding-right: 2.5rem; }
+html[dir="rtl"] .left-2 { right: 0.5rem; left: auto; }
+html[dir="rtl"] .left-2\.5 { right: 0.625rem; left: auto; }
+html[dir="rtl"] .left-3 { right: 0.75rem; left: auto; }
+html[dir="rtl"] .ml-0 { margin-right: 0rem; margin-left: 0; }
+html[dir="rtl"] .ml-1 { margin-right: 0.25rem; margin-left: 0; }
+html[dir="rtl"] .ml-2 { margin-right: 0.5rem; margin-left: 0; }
+html[dir="rtl"] .pl-2 { padding-right: 0.5rem; padding-left: 0; }
+html[dir="rtl"] .pl-3 { padding-right: 0.75rem; padding-left: 0; }
+html[dir="rtl"] .pl-8 { padding-right: 2rem; padding-left: 0; }
+html[dir="rtl"] .pr-0\.5 { padding-left: 0.125rem; padding-right: 0; }
+html[dir="rtl"] .pr-1\.5 { padding-left: 0.375rem; padding-right: 0; }
+html[dir="rtl"] .pr-2 { padding-left: 0.5rem; padding-right: 0; }
+html[dir="rtl"] .right-0 { left: 0rem; right: auto; }
+html[dir="rtl"] .right-1 { left: 0.25rem; right: auto; }
+html[dir="rtl"] .right-16 { left: 4rem; right: auto; }
+html[dir="rtl"] .right-2 { left: 0.5rem; right: auto; }
+html[dir="rtl"] .right-3 { left: 0.75rem; right: auto; }
+html[dir="rtl"] .\-ml-1 { margin-right: -0.25rem; margin-left: 0; }
+html[dir="rtl"] .\-ml-2 { margin-right: -0.5rem; margin-left: 0; }
+html[dir="rtl"] .\-right-0\.5 { left: -0.125rem; right: auto; }
+html[dir="rtl"] .\-right-1\.5 { left: -0.375rem; right: auto; }
+html[dir="rtl"] .\-right-2 { left: -0.5rem; right: auto; }
+html[dir="rtl"] .\-right-6 { left: -1.5rem; right: auto; }

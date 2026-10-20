@@ -7,6 +7,8 @@ const jwt = require('jsonwebtoken');
 const { ROWS, parseParams, buildWhere, orderBy, toProduct } =
   require('./src/products.cjs');
 const { BASE_COLUMNS, ALL_COLUMNS, ensureProductsTable, upsertRows } = require('./src/schema.cjs');
+const flashSale = require('./src/flash-sale.cjs');
+const marketplace = require('./src/marketplace.cjs');
 const { toGeneratedRow } = require('./src/catalog-rows.cjs');
 
 const app = express();
@@ -93,7 +95,7 @@ const APP_AUDIENCE = process.env.USERNODE_APP_ID
 // without a spurious 401. The write routes below stay authenticated.
 // EventSource cannot set request headers, so the live reviews stream passes
 // the same identity token in the query string; the middleware above reads it.
-const PUBLIC_API_PATHS = new Set(['/health', '/api/profile', '/api/products', '/api/catalog/summary', '/api/reviews/stream']);
+const PUBLIC_API_PATHS = new Set(['/health', '/api/profile', '/api/products', '/api/catalog/summary', '/api/reviews/stream', '/api/flash-sale']);
 
 // Public GET routes whose path carries a parameter (a product id, say), so an
 // exact-path Set cannot name them. Only GET is ever public: every write still
@@ -107,6 +109,16 @@ function isPublicApiGet(req) {
 }
 
 app.use(express.json());
+
+// "Now" for anything where the day or the time decides what shows (the Flash
+// Sale). Real time everywhere except a staging preview opened at a chosen
+// moment ("Time-dependent features" in the platform conventions).
+const PREVIEW_NOW = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d{1,3})?)?(?:Z|[+-]\d{2}:\d{2})$/;
+function requestNow(req) {
+  const raw = IS_STAGING ? (req.headers['x-usernode-now'] || req.query['un-now']) : null;
+  return typeof raw === 'string' && PREVIEW_NOW.test(raw) ? new Date(raw) : new Date();
+}
+app.use((req, _res, next) => { req.now = requestNow(req); next(); });
 
 // The platform's three centrally hosted files — the bridge, the native UI
 // kit and the Tailwind runtime — are reachable at these paths on this app's
@@ -432,6 +444,13 @@ async function ensureReviewTables() {
       position INTEGER NOT NULL DEFAULT 0
     )
   `);
+  // Columns the marketplace catalog's reviews use: a headline, a helpful
+  // count and an optional seller reply. A shopper's own review leaves them at
+  // their defaults.
+  await pool.query("ALTER TABLE reviews ADD COLUMN IF NOT EXISTS title TEXT NOT NULL DEFAULT ''");
+  await pool.query('ALTER TABLE reviews ADD COLUMN IF NOT EXISTS helpful INTEGER NOT NULL DEFAULT 0');
+  await pool.query('ALTER TABLE reviews ADD COLUMN IF NOT EXISTS seller_reply TEXT');
+  await pool.query('ALTER TABLE reviews ADD COLUMN IF NOT EXISTS seller_reply_at TIMESTAMPTZ');
   await pool.query('CREATE INDEX IF NOT EXISTS reviews_product_idx ON reviews (product_id, created_at DESC)');
   await pool.query('CREATE INDEX IF NOT EXISTS review_images_review_idx ON review_images (review_id, position)');
   // At most one review per purchased line. A second attempt at the same line
@@ -499,6 +518,9 @@ function reviewJson(row, images, viewerId) {
     body: row.body,
     verified: row.verified,
     status: row.status,
+    title: row.title || '',
+    helpful: row.helpful || 0,
+    sellerReply: row.seller_reply ? { text: row.seller_reply, at: row.seller_reply_at } : null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     mine: viewerId != null && String(row.user_id) === String(viewerId),
@@ -550,7 +572,23 @@ app.get('/api/products/:id/reviews', async (req, res) => {
       viewer.reviewId = mine ? String(mine.id) : null;
       viewer.canReview = !!await findVerifiedLine(req.user.id, productId);
     }
-    return res.json({ items, viewer });
+    // Exact breakdown of every published review (the list below is capped).
+    // `exact` is true for marketplace products, whose card rating is this very
+    // average; the bundled catalog keeps its own aggregate.
+    const dist = await pool.query(
+      `SELECT rating, COUNT(*)::int AS n FROM reviews
+        WHERE product_id = $1 AND status <> 'rejected' GROUP BY rating`, [productId]);
+    const counts = [0, 0, 0, 0, 0];
+    dist.rows.forEach((r) => { if (r.rating >= 1 && r.rating <= 5) counts[5 - r.rating] = r.n; });
+    const total = counts.reduce((a, b) => a + b, 0);
+    const sum = counts.reduce((a, n, i) => a + n * (5 - i), 0);
+    const summary = {
+      exact: marketplace.isMarketplaceId(productId),
+      count: total,
+      average: total ? Math.floor((sum * 20 + total) / (2 * total)) / 10 : 0,
+      counts,
+    };
+    return res.json({ items, viewer, summary });
   } catch (err) {
     console.error('[reviews] load failed:', err.message);
     return res.status(500).json({ error: 'Could not load reviews' });
@@ -640,6 +678,7 @@ app.post('/api/reviews', async (req, res) => {
     }
 
     rateRecord(String(req.user.id), images.length);
+    if (marketplace.isMarketplaceId(productId)) await marketplace.refreshMarketplaceRatings(pool, productId);
     const review = reviewJson(row, images.map((im, i) => ({ id: 'new-' + i, url: im.url, alt: im.alt })), req.user.id);
     review.mine = true;
     publishReview(productId, { type: 'upsert', productId, review });
@@ -718,6 +757,7 @@ app.patch('/api/reviews/:id', async (req, res) => {
     } finally {
       client.release();
     }
+    if (marketplace.isMarketplaceId(row.product_id)) await marketplace.refreshMarketplaceRatings(pool, row.product_id);
     const imgRows = (await loadReviewImages([String(row.id)])).get(String(row.id)) || [];
     const review = reviewJson(updatedRow, imgRows, req.user.id);
     review.mine = true;
@@ -735,6 +775,7 @@ app.delete('/api/reviews/:id', async (req, res) => {
     const row = await loadOwnReview(req, res);
     if (!row) return;
     await pool.query('DELETE FROM reviews WHERE id = $1', [row.id]);
+    if (marketplace.isMarketplaceId(row.product_id)) await marketplace.refreshMarketplaceRatings(pool, row.product_id);
     publishReview(row.product_id, { type: 'delete', productId: row.product_id, id: String(row.id) });
     return res.json({ ok: true });
   } catch (err) {
@@ -783,6 +824,37 @@ app.get('/api/reviews/stream', (req, res) => {
   };
   req.on('close', cleanup);
   req.on('error', cleanup);
+});
+
+/* Flash Sale. GET is public (every shopper sees the same campaign for the
+ * day); the purchase check needs a signed-in user like every other write. */
+app.get('/api/flash-sale', async (req, res) => {
+  try {
+    res.set('Cache-Control', 'no-store');
+    return res.json(await flashSale.currentFlashSale(pool, req.now.getTime()));
+  } catch (err) {
+    console.error('[flash-sale] load failed:', err.message);
+    return res.status(500).json({ error: 'Could not load the Flash Sale' });
+  }
+});
+
+/* Validates stock and the campaign price for the Flash Sale lines of an order
+ * and reserves the units. 409 with a `code` when the campaign has ended, a
+ * price changed or there is not enough stock; nothing is reserved then. */
+app.post('/api/flash-sale/purchase', async (req, res) => {
+  if (!req.user) return res.status(401).json({ error: 'account_required' });
+  try {
+    const lines = ((req.body || {}).items || []).map((i) => ({
+      productId: i && i.productId, qty: i && i.qty, price: i && i.price,
+    }));
+    return res.json(Object.assign({ ok: true }, await flashSale.reserveFlashSale(pool, lines, req.now.getTime())));
+  } catch (err) {
+    if (err instanceof flashSale.FlashError) {
+      return res.status(err.code === 'bad_request' ? 400 : 409).json(Object.assign({ error: err.code, code: err.code }, err.extra));
+    }
+    console.error('[flash-sale] purchase failed:', err.message);
+    return res.status(500).json({ error: 'Could not confirm the Flash Sale items' });
+  }
 });
 
 /* Orders mirror. The client still keeps its order locally (that path is what
@@ -1166,6 +1238,7 @@ async function start() {
   await ensureProductsTable(pool);
   await ensureProductI18nTable();
   await seedCatalog(ROWS);
+  await flashSale.ensureFlashTables(pool);
   if (IS_STAGING) await seedStagingDemo();
   // Staging only: a couple of fake localized rows so ?lang=es has content to
   // show. Strictly a no-op in production.
@@ -1176,6 +1249,14 @@ async function start() {
   // runs under USERNODE_ENV=staging and only ever writes fake identities.
   await ensureReviewTables();
   await seedReviews();
+
+  // The marketplace expansion (about 500 products and their reviews) comes
+  // from data/marketplace/*.json in every environment: it is catalog content,
+  // not a staging fixture. Ratings are then recomputed from the reviews so a
+  // card always shows the average and count of the reviews behind it.
+  await marketplace.seedMarketplaceProducts(pool);
+  await marketplace.seedMarketplaceReviews(pool);
+  await marketplace.refreshMarketplaceRatings(pool);
 
   const server = app.listen(port, () => console.log(`Listening on :${port}`));
   // Let Envoy retire idle upstream connections at 60s, with a 15s margin.

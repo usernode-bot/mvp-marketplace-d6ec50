@@ -22,9 +22,9 @@ import {
   specsFor,
 } from './data.js';
 import { store } from './store.js';
-import { emptyState, esc, fmtCount, fmtPrice, photoHtml, productCard, sizedImage, skeletonCard, starRow, toast } from './ui.js';
+import { emptyState, esc, fmtCount, fmtPrice, photoHtml, productCard, scrollBehavior, sizedImage, skeletonCard, starRow, toast } from './ui.js';
 import { goToHash } from './router.js';
-import { has, t } from './i18n.js';
+import { fmtNumber, has, t } from './i18n.js';
 import { initReviews, mountReviews } from './reviews.js';
 
 
@@ -105,14 +105,23 @@ function galleryHtml() {
     + creditHtml(view);
 }
 
-/* Pexels asks for the photographer to be credited. One line under the
- * gallery names the photographer of the photo on show. */
+/* Photographers are credited, as their licences ask. One line under the
+ * gallery names the author of the photo on show: Pexels photos link to
+ * Pexels, Wikimedia Commons photos name the author and licence and link to
+ * the file's page. A placeholder has no credit. */
 function creditHtml(view) {
   const c = p.generated && Array.isArray(p.imageCredits) ? p.imageCredits[view] : null;
-  if (!c || !c.photographer || !c.pexelsUrl) return '<p id="pdp-credit" class="mt-2 text-center text-[11px] text-zinc-400"></p>';
-  return '<p id="pdp-credit" class="mt-2 text-center text-[11px] text-zinc-400">' + esc(t('product.photoBy')) + ' '
-    + '<a href="' + esc(c.photographerUrl || c.pexelsUrl) + '" target="_blank" rel="noopener noreferrer" class="underline underline-offset-2">' + esc(c.photographer) + '</a>'
-    + ' ' + esc(t('product.photoOn')) + ' <a href="https://www.pexels.com" target="_blank" rel="noopener noreferrer" class="underline underline-offset-2">Pexels</a></p>';
+  const empty = '<p id="pdp-credit" class="mt-2 text-center text-[11px] text-zinc-400"></p>';
+  if (!c || !c.photographer) return empty;
+  const link = (href, text) => '<a href="' + esc(href) + '" target="_blank" rel="noopener noreferrer" class="underline underline-offset-2">' + esc(text) + '</a>';
+  const by = esc(t('product.photoBy')) + ' ', on = ' ' + esc(t('product.photoOn')) + ' ';
+  if (c.source === 'commons') {
+    return '<p id="pdp-credit" class="mt-2 text-center text-[11px] text-zinc-400">' + by + esc(c.photographer)
+      + ' (' + link(c.photographerUrl, c.license || 'licence') + ')' + on + link('https://commons.wikimedia.org', 'Wikimedia Commons') + '</p>';
+  }
+  if (!c.pexelsUrl) return empty;
+  return '<p id="pdp-credit" class="mt-2 text-center text-[11px] text-zinc-400">' + by
+    + link(c.photographerUrl || c.pexelsUrl, c.photographer) + on + link('https://www.pexels.com', 'Pexels') + '</p>';
 }
 
 /* Stock status. Generated products have a real count (p.stock); the bundled
@@ -170,7 +179,7 @@ function infoHtml() {
   return '<h1 class="text-lg font-bold leading-snug text-zinc-900 md:text-xl">' + esc(p.name) + '</h1>'
     + '<div class="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1">'
     + starRow(p.rating)
-    + '<span class="text-sm font-semibold text-zinc-700">' + p.rating.toFixed(1) + '</span>'
+    + '<span class="text-sm font-semibold text-zinc-700">' + fmtNumber(p.rating, { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + '</span>'
     + '<button type="button" data-scroll-reviews class="text-xs text-zinc-500 underline-offset-2 hover:text-brand-700 hover:underline">(' + esc(t('product.reviewsWord', { count: p.reviews, n: fmtCount(p.reviews) })) + ')</button>'
     + '<span class="text-xs text-zinc-300">|</span>'
     + '<span class="text-xs text-zinc-500">' + esc(t('product.sold', { n: fmtCount(p.sold) })) + '</span>'
@@ -209,7 +218,7 @@ function sellerHtml() {
     + '<span class="badge badge-soft">' + esc(s.badge) + '</span></div>'
     + '<div class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-zinc-500">'
     + starRow(s.rating, 'h-3 w-3')
-    + '<span class="font-semibold text-zinc-700">' + s.rating.toFixed(1) + '</span>'
+    + '<span class="font-semibold text-zinc-700">' + fmtNumber(s.rating, { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + '</span>'
     + '<span>' + esc(t('product.followers', { n: s.followers })) + '</span><span class="text-zinc-300">|</span>'
     + '<span>' + esc(t('product.responseRate', { rate: s.response })) + '</span><span class="text-zinc-300">|</span>'
     + '<span>' + esc(t('product.since', { year: s.since })) + '</span>'
@@ -467,7 +476,7 @@ function bindProductEvents() {
 
     if (target.hasAttribute('data-scroll-reviews')) {
       const section = document.getElementById('pdp-reviews');
-      if (section) section.scrollIntoView({ behavior: 'smooth' });
+      if (section) section.scrollIntoView({ behavior: scrollBehavior() });
       return;
     }
     if (target.hasAttribute('data-chat')) {

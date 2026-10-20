@@ -31,19 +31,47 @@ async function dict(lang) {
   return out;
 }
 
-test('en and id dictionaries have the same keys and placeholders', async () => {
+const OTHER = ['id', 'ar', 'zh', 'ko', 'ja', 'es'];
+
+test('every language has exactly the English keys and placeholders, none empty', async () => {
   const en = await dict('en');
-  const id = await dict('id');
-  const keys = (d) => Object.keys(d).sort();
-  const missingInId = Object.keys(en).filter((k) => !(k in id));
-  const extraInId = Object.keys(id).filter((k) => !(k in en));
-  assert.deepEqual(missingInId, []);
-  assert.deepEqual(extraInId, []);
-  for (const k of keys(en)) {
-    const ph = (s) => (s.match(/\{\w+\}/g) || []).sort().join();
-    assert.equal(ph(id[k]), ph(en[k]), 'placeholders differ for ' + k);
-    assert.ok(id[k].trim() !== '', 'empty id string for ' + k);
+  const ph = (s) => (s.match(/\{\w+\}/g) || []).sort().join();
+  for (const lang of OTHER) {
+    const d = await dict(lang);
+    assert.deepEqual(Object.keys(en).filter((k) => !(k in d)), [], lang + ' is missing keys');
+    assert.deepEqual(Object.keys(d).filter((k) => !(k in en)), [], lang + ' has extra keys');
+    for (const k of Object.keys(en)) {
+      assert.equal(ph(d[k]), ph(en[k]), lang + ': placeholders differ for ' + k);
+      assert.ok(d[k].trim() !== '', lang + ': empty string for ' + k);
+    }
   }
+});
+
+test('the picker offers all seven languages by native name', () => {
+  assert.deepEqual(i18n.LOCALES.map((l) => l.label), ['English', 'Bahasa Indonesia', 'العربية', '中文', '한국어', '日本語', 'Español']);
+  assert.deepEqual(i18n.LOCALES.map((l) => l.code), ['en', 'id', 'ar', 'zh', 'ko', 'ja', 'es']);
+});
+
+test('Arabic is right-to-left, every other language is left-to-right', () => {
+  for (const l of i18n.LOCALES) {
+    i18n.setLocale(l.code);
+    i18n.initI18n(); // what the app runs on launch with the saved language
+    assert.equal(globalThis.document.documentElement.dir, l.code === 'ar' ? 'rtl' : 'ltr', l.code);
+    assert.equal(globalThis.document.documentElement.lang, l.code);
+    assert.equal(i18n.isRtl(), l.code === 'ar');
+    assert.equal(i18n.localeLabel(), l.label);
+  }
+  i18n.setLocale('en');
+});
+
+test('numbers and prices follow the selected language', () => {
+  i18n.setLocale('es');
+  assert.match(i18n.fmtMoney(1299900), /12\.999,00/);
+  i18n.setLocale('ja');
+  assert.match(i18n.fmtMoney(1299), /12\.99/);
+  assert.equal(i18n.fmtNumber(1234567), '1,234,567');
+  i18n.setLocale('en');
+  assert.equal(i18n.fmtMoney(1299), '$12.99');
 });
 
 test('every literal t() key used by the client exists in English', async () => {

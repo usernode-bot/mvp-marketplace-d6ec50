@@ -7,7 +7,7 @@
 import { icon, productArt, productPlaceholder, sizedImage } from './icons.js';
 import { discountPct } from './data.js';
 import { store } from './store.js';
-import { t, has, intlLocale } from './i18n.js';
+import { t, has, intlLocale, fmtNumber, fmtMoney, locale } from './i18n.js';
 
 /* ---------------------------------------------------------------------------
  * Product photos for the generated marketplace catalog.
@@ -46,22 +46,41 @@ window.unImgLoaded = function (img) {
  * photo), `opts.cls` adds classes to the <img> (e.g. the zoom transition). */
 export function photoHtml(url, alt, opts = {}) {
   const w = opts.w || 480;
-  return '<div data-img-shimmer class="absolute inset-0 animate-pulse bg-zinc-100"></div>'
+  return '<div data-img-shimmer class="absolute inset-0 bg-zinc-100"></div>'
     + '<img src="' + esc(sizedImage(url, w)) + '" alt="' + esc(alt) + '" width="' + w + '" height="' + w + '"'
     + (opts.eager ? ' fetchpriority="high"' : ' loading="lazy"') + ' decoding="async" data-product-image'
     + ' class="product-img absolute inset-0 h-full w-full ' + (opts.fit === 'contain' ? 'object-contain' : 'object-cover') + (opts.cls ? ' ' + opts.cls : '') + '"'
     + ' onload="unImgLoaded(this)" onerror="unImgFail(this)">';
 }
 
+/* 'smooth' for user-initiated scrolls, 'auto' for people who asked for less motion. */
+export function scrollBehavior() {
+  return window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
+}
 
-/* "$12.99" from integer cents, in the selected locale. The currency stays USD
- * (the stored amounts are integer cents), so only the formatting changes. */
-export function fmtPrice(cents) {
-  try {
-    return numberFormat({ style: 'currency', currency: 'USD' }).format(cents / 100);
-  } catch {
-    return '$' + (cents / 100).toFixed(2);
+/* Fill a product grid with `items`. When the grid already shows the first n
+ * of them in the same order and language (the "Load more" case), only the new
+ * cards are appended, so the photos already on screen are not destroyed and
+ * redecoded mid-scroll. Anything else (new filters, sort, language, skeletons
+ * on screen) rebuilds the grid. */
+export function syncProductGrid(grid, items, cardFn) {
+  const loc = locale();
+  const have = grid.children.length;
+  let append = have > 0 && have <= items.length && grid.dataset.locale === loc;
+  for (let i = 0; append && i < have; i++) {
+    if (grid.children[i].getAttribute('data-product') !== String(items[i].id)) append = false;
   }
+  if (append) {
+    if (have < items.length) grid.insertAdjacentHTML('beforeend', items.slice(have).map(cardFn).join(''));
+  } else {
+    grid.innerHTML = items.map(cardFn).join('');
+  }
+  grid.dataset.locale = loc;
+}
+
+/* "$12.99" from integer cents, formatted for the active language. */
+export function fmtPrice(cents) {
+  return fmtMoney(cents);
 }
 
 /* 12040 -> "12k", 980 -> "980". Below 1000 the digits are grouped by the
@@ -70,11 +89,9 @@ export function fmtCount(n) {
   if (n >= 1000) {
     const k = n / 1000;
     const v = k >= 10 ? Math.round(k) : Math.round(k * 10) / 10;
-    let text = String(v);
-    try { text = new Intl.NumberFormat(intlLocale(), { maximumFractionDigits: 1 }).format(v); } catch { /* keep plain */ }
-    return t('ui.thousands', { n: text });
+    return t('ui.thousands', { n: fmtNumber(v, { maximumFractionDigits: 1 }) });
   }
-  return numberFormat({ useGrouping: true, maximumFractionDigits: 0 }).format(n);
+  return fmtNumber(n);
 }
 
 /* Localized display names for the fixed category / subcategory vocabulary
@@ -249,7 +266,7 @@ export function productCard(p, opts = {}) {
     + (p.art
       ? productArt(p)
         + (photo
-          ? '<img src="' + esc(photo) + '" alt="' + esc(p.name) + '" loading="lazy" decoding="async" data-product-image'
+          ? '<img src="' + esc(photo) + '" alt="' + esc(p.name) + '" width="480" height="480" loading="lazy" decoding="async" data-product-image'
             + ' class="product-img absolute inset-0 h-full w-full ' + (p.imageFit === 'contain' ? 'object-contain' : 'object-cover') + '" onerror="this.remove()">'
           : '')
       : (photo
@@ -272,7 +289,7 @@ export function productCard(p, opts = {}) {
     + '<h3 class="line-clamp-2 text-sm font-medium leading-snug text-zinc-800">' + p.name + '</h3>'
     + '<div class="mt-1.5 flex items-center gap-1 text-xs text-zinc-500">'
     + '<span class="text-amber-400">' + icon('star', 'h-3.5 w-3.5') + '</span>'
-    + '<span class="font-semibold text-zinc-700">' + p.rating.toFixed(1) + '</span>'
+    + '<span class="font-semibold text-zinc-700">' + fmtNumber(p.rating, { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + '</span>'
     + '<span>(' + fmtCount(p.reviews) + ')</span>'
     + (opts.compact ? '' : soldBlock)
     + '</div>'

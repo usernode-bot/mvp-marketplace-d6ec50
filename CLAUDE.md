@@ -191,3 +191,36 @@ soon" on those entry points rather than hiding them.
   the placed order so the Orders tab shows them again. Adding a courier or
   country is a data edit there, not a new rendering branch. Prices are
   integer cents.
+
+## Marketplace expansion catalog (500 products, `mx-` ids)
+
+- A second generated catalog of about 500 products (ids `mx-0001`...) with 4,300 customer reviews. It lives
+  in **data files**, not UI code: `data/marketplace/products.json`, `reviews.json` and `image-mapping.json`.
+  `src/marketplace.cjs` upserts them into `products` / `reviews` on **every boot in every environment** (it is
+  catalog content, not a staging fixture); edit the JSON (or re-run the steps) and the next boot applies it.
+- Build steps: `npm run mx:generate` (offline, deterministic: products and reviews), `npm run mx:images`
+  (searches Wikimedia Commons, no API key; cached under `.cache/commons`), `npm run mx:validate` (HEAD-checks every
+  photo URL, swaps a failed one for another photo of the same product type, and only as a last resort uses
+  `public/images/placeholders/<category>.svg`; writes `data/marketplace/image-report.json`), `npm run mx:verify`
+  (offline invariants: counts, unique names, discount 10-50%, ratings equal the review average, image rules).
+- A product's `rating` and `reviews` are the average (rounded half up to 0.1) and number of its reviews. Never
+  edit them by hand: `refreshMarketplaceRatings` recomputes them from `reviews` after seeding and after a shopper
+  adds, edits or removes a review of an `mx-` product.
+- Seeded reviews use fake reviewer ids (`seed:<product>:<n>`) and ids from 2,000,000 up. They never touch the
+  verified-purchase check (`order_items`) and never appear as the viewer's own review. `reviews` gained `title`,
+  `helpful`, `seller_reply`, `seller_reply_at`.
+- Photo rules (checked by `mx:verify`): 3-4 distinct photos per product, a photo on at most 2 products, never on two
+  categories. Photos are Wikimedia Commons thumbnails; the product page credits author and licence.
+- Seller cities are the 10 listed in `scripts/generate-marketplace.mjs`; Jakarta is one of the app's five Jakarta
+  districts because the location list has no plain "Jakarta".
+- The product page's rating breakdown is counted from the reviews for `mx-` products (`summary.exact` from
+  `GET /api/products/:id/reviews`); the bundled catalog keeps its own aggregate bars. Review sorting (Newest, Most
+  helpful, Highest rating, Lowest rating) is client-side over the loaded list. Home loads 24 products per batch.
+
+## Daily Flash Sale
+
+- The Home Flash Sale row is a persisted daily campaign, not `flash: true` on the bundled catalog (that column is now legacy). `src/flash-sale.cjs` owns the tables `flash_campaigns` (one per marketplace day, unique `date_key`) and `flash_campaign_items` (primary key `(campaign_id, product_id)`, so no duplicates; flash price, original price, flash stock and sold are frozen at creation). The first request of a day creates it; a product can also be assigned by hand with an insert. Both tables are public.
+- The rules (date key, timezone, eligibility, selection) live once in `public/js/flash-sale-core.js`, shared by the server and the offline demo fallback (`public/js/flash-demo.js`, used only when `GET /api/flash-sale` fails; delete it when no longer wanted). Selection: order eligible products by `hash32(date_key|id)`, take 12, and use the previous day's picks only to top up a short pool.
+- The marketplace timezone is the `MARKETPLACE_TIMEZONE` setting (default `Asia/Jakarta`); the day, the label date and the countdown end all follow it. "Now" comes from `req.now` (staging preview moments) on the server and from the server clock on the client.
+- `products.active` and `products.flash_eligible` (default true) are the manual switches. Only products with a positive `stock` and `orig > price` qualify, which in practice means the generated (`gx-`) and expansion (`mx-`) catalogs, not the bundled `p`/`r` ones.
+- Checkout calls `POST /api/flash-sale/purchase` before payment: it checks the campaign is running, the price and the stock, and reserves the units in one transaction.

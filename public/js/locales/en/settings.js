@@ -17,6 +17,7 @@ export default {
   'settings.logoutMessage': 'MVP Marketplace keeps your cart, wishlist, addresses and settings on this device. Logging out clears them.',
   'settings.loggedOut': 'Logged out',
   'settings.languageSet': 'Language set to {language}',
+  'settings.selected': 'Selected',
   'settings.languageFallback': 'Use the language picker in Settings',
   'settings.themeInfo': 'Use the color swatches to change the theme (header on desktop, Profile page on mobile)',
   'settings.editProfile': 'Edit profile',
